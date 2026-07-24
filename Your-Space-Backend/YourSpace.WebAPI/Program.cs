@@ -49,6 +49,11 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    using (var scope = app.Services.CreateScope())
+    {
+        scope.ServiceProvider.GetRequiredService<YourSpaceDbContext>().Database.Migrate();
+    }
+
     app.UseOpenApi();
     app.UseSwaggerUi();
     app.UseHttpLogging();

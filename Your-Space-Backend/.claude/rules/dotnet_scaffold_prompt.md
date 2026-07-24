@@ -131,7 +131,7 @@ builder.Services: Controllers (+ enum-as-string JSON converter) → DataProtecti
                 → AddRateLimiting() → AddSwaggerDocumentation()
                 → AddHttpLogging() (Development only)
 
-app: (Development: UseOpenApi + UseSwaggerUi + UseHttpLogging)
+app: (Development: Database.Migrate() + UseOpenApi + UseSwaggerUi + UseHttpLogging)
    → UseHsts() → UseHttpsRedirection()
    → UseCors(...)                          # before authentication/authorization, always
    → UseExceptionHandler("/error") → UseMiddleware<ExceptionMiddleware>()
@@ -142,6 +142,8 @@ app: (Development: UseOpenApi + UseSwaggerUi + UseHttpLogging)
 ```
 
 `UseCors` must run before `UseAuthentication`/`UseAuthorization` — a preflight request never carries credentials, so CORS has to be settled first. If any SignalR hub needs `AllowCredentials()`, the CORS policy cannot also use `AllowAnyOrigin()` — it must list explicit origins (wildcarded subdomains are fine via `SetIsOriginAllowedToAllowWildcardSubdomains()`).
+
+`Database.Migrate()` runs first in the `Development` block — before `UseOpenApi`/`UseSwaggerUi`/`UseHttpLogging` — so the API docs and request logging never come up against a schema that isn't there yet. See edge case 9 below for why this must stay `Development`-only.
 
 ---
 
@@ -161,6 +163,7 @@ Create one at the solution root covering, at minimum: file-scoped namespaces pre
 6. **Rate limiting scope:** confirm which endpoints (all vs. auth-sensitive only, e.g. login/OTP) need rate limiting in the first pass — don't apply a single blanket policy without checking whether any endpoint (webhooks from a payment/notification provider, for instance) needs to be exempted.
 7. **Retry strategy vs. manual transactions:** if `EnableRetryOnFailure` is ever added to the `DbContext` options, every `BeginTransactionAsync` call site in the codebase must be wrapped in `IExecutionStrategy.ExecuteAsync(...)` per EF Core's docs — Npgsql's (and SQL Server's) retrying execution strategy is incompatible with user-initiated transactions otherwise. Default to **not** enabling retry-on-failure until this is deliberately taken on solution-wide.
 8. **Nullable reference types on entities:** EF Core sets non-nullable entity properties via reflection/materialization, bypassing constructor nullability checks — decide up front whether required scalar properties use `required` (C# 11+) or are left implicitly non-null-but-uninitialized, and apply the choice consistently rather than mixing both across entities.
+9. **Auto-migrate on boot vs. explicit deploy step:** `Program.cs` may call `Database.Migrate()` after `WebApplication.Build()` to create the database and apply pending migrations automatically — if included, gate it strictly behind `IsDevelopment()`. Never call it unconditionally: concurrent instances racing to migrate, and unreviewed schema changes landing on a live database as a side effect of a restart, are real risks in `Production`. `Production` always applies migrations via the explicit `dotnet ef database update` command from CLAUDE.md's Commands section, run as a deliberate deploy step.
 
 ---
 

@@ -27,6 +27,8 @@ dotnet ef migrations add <MigrationName> --project YourSpace.Data --startup-proj
 dotnet ef database update --project YourSpace.Data --startup-project YourSpace.WebAPI
 ```
 
+**Development only:** `dotnet run` also applies pending migrations automatically on boot — `Program.cs` calls `Database.Migrate()` right after building the app, gated behind `IsDevelopment()`. It creates the database if it doesn't exist yet (via Postgres's `postgres` system database) and applies any migrations not yet in `__EFMigrationsHistory`. This is a local convenience only. `Production` never migrates on boot — always run `dotnet ef database update` above as an explicit, reviewed deploy step, so schema changes never land on a live database as a side effect of an instance restarting.
+
 ## Running
 
 ```bash
