@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="YourSpace.Data/YourSpace.Data.csproj" />
+  <Project Path="YourSpace.Repository/YourSpace.Repository.csproj" />
+  <Project Path="YourSpace.Services/YourSpace.Services.csproj" />
+  <Project Path="YourSpace.WebAPI.Tests/YourSpace.WebAPI.Tests.csproj" />
+  <Project Path="YourSpace.WebAPI/YourSpace.WebAPI.csproj" />
+</Solution>

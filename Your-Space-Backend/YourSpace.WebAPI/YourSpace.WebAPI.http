@@ -1,0 +1,6 @@
+@YourSpace.WebAPI_HostAddress = http://localhost:5145
+
+GET {{YourSpace.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
