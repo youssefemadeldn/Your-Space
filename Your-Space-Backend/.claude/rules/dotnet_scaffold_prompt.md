@@ -12,15 +12,16 @@ entities, services, or controllers — only the infrastructure layer.
 ---
 
 **Package context (ignore versions — use latest stable compatible with the target framework):**
-- ORM & database: `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.Tools`
+- ORM & database: `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.Tools` (on `<Solution>.Data`), `Microsoft.EntityFrameworkCore.Design` (on `<Solution>.WebAPI` — `dotnet ef` resolves tooling against the *startup* project, not the class library; without it `dotnet ef migrations add` fails outright)
 - Auth: `Microsoft.AspNetCore.Identity.EntityFrameworkCore`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `System.IdentityModel.Tokens.Jwt`
 - Validation: `FluentValidation.AspNetCore`
 - Mapping: `AutoMapper.Extensions.Microsoft.DependencyInjection`
 - Logging: `Serilog.AspNetCore`
-- API surface: `Microsoft.AspNetCore.Mvc.Versioning`, `Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer`, `Microsoft.AspNetCore.OpenApi`, `NSwag.AspNetCore`
+- API surface: `Asp.Versioning.Mvc`, `Asp.Versioning.Mvc.ApiExplorer` (the actively-maintained successor to the now-frozen `Microsoft.AspNetCore.Mvc.Versioning` — same versioning team, tracks .NET's own version numbering), `Microsoft.AspNetCore.OpenApi`, `NSwag.AspNetCore`
 - Caching/resilience: `Microsoft.Extensions.Caching.StackExchangeRedis`, `Polly`
 - Testing: `xunit`, `Moq`, `FluentAssertions`, `Bogus`, `Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.EntityFrameworkCore.Sqlite`, `Testcontainers` (+ the module for any real external dependency, e.g. `Testcontainers.Redis`), `NetArchTest.Rules`
 - Only add anything beyond this list when a concrete, active feature needs it (see CLAUDE.md "Dependencies rule") — never speculatively.
+- After installing, run `dotnet list package --vulnerable --include-transitive` across every project and substitute or pin any flagged package before writing code — a package's own "latest stable" can still be vulnerable if the package itself is stale or superseded, not just outdated.
 
 ---
 
@@ -108,7 +109,32 @@ Produce a complete file-by-file plan. For each file specify: full path, responsi
 - `Helpers/ServiceRegistration.cs` — `AddApplicationServices(this IServiceCollection)`: `IUnitOfWork`, `IGenericRepository<,>` (open generic registration), AutoMapper (`AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies())`), FluentValidation (auto-validation + client-side adapters), `AddSignalR()` only if Phase-1 confirmed real-time is in scope, API versioning, authorization policies.
 - `Extensions/IdentityServiceExtension.cs` — `AddIdentityService(IConfiguration)`: Identity + JWT bearer options (issuer/audience/signing key sourced from configuration, never hardcoded), token validation parameters.
 - `Extensions/RateLimitingExtension.cs` — `AddRateLimiting(...)` (spelled correctly — see feature prompt anti-patterns for why this matters).
-- `Extensions/SwaggerServiceExtension.cs` — `AddSwaggerDocumentation()` via NSwag, versioned per the `IApiVersionDescriptionProvider`.
+- `Extensions/SwaggerServiceExtension.cs` — `AddSwaggerDocumentation()` via NSwag, versioned per the `IApiVersionDescriptionProvider`. The provider isn't resolvable yet when this method runs — the container isn't built — so read it off a short-lived temporary provider scoped only to this lookup, then register one `AddOpenApiDocument` per version:
+  ```csharp
+  public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
+  {
+      services.AddEndpointsApiExplorer();
+
+      // Temporary provider used only to read the already-registered API version descriptions —
+      // resolves no scoped services, so this is safe despite the ASP0000 warning.
+  #pragma warning disable ASP0000
+      using var tempProvider = services.BuildServiceProvider();
+  #pragma warning restore ASP0000
+      var versionProvider = tempProvider.GetRequiredService<IApiVersionDescriptionProvider>();
+
+      foreach (var description in versionProvider.ApiVersionDescriptions)
+      {
+          services.AddOpenApiDocument(config =>
+          {
+              config.DocumentName = description.GroupName;
+              config.ApiGroupNames = [description.GroupName];
+              config.Version = description.ApiVersion.ToString();
+          });
+      }
+
+      return services;
+  }
+  ```
 - `Program.cs` — see the required pipeline order below.
 - `appsettings.json` — shape only (empty `ConnectionStrings`, `Token` issuer/audience with no key value, feature-flag-style settings sections with safe defaults). `appsettings.Development.json` may contain non-secret local defaults (e.g. a localhost connection string with a throwaway local password is acceptable for local-only Development config **if and only if** that password grants no access to anything beyond a disposable local dev database — when in doubt, use `user-secrets` even for Development).
 - `.editorconfig` at the solution root — see "Baseline `.editorconfig`" below.

@@ -267,7 +267,7 @@ If a secret is ever discovered committed in git history, gitignoring the file go
 - **Avoid duplication** — if the same predicate/filter logic appears in more than one specification constructor or query, extract it into a shared private method or composable expression instead of copy-pasting.
 - **Using-directive order:** `System.*` → `Microsoft.*` → third-party packages → `<Solution>.*`, one blank line between groups. Never leave an unused `using`.
 - **Naming:** `PascalCase` for types, methods, and public members; `camelCase` for parameters and locals; `_camelCase` for private fields. A misspelled type or namespace that ships (e.g. `Extentions`, `Piority`) becomes load-bearing the moment other code references it — catch it in review before merge, because fixing it afterward is a breaking rename, not a typo fix.
-- **Dependencies rule** — do not add a package unless it's actively used; a referenced-but-unused package (dead weight in the `.csproj`) should be removed, not left "in case."
+- **Dependencies rule** — do not add a package unless it's actively used; a referenced-but-unused package (dead weight in the `.csproj`) should be removed, not left "in case." Before adding any new package, check it isn't stale or deprecated, and run `dotnet list package --vulnerable --include-transitive` afterward — a package's "latest stable" release can still carry a known vulnerability, directly or transitively, if the package itself has been superseded or abandoned.
 
 ---
 
@@ -332,7 +332,7 @@ Before finishing any task, verify every item:
 - [ ] No secret was added to `appsettings*.json` (Architecture rule 6).
 - [ ] Multi-step writes are transaction-wrapped where partial completion would corrupt state (Architecture rule 7).
 - [ ] Logging follows the Information/Warning/Error rules above, with structured templates.
-- [ ] No unnecessary package was added.
+- [ ] No unnecessary package was added, and any new package was checked for known vulnerabilities (`dotnet list package --vulnerable --include-transitive`).
 - [ ] Acted as a senior partner: non-obvious tradeoffs named, concerns flagged, improvements suggested when genuinely valuable.
 
 Then provide a brief summary of:
