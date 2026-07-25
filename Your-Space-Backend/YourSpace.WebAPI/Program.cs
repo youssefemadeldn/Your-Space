@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StackExchange.Redis;
 using YourSpace.Data.Contexts;
+using YourSpace.Data.Entities;
 using YourSpace.Services.Helper;
 using YourSpace.WebAPI.Extensions;
 using YourSpace.WebAPI.Helpers;
@@ -88,7 +90,11 @@ if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
     {
-        scope.ServiceProvider.GetRequiredService<YourSpaceDbContext>().Database.Migrate();
+        var dbContext = scope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
+        dbContext.Database.Migrate();
+
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        await MockDataSeeder.SeedAsync(dbContext, userManager);
     }
 
     app.UseOpenApi();

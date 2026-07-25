@@ -68,6 +68,7 @@ public class AuthService_ResetPasswordAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(400);
+        result.ErrorCode.Should().Be("Auth.ResetPassword.InvalidRequest");
     }
 
     [Fact]
@@ -79,6 +80,7 @@ public class AuthService_ResetPasswordAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(400);
+        result.ErrorCode.Should().Be("Otp.Invalid");
         _unitOfWork.Verify(u => u.CommitAsync(It.IsAny<IDbContextTransaction>()), Times.Once);
         _unitOfWork.Verify(u => u.RollbackAsync(It.IsAny<IDbContextTransaction>()), Times.Never);
     }
@@ -91,6 +93,7 @@ public class AuthService_ResetPasswordAsyncTests
         var result = await CreateSut().ResetPasswordAsync(Dto);
 
         result.StatusCode.Should().Be(423);
+        result.ErrorCode.Should().Be("Otp.LockedOut");
     }
 
     [Fact]

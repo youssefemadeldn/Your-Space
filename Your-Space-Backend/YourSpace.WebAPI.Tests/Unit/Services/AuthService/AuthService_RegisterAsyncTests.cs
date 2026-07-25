@@ -63,6 +63,7 @@ public class AuthService_RegisterAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(409);
+        result.ErrorCode.Should().Be("Auth.Register.EmailExists");
         _userManager.Verify(m => m.CreateAsync(It.IsAny<AppUser>(), It.IsAny<string>()), Times.Never);
     }
 

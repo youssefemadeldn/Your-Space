@@ -59,6 +59,7 @@ public class AuthService_LoginAsyncTests
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(401);
         result.Message.Should().Be("Invalid email or password.");
+        result.ErrorCode.Should().Be("Auth.InvalidCredentials");
     }
 
     [Fact]
@@ -71,6 +72,7 @@ public class AuthService_LoginAsyncTests
         var result = await CreateSut().LoginAsync(Dto, "127.0.0.1");
 
         result.StatusCode.Should().Be(423);
+        result.ErrorCode.Should().Be("Auth.AccountLocked");
     }
 
     [Fact]
@@ -85,6 +87,7 @@ public class AuthService_LoginAsyncTests
 
         result.StatusCode.Should().Be(401);
         result.Message.Should().Be("Invalid email or password.");
+        result.ErrorCode.Should().Be("Auth.InvalidCredentials");
         _userManager.Verify(m => m.AccessFailedAsync(user), Times.Once);
     }
 
@@ -100,6 +103,7 @@ public class AuthService_LoginAsyncTests
         var result = await CreateSut().LoginAsync(Dto, "127.0.0.1");
 
         result.StatusCode.Should().Be(403);
+        result.ErrorCode.Should().Be("Auth.EmailNotConfirmed");
     }
 
     [Fact]

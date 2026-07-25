@@ -59,6 +59,7 @@ public class AuthService_RefreshTokenAsyncTests
         var result = await CreateSut().RefreshTokenAsync("unknown-token", "127.0.0.1");
 
         result.StatusCode.Should().Be(401);
+        result.ErrorCode.Should().Be("Auth.RefreshToken.Invalid");
     }
 
     [Fact]
@@ -93,6 +94,7 @@ public class AuthService_RefreshTokenAsyncTests
         var result = await CreateSut().RefreshTokenAsync("stolen-token", "127.0.0.1");
 
         result.StatusCode.Should().Be(401);
+        result.ErrorCode.Should().Be("Auth.RefreshToken.Reused");
         _refreshTokenRepo.Verify(r => r.Update(It.Is<RefreshToken>(rt => rt.Id == stillActive.Id && rt.RevokedAt != null)), Times.Once);
     }
 
@@ -117,6 +119,7 @@ public class AuthService_RefreshTokenAsyncTests
         var result = await CreateSut().RefreshTokenAsync("logged-out-token", "127.0.0.1");
 
         result.StatusCode.Should().Be(401);
+        result.ErrorCode.Should().Be("Auth.RefreshToken.Revoked");
         _refreshTokenRepo.Verify(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<RefreshToken>>()), Times.Never);
         _refreshTokenRepo.Verify(r => r.Update(It.IsAny<RefreshToken>()), Times.Never);
     }
@@ -138,6 +141,7 @@ public class AuthService_RefreshTokenAsyncTests
         var result = await CreateSut().RefreshTokenAsync("expired-token", "127.0.0.1");
 
         result.StatusCode.Should().Be(401);
+        result.ErrorCode.Should().Be("Auth.RefreshToken.Expired");
     }
 
     [Fact]

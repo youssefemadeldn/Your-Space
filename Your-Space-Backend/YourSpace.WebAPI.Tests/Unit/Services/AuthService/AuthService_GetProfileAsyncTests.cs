@@ -34,6 +34,7 @@ public class AuthService_GetProfileAsyncTests
         var result = await CreateSut().GetProfileAsync("missing");
 
         result.StatusCode.Should().Be(404);
+        result.ErrorCode.Should().Be("Auth.User.NotFound");
     }
 
     [Fact]

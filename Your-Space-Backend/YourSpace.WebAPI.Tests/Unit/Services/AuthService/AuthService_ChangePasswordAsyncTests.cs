@@ -66,6 +66,7 @@ public class AuthService_ChangePasswordAsyncTests
         var result = await CreateSut().ChangePasswordAsync("missing", Dto);
 
         result.StatusCode.Should().Be(404);
+        result.ErrorCode.Should().Be("Auth.User.NotFound");
     }
 
     [Fact]

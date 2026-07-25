@@ -14,7 +14,10 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
         catch (NotFoundException ex)
         {
             logger.LogWarning(ex, "Resource not found: {Message}", ex.Message);
-            await WriteResponseAsync(context, ServiceResult.NotFound(ex.Message));
+            // Fixed generic code, not a per-guard-clause value — NotFoundException carries only a message,
+            // thrown from anywhere in the solution, so there's no per-resource key available here (same
+            // reasoning CLAUDE.md already applies to ServerError's fixed default).
+            await WriteResponseAsync(context, ServiceResult.NotFound(ex.Message, "Resource.NotFound"));
         }
         catch (ValidationException ex)
         {

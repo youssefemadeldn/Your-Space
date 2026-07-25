@@ -21,6 +21,29 @@ public class AuthService(
     IConfiguration configuration,
     ILogger<AuthService> logger) : IAuthService
 {
+    // Stable, non-localized ErrorCode values a client branches on — never reworded, never changes with
+    // Accept-Language (CLAUDE.md Architecture rule 10). Kept as named constants so the two call sites that
+    // must share the same code (unknown-email vs. wrong-password, both anti-enumeration) can't drift apart.
+    private static class ErrorCodes
+    {
+        public const string RegisterEmailExists = "Auth.Register.EmailExists";
+        public const string InvalidCredentials = "Auth.InvalidCredentials";
+        public const string AccountLocked = "Auth.AccountLocked";
+        public const string EmailNotConfirmed = "Auth.EmailNotConfirmed";
+        public const string RefreshTokenInvalid = "Auth.RefreshToken.Invalid";
+        public const string RefreshTokenReused = "Auth.RefreshToken.Reused";
+        public const string RefreshTokenRevoked = "Auth.RefreshToken.Revoked";
+        public const string RefreshTokenExpired = "Auth.RefreshToken.Expired";
+        public const string RefreshTokenNotFound = "Auth.RefreshToken.NotFound";
+        public const string ConfirmEmailInvalidRequest = "Auth.ConfirmEmail.InvalidRequest";
+        public const string ConfirmEmailFailed = "Auth.ConfirmEmail.Failed";
+        public const string ResetPasswordInvalidRequest = "Auth.ResetPassword.InvalidRequest";
+        public const string UserNotFound = "Auth.User.NotFound";
+        public const string OtpExpired = "Otp.Expired";
+        public const string OtpLockedOut = "Otp.LockedOut";
+        public const string OtpInvalid = "Otp.Invalid";
+    }
+
     public async Task<ServiceResult<UserProfileDto>> RegisterAsync(RegisterDto dto)
     {
         logger.LogInformation("Registering new user {Email}", dto.Email);
@@ -29,7 +52,7 @@ public class AuthService(
         if (existingUser is not null)
         {
             logger.LogWarning("Registration attempted with an already-registered email {Email}", dto.Email);
-            return ServiceResult<UserProfileDto>.Conflict("An account with this email already exists.");
+            return ServiceResult<UserProfileDto>.Conflict("An account with this email already exists.", ErrorCodes.RegisterEmailExists);
         }
 
         var user = new AppUser
@@ -94,26 +117,26 @@ public class AuthService(
         if (user is null)
         {
             logger.LogWarning("Login attempted for an unknown email {Email}", dto.Email);
-            return ServiceResult<AuthResponseDto>.Fail("Invalid email or password.", 401);
+            return ServiceResult<AuthResponseDto>.Fail("Invalid email or password.", ErrorCodes.InvalidCredentials, 401);
         }
 
         if (await userManager.IsLockedOutAsync(user))
         {
             logger.LogWarning("Login attempted for a locked-out user {UserId}", user.Id);
-            return ServiceResult<AuthResponseDto>.Fail("This account is temporarily locked. Try again later.", 423);
+            return ServiceResult<AuthResponseDto>.Fail("This account is temporarily locked. Try again later.", ErrorCodes.AccountLocked, 423);
         }
 
         if (!await userManager.CheckPasswordAsync(user, dto.Password))
         {
             await userManager.AccessFailedAsync(user);
             logger.LogWarning("Invalid password for user {UserId}", user.Id);
-            return ServiceResult<AuthResponseDto>.Fail("Invalid email or password.", 401);
+            return ServiceResult<AuthResponseDto>.Fail("Invalid email or password.", ErrorCodes.InvalidCredentials, 401);
         }
 
         if (!await userManager.IsEmailConfirmedAsync(user))
         {
             logger.LogWarning("Login blocked for unconfirmed email, user {UserId}", user.Id);
-            return ServiceResult<AuthResponseDto>.Fail("Please confirm your email before logging in.", 403);
+            return ServiceResult<AuthResponseDto>.Fail("Please confirm your email before logging in.", ErrorCodes.EmailNotConfirmed, 403);
         }
 
         await userManager.ResetAccessFailedCountAsync(user);
@@ -134,7 +157,7 @@ public class AuthService(
         if (stored is null)
         {
             logger.LogWarning("Refresh attempted with an unknown token");
-            return ServiceResult<AuthResponseDto>.Fail("Invalid refresh token.", 401);
+            return ServiceResult<AuthResponseDto>.Fail("Invalid refresh token.", ErrorCodes.RefreshTokenInvalid, 401);
         }
 
         if (stored.RevokedAt is not null)
@@ -148,17 +171,17 @@ public class AuthService(
             {
                 logger.LogWarning("Refresh token reuse detected for user {UserId} — revoking all active sessions", stored.UserId);
                 await RevokeAllUserTokensAsync(stored.UserId);
-                return ServiceResult<AuthResponseDto>.Fail("This refresh token has already been used. Please log in again.", 401);
+                return ServiceResult<AuthResponseDto>.Fail("This refresh token has already been used. Please log in again.", ErrorCodes.RefreshTokenReused, 401);
             }
 
             logger.LogWarning("Refresh attempted with an already-revoked token for user {UserId}", stored.UserId);
-            return ServiceResult<AuthResponseDto>.Fail("This refresh token has been revoked. Please log in again.", 401);
+            return ServiceResult<AuthResponseDto>.Fail("This refresh token has been revoked. Please log in again.", ErrorCodes.RefreshTokenRevoked, 401);
         }
 
         if (stored.ExpiresAt < DateTime.UtcNow)
         {
             logger.LogWarning("Expired refresh token presented for user {UserId}", stored.UserId);
-            return ServiceResult<AuthResponseDto>.Fail("Your session has expired. Please log in again.", 401);
+            return ServiceResult<AuthResponseDto>.Fail("Your session has expired. Please log in again.", ErrorCodes.RefreshTokenExpired, 401);
         }
 
         var roles = await userManager.GetRolesAsync(stored.User);
@@ -211,7 +234,7 @@ public class AuthService(
 
         if (stored is null)
         {
-            return ServiceResult.NotFound("Refresh token not found.");
+            return ServiceResult.NotFound("Refresh token not found.", ErrorCodes.RefreshTokenNotFound);
         }
 
         if (stored.RevokedAt is null)
@@ -231,7 +254,7 @@ public class AuthService(
         var user = await userManager.FindByEmailAsync(dto.Email);
         if (user is null)
         {
-            return ServiceResult.Fail("Invalid or expired confirmation code.", 400);
+            return ServiceResult.Fail("Invalid or expired confirmation code.", ErrorCodes.ConfirmEmailInvalidRequest, 400);
         }
 
         var transaction = await unitOfWork.BeginTransactionAsync();
@@ -254,7 +277,7 @@ public class AuthService(
                 // Not the user's fault — roll back the OTP consumption too, so the code stays usable.
                 await unitOfWork.RollbackAsync(transaction);
                 logger.LogError("Email confirmation failed for user {UserId} after a valid code: {Errors}", user.Id, string.Join(", ", confirmResult.Errors.Select(e => e.Code)));
-                return ServiceResult.Fail("Email confirmation failed. Please try again.", 400);
+                return ServiceResult.Fail("Email confirmation failed. Please try again.", ErrorCodes.ConfirmEmailFailed, 400);
             }
 
             await unitOfWork.CommitAsync(transaction);
@@ -314,7 +337,7 @@ public class AuthService(
         var user = await userManager.FindByEmailAsync(dto.Email);
         if (user is null)
         {
-            return ServiceResult.Fail("Invalid or expired reset request.", 400);
+            return ServiceResult.Fail("Invalid or expired reset request.", ErrorCodes.ResetPasswordInvalidRequest, 400);
         }
 
         var transaction = await unitOfWork.BeginTransactionAsync();
@@ -355,7 +378,7 @@ public class AuthService(
         var user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return ServiceResult.NotFound("User not found.");
+            return ServiceResult.NotFound("User not found.", ErrorCodes.UserNotFound);
         }
 
         var result = await userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
@@ -375,7 +398,7 @@ public class AuthService(
         var user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return ServiceResult<UserProfileDto>.NotFound("User not found.");
+            return ServiceResult<UserProfileDto>.NotFound("User not found.", ErrorCodes.UserNotFound);
         }
 
         return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user));
@@ -445,9 +468,9 @@ public class AuthService(
 
     private static ServiceResult MapOtpFailure(OtpValidationResult result, string codeKind) => result switch
     {
-        OtpValidationResult.Expired => ServiceResult.Fail($"This {codeKind} has expired. Please request a new one.", 400),
-        OtpValidationResult.LockedOut => ServiceResult.Fail("Too many incorrect attempts. Please request a new code.", 423),
-        _ => ServiceResult.Fail($"Invalid {codeKind}.", 400)
+        OtpValidationResult.Expired => ServiceResult.Fail($"This {codeKind} has expired. Please request a new one.", ErrorCodes.OtpExpired, 400),
+        OtpValidationResult.LockedOut => ServiceResult.Fail("Too many incorrect attempts. Please request a new code.", ErrorCodes.OtpLockedOut, 423),
+        _ => ServiceResult.Fail($"Invalid {codeKind}.", ErrorCodes.OtpInvalid, 400)
     };
 
     private async Task TrySendEmailAsync(string toEmail, string subject, string htmlBody, string emailKind)

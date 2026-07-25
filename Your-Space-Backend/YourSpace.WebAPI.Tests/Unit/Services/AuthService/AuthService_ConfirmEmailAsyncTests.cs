@@ -54,6 +54,7 @@ public class AuthService_ConfirmEmailAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(400);
+        result.ErrorCode.Should().Be("Auth.ConfirmEmail.InvalidRequest");
         _otpService.Verify(o => o.ValidateEmailConfirmationCodeAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -66,6 +67,7 @@ public class AuthService_ConfirmEmailAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(400);
+        result.ErrorCode.Should().Be("Otp.Invalid");
         // A wrong-code attempt still records an attempt count against the OTP row — that write must
         // be kept, not rolled back, even though the overall call "fails".
         _unitOfWork.Verify(u => u.CommitAsync(It.IsAny<IDbContextTransaction>()), Times.Once);
@@ -81,6 +83,7 @@ public class AuthService_ConfirmEmailAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(400);
+        result.ErrorCode.Should().Be("Otp.Expired");
     }
 
     [Fact]
@@ -92,6 +95,7 @@ public class AuthService_ConfirmEmailAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(423);
+        result.ErrorCode.Should().Be("Otp.LockedOut");
     }
 
     [Fact]
@@ -106,6 +110,7 @@ public class AuthService_ConfirmEmailAsyncTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(400);
+        result.ErrorCode.Should().Be("Auth.ConfirmEmail.Failed");
         _unitOfWork.Verify(u => u.RollbackAsync(It.IsAny<IDbContextTransaction>()), Times.Once);
         _unitOfWork.Verify(u => u.CommitAsync(It.IsAny<IDbContextTransaction>()), Times.Never);
     }

@@ -45,6 +45,7 @@ public class AuthService_RevokeTokenAsyncTests
         var result = await CreateSut().RevokeTokenAsync("unknown", "127.0.0.1");
 
         result.StatusCode.Should().Be(404);
+        result.ErrorCode.Should().Be("Auth.RefreshToken.NotFound");
     }
 
     [Fact]
