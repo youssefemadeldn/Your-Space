@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StackExchange.Redis;
 using YourSpace.Data.Contexts;
+using YourSpace.Services.Helper;
 using YourSpace.WebAPI.Extensions;
 using YourSpace.WebAPI.Helpers;
 using YourSpace.WebAPI.Middleware;
@@ -13,7 +15,25 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
 
 builder.Services.AddControllers()
-    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        // [ApiController]'s automatic model-state validation (which FluentValidation's
+        // AddFluentValidationAutoValidation() populates) short-circuits the pipeline and returns its
+        // own ProblemDetails shape by default — before ExceptionMiddleware/ServiceResult ever see the
+        // request. Overriding the factory is the only way to keep every validation failure on the one
+        // documented ServiceResult envelope instead of a second, undocumented response shape.
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+
+            return new ResultActionResult(ServiceResult.ValidationError(errors));
+        };
+    });
 
 builder.Services.AddDataProtection();
 
@@ -80,7 +100,9 @@ else
     app.UseHsts();
 }
 
-using (var seedScope = app.Services.CreateScope())
+// IdentitySeeder resolves IUnitOfWork, which is IAsyncDisposable-only (see UnitOfWork.DisposeAsync) —
+// a synchronous `using` scope throws on dispose trying to dispose it synchronously.
+await using (var seedScope = app.Services.CreateAsyncScope())
 {
     await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
 }

@@ -8,6 +8,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
+using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -52,6 +53,7 @@ public class AuthService_ChangePasswordAsyncTests
         _userManager.Object,
         _unitOfWork.Object,
         _tokenService.Object,
+        Mock.Of<IOtpService>(),
         _emailSender.Object,
         _configuration,
         Mock.Of<ILogger<AuthServiceImpl>>());

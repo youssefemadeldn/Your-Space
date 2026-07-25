@@ -45,4 +45,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
     public string GenerateRefreshToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
     public string HashToken(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+
+    public string GenerateOtpCode(int length) =>
+        RandomNumberGenerator.GetInt32(0, (int)Math.Pow(10, length)).ToString($"D{length}");
 }

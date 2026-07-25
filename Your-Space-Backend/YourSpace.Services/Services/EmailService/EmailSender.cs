@@ -20,6 +20,8 @@ public class EmailSender(IOptions<EmailOptions> options, ILogger<EmailSender> lo
 
         using var client = new SmtpClient();
 
+        client.CheckCertificateRevocation = false;
+
         logger.LogInformation("Sending email {Subject} to {ToEmail}", subject, toEmail);
 
         await client.ConnectAsync(

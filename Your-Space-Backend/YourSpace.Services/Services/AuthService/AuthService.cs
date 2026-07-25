@@ -7,6 +7,7 @@ using YourSpace.Repository.Specifications.AuthSpecifications;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
+using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.TokenService;
 
 namespace YourSpace.Services.Services.AuthService;
@@ -15,6 +16,7 @@ public class AuthService(
     UserManager<AppUser> userManager,
     IUnitOfWork unitOfWork,
     ITokenService tokenService,
+    IOtpService otpService,
     IEmailSender emailSender,
     IConfiguration configuration,
     ILogger<AuthService> logger) : IAuthService
@@ -70,15 +72,15 @@ public class AuthService(
         // Any return above this point (validation/role failure) leaves the transaction uncommitted —
         // disposing it here rolls it back, so no partially-created account survives either path.
 
-        var confirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var otpCode = await otpService.GenerateEmailConfirmationCodeAsync(user.Id);
         await TrySendEmailAsync(
             user.Email!,
             "Confirm your Your Space account",
             $"""
              <p>Welcome to Your Space!</p>
-             <p>Use the details below to confirm your account:</p>
-             <p>User Id: {user.Id}</p>
-             <p>Confirmation token: {confirmationToken}</p>
+             <p>Use the code below to confirm your account:</p>
+             <h2>{otpCode}</h2>
+             <p>This code expires in {OtpConstants.ExpiryMinutes} minutes.</p>
              """,
             "confirmation");
 
@@ -226,17 +228,41 @@ public class AuthService(
 
     public async Task<ServiceResult> ConfirmEmailAsync(ConfirmEmailDto dto)
     {
-        var user = await userManager.FindByIdAsync(dto.UserId);
+        var user = await userManager.FindByEmailAsync(dto.Email);
         if (user is null)
         {
-            return ServiceResult.Fail("Invalid confirmation link.", 400);
+            return ServiceResult.Fail("Invalid or expired confirmation code.", 400);
         }
 
-        var result = await userManager.ConfirmEmailAsync(user, dto.Token);
-        if (!result.Succeeded)
+        var transaction = await unitOfWork.BeginTransactionAsync();
+        try
         {
-            logger.LogWarning("Email confirmation failed for user {UserId}", user.Id);
-            return ServiceResult.Fail("Invalid or expired confirmation link.", 400);
+            var otpResult = await otpService.ValidateEmailConfirmationCodeAsync(user.Id, dto.Code);
+            if (otpResult != OtpValidationResult.Success)
+            {
+                // ValidateAsync already persisted an attempt-count increment or a lockout for this
+                // outcome — that's a real state change worth keeping, so it commits either way.
+                await unitOfWork.CommitAsync(transaction);
+                logger.LogWarning("Email confirmation failed for user {UserId}: {Result}", user.Id, otpResult);
+                return MapOtpFailure(otpResult, "confirmation code");
+            }
+
+            var confirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmResult = await userManager.ConfirmEmailAsync(user, confirmationToken);
+            if (!confirmResult.Succeeded)
+            {
+                // Not the user's fault — roll back the OTP consumption too, so the code stays usable.
+                await unitOfWork.RollbackAsync(transaction);
+                logger.LogError("Email confirmation failed for user {UserId} after a valid code: {Errors}", user.Id, string.Join(", ", confirmResult.Errors.Select(e => e.Code)));
+                return ServiceResult.Fail("Email confirmation failed. Please try again.", 400);
+            }
+
+            await unitOfWork.CommitAsync(transaction);
+        }
+        catch
+        {
+            await unitOfWork.RollbackAsync(transaction);
+            throw;
         }
 
         logger.LogInformation("Email confirmed for user {UserId}", user.Id);
@@ -248,13 +274,14 @@ public class AuthService(
         var user = await userManager.FindByEmailAsync(dto.Email);
         if (user is not null && !await userManager.IsEmailConfirmedAsync(user))
         {
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var code = await otpService.GenerateEmailConfirmationCodeAsync(user.Id);
             await TrySendEmailAsync(
                 user.Email!,
                 "Confirm your Your Space account",
                 $"""
-                 <p>User Id: {user.Id}</p>
-                 <p>Confirmation token: {token}</p>
+                 <p>Your confirmation code is:</p>
+                 <h2>{code}</h2>
+                 <p>This code expires in {OtpConstants.ExpiryMinutes} minutes.</p>
                  """,
                 "confirmation");
         }
@@ -267,13 +294,14 @@ public class AuthService(
         var user = await userManager.FindByEmailAsync(dto.Email);
         if (user is not null)
         {
-            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var code = await otpService.GeneratePasswordResetCodeAsync(user.Id);
             await TrySendEmailAsync(
                 user.Email!,
                 "Reset your Your Space password",
                 $"""
-                 <p>Email: {user.Email}</p>
-                 <p>Reset token: {token}</p>
+                 <p>Your password reset code is:</p>
+                 <h2>{code}</h2>
+                 <p>This code expires in {OtpConstants.ExpiryMinutes} minutes.</p>
                  """,
                 "password reset");
         }
@@ -289,14 +317,35 @@ public class AuthService(
             return ServiceResult.Fail("Invalid or expired reset request.", 400);
         }
 
-        var result = await userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
-        if (!result.Succeeded)
+        var transaction = await unitOfWork.BeginTransactionAsync();
+        try
         {
-            logger.LogWarning("Password reset failed for user {UserId}", user.Id);
-            return ServiceResult.ValidationError(MapIdentityErrors(result.Errors), "Password reset failed.");
+            var otpResult = await otpService.ValidatePasswordResetCodeAsync(user.Id, dto.Code);
+            if (otpResult != OtpValidationResult.Success)
+            {
+                await unitOfWork.CommitAsync(transaction);
+                logger.LogWarning("Password reset failed for user {UserId}: {Result}", user.Id, otpResult);
+                return MapOtpFailure(otpResult, "reset code");
+            }
+
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+            var resetResult = await userManager.ResetPasswordAsync(user, resetToken, dto.NewPassword);
+            if (!resetResult.Succeeded)
+            {
+                await unitOfWork.RollbackAsync(transaction);
+                logger.LogWarning("Password reset failed for user {UserId} after a valid code", user.Id);
+                return ServiceResult.ValidationError(MapIdentityErrors(resetResult.Errors), "Password reset failed.");
+            }
+
+            await RevokeAllActiveTokensCoreAsync(user.Id);
+            await unitOfWork.CommitAsync(transaction);
+        }
+        catch
+        {
+            await unitOfWork.RollbackAsync(transaction);
+            throw;
         }
 
-        await RevokeAllUserTokensAsync(user.Id);
         logger.LogInformation("Password reset for user {UserId}", user.Id);
         return ServiceResult.Ok("Password has been reset successfully. Please log in with your new password.");
     }
@@ -358,7 +407,10 @@ public class AuthService(
         };
     }
 
-    private async Task RevokeAllUserTokensAsync(string userId)
+    // The fetch-active + mark-revoked + SaveChangesAsync logic, with no transaction handling of its
+    // own — callable directly from inside a caller's already-open transaction (ResetPasswordAsync)
+    // without hitting UnitOfWork.BeginTransactionAsync's lack of a reentrancy guard.
+    private async Task RevokeAllActiveTokensCoreAsync(string userId)
     {
         var repo = unitOfWork.Repository<RefreshToken, Guid>();
         var activeTokens = await repo.ListAllWithSpecAsync(new ActiveRefreshTokensByUserSpecs(userId));
@@ -367,16 +419,21 @@ public class AuthService(
             return;
         }
 
+        foreach (var token in activeTokens)
+        {
+            token.RevokedAt = DateTime.UtcNow;
+            repo.Update(token);
+        }
+
+        await unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task RevokeAllUserTokensAsync(string userId)
+    {
         var transaction = await unitOfWork.BeginTransactionAsync();
         try
         {
-            foreach (var token in activeTokens)
-            {
-                token.RevokedAt = DateTime.UtcNow;
-                repo.Update(token);
-            }
-
-            await unitOfWork.SaveChangesAsync();
+            await RevokeAllActiveTokensCoreAsync(userId);
             await unitOfWork.CommitAsync(transaction);
         }
         catch
@@ -385,6 +442,13 @@ public class AuthService(
             throw;
         }
     }
+
+    private static ServiceResult MapOtpFailure(OtpValidationResult result, string codeKind) => result switch
+    {
+        OtpValidationResult.Expired => ServiceResult.Fail($"This {codeKind} has expired. Please request a new one.", 400),
+        OtpValidationResult.LockedOut => ServiceResult.Fail("Too many incorrect attempts. Please request a new code.", 423),
+        _ => ServiceResult.Fail($"Invalid {codeKind}.", 400)
+    };
 
     private async Task TrySendEmailAsync(string toEmail, string subject, string htmlBody, string emailKind)
     {

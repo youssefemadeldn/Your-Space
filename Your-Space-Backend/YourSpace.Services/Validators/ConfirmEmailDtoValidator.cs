@@ -7,7 +7,7 @@ public class ConfirmEmailDtoValidator : AbstractValidator<ConfirmEmailDto>
 {
     public ConfirmEmailDtoValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
-        RuleFor(x => x.Token).NotEmpty();
+        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        RuleFor(x => x.Code).NotEmpty().MustBeValidOtpCode();
     }
 }

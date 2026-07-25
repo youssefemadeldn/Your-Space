@@ -50,9 +50,10 @@ public class AuthController(IAuthService authService) : ControllerBase
         return new ResultActionResult(result);
     }
 
-    // Public — reached via the link/token sent to the user's email, before they can log in.
-    [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail([FromQuery] ConfirmEmailDto dto)
+    // Public — the OTP code itself, sent to the user's email, is the credential being verified.
+    [HttpPost("confirm-email")]
+    [EnableRateLimiting(RateLimitingExtension.AuthPolicy)]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto)
     {
         var result = await authService.ConfirmEmailAsync(dto);
         return new ResultActionResult(result);

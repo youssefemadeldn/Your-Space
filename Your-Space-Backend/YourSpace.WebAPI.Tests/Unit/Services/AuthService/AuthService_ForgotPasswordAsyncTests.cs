@@ -6,6 +6,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
+using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -16,12 +17,19 @@ namespace YourSpace.WebAPI.Tests.Unit.Services.AuthService;
 public class AuthService_ForgotPasswordAsyncTests
 {
     private readonly Mock<UserManager<AppUser>> _userManager = UserManagerMockFactory.Create();
+    private readonly Mock<IOtpService> _otpService = new();
     private readonly Mock<IEmailSender> _emailSender = new();
+
+    public AuthService_ForgotPasswordAsyncTests()
+    {
+        _otpService.Setup(o => o.GeneratePasswordResetCodeAsync(It.IsAny<string>())).ReturnsAsync("111222");
+    }
 
     private AuthServiceImpl CreateSut() => new(
         _userManager.Object,
         Mock.Of<IUnitOfWork>(),
         Mock.Of<ITokenService>(),
+        _otpService.Object,
         _emailSender.Object,
         new ConfigurationBuilder().Build(),
         Mock.Of<ILogger<AuthServiceImpl>>());

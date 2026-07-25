@@ -5,6 +5,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Repositories;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService;
+using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.TokenService;
 
 namespace YourSpace.WebAPI.Helpers;
@@ -26,6 +27,7 @@ public static class ServiceRegistration
 
         // Auth
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IOtpService, OtpService>();
         services.AddSingleton<ITokenService, TokenService>();
 
         // API versioning

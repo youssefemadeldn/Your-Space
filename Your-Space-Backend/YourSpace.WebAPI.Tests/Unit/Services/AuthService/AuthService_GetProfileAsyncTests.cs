@@ -5,6 +5,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.EmailService;
+using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -20,6 +21,7 @@ public class AuthService_GetProfileAsyncTests
         _userManager.Object,
         Mock.Of<IUnitOfWork>(),
         Mock.Of<ITokenService>(),
+        Mock.Of<IOtpService>(),
         Mock.Of<IEmailSender>(),
         new ConfigurationBuilder().Build(),
         Mock.Of<ILogger<AuthServiceImpl>>());

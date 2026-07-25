@@ -6,6 +6,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
+using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -18,13 +19,20 @@ public class AuthService_RegisterAsyncTests
     private readonly Mock<UserManager<AppUser>> _userManager = UserManagerMockFactory.Create();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<ITokenService> _tokenService = new();
+    private readonly Mock<IOtpService> _otpService = new();
     private readonly Mock<IEmailSender> _emailSender = new();
     private readonly IConfiguration _configuration = new ConfigurationBuilder().Build();
+
+    public AuthService_RegisterAsyncTests()
+    {
+        _otpService.Setup(o => o.GenerateEmailConfirmationCodeAsync(It.IsAny<string>())).ReturnsAsync("123456");
+    }
 
     private AuthServiceImpl CreateSut() => new(
         _userManager.Object,
         _unitOfWork.Object,
         _tokenService.Object,
+        _otpService.Object,
         _emailSender.Object,
         _configuration,
         Mock.Of<ILogger<AuthServiceImpl>>());
@@ -82,8 +90,6 @@ public class AuthService_RegisterAsyncTests
             .ReturnsAsync(IdentityResult.Success);
         _userManager.Setup(m => m.AddToRoleAsync(It.IsAny<AppUser>(), "User"))
             .ReturnsAsync(IdentityResult.Success);
-        _userManager.Setup(m => m.GenerateEmailConfirmationTokenAsync(It.IsAny<AppUser>()))
-            .ReturnsAsync("confirmation-token");
         _userManager.Setup(m => m.GetRolesAsync(It.IsAny<AppUser>()))
             .ReturnsAsync(["User"]);
 
@@ -93,7 +99,8 @@ public class AuthService_RegisterAsyncTests
         result.StatusCode.Should().Be(201);
         result.Data!.Roles.Should().Contain("User");
         _userManager.Verify(m => m.AddToRoleAsync(It.IsAny<AppUser>(), "User"), Times.Once);
-        _emailSender.Verify(e => e.SendEmailAsync(dto.Email, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _otpService.Verify(o => o.GenerateEmailConfirmationCodeAsync(It.IsAny<string>()), Times.Once);
+        _emailSender.Verify(e => e.SendEmailAsync(dto.Email, It.IsAny<string>(), It.Is<string>(body => body.Contains("123456"))), Times.Once);
     }
 
     [Fact]
@@ -105,8 +112,6 @@ public class AuthService_RegisterAsyncTests
             .ReturnsAsync(IdentityResult.Success);
         _userManager.Setup(m => m.AddToRoleAsync(It.IsAny<AppUser>(), "User"))
             .ReturnsAsync(IdentityResult.Success);
-        _userManager.Setup(m => m.GenerateEmailConfirmationTokenAsync(It.IsAny<AppUser>()))
-            .ReturnsAsync("confirmation-token");
         _userManager.Setup(m => m.GetRolesAsync(It.IsAny<AppUser>())).ReturnsAsync(["User"]);
         _emailSender.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ThrowsAsync(new InvalidOperationException("SMTP unreachable"));

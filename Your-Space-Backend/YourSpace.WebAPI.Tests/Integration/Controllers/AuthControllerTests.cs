@@ -31,11 +31,13 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
         registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var confirmationEmail = factory.EmailSender.SentEmails.Single(e => e.ToEmail == email);
-        var userId = Regex.Match(confirmationEmail.HtmlBody, "User Id: (.+?)</p>").Groups[1].Value.Trim();
-        var confirmationToken = Regex.Match(confirmationEmail.HtmlBody, "Confirmation token: (.+?)</p>").Groups[1].Value.Trim();
+        var confirmationCode = Regex.Match(confirmationEmail.HtmlBody, "<h2>(.+?)</h2>").Groups[1].Value.Trim();
 
-        var confirmResponse = await client.GetAsync(
-            $"/api/v1/Auth/confirm-email?UserId={Uri.EscapeDataString(userId)}&Token={Uri.EscapeDataString(confirmationToken)}");
+        var confirmResponse = await client.PostAsJsonAsync("/api/v1/Auth/confirm-email", new ConfirmEmailDto
+        {
+            Email = email,
+            Code = confirmationCode
+        });
         confirmResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var loginResponse = await client.PostAsJsonAsync("/api/v1/Auth/login", new LoginDto
