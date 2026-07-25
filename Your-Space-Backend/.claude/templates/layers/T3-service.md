@@ -1,6 +1,6 @@
 ---
 name: T3-service
-governed-by: CLAUDE.md "Error handling" · CLAUDE.md "Logging" · CLAUDE.md "Dependency injection" · CLAUDE.md Architecture rule 8 ("Localization") · dotnet_feature_prompt.md Rules 1, 5, 7, 8
+governed-by: CLAUDE.md "Error handling" · CLAUDE.md "Logging" · CLAUDE.md "Dependency injection" · CLAUDE.md Architecture rule 8 ("Localization") · CLAUDE.md Architecture rule 10 ("ErrorCode") · dotnet_feature_prompt.md Rules 1, 5, 7, 8, 10
 di-lifetime: "Scoped"
 ---
 
@@ -70,7 +70,7 @@ public class <Feature>Service : I<Feature>Service
         if (entity is null)
         {
             _logger.LogWarning("{Entity} {Id} not found", nameof(<Entity>), id);
-            return ServiceResult<<Entity>DetailsDto>.NotFound(_localizer["<Entity>.NotFound", id]);
+            return ServiceResult<<Entity>DetailsDto>.NotFound(_localizer["<Entity>.NotFound", id], "<Entity>.NotFound");
         }
 
         return ServiceResult<<Entity>DetailsDto>.Ok(_mapper.Map<<Entity>DetailsDto>(entity));
@@ -99,7 +99,7 @@ public class <Feature>Service : I<Feature>Service
         var repo = _unitOfWork.Repository<<Entity>, int>();
         var entity = await repo.GetByIdAsync(id);
         if (entity is null)
-            return ServiceResult.NotFound(_localizer["<Entity>.NotFound", id]);
+            return ServiceResult.NotFound(_localizer["<Entity>.NotFound", id], "<Entity>.NotFound");
 
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
@@ -129,3 +129,4 @@ public class <Feature>Service : I<Feature>Service
 - **Never inject `I<Feature>Service` into another service's constructor if it creates a cycle** — if two features' services need each other, the shared logic belongs in a helper both can depend on, not a mutual reference.
 - Query methods that return a list use `<Entity>ProfileDto` (the list-row shape), never `<Entity>DetailsDto` — see `T4-dto.md`.
 - **Every `ServiceResult` message comes from `_localizer`, never an interpolated/concatenated string literal** — `IStringLocalizer<SharedResource>` supports positional format args (`_localizer["<Entity>.NotFound", id]`), so a message needing a value still avoids hardcoding the English sentence. Add the key to both `.resx` files in the same commit. See CLAUDE.md "Localization" and Rule 8.
+- **Every failure factory call (`NotFound`/`Conflict`/`Unauthorized`/`Forbidden`/`Fail`) also passes `ErrorCode`** — the same resource key literal used for the `_localizer[...]` message, e.g. `"<Entity>.NotFound"`. This is a compiler-enforced parameter, not optional. See CLAUDE.md Architecture rule 10 and Rule 10.

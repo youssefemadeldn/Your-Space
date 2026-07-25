@@ -144,6 +144,12 @@ Any service operation that writes to more than one table/aggregate where a parti
 ### 8. The solution is localization-ready (English/Arabic) by default
 Every entity with user-facing text, every DTO that carries it, and every message a service or validator produces is built with English/Arabic support the moment it's created — regardless of whether the feature that introduces it explicitly asks for translation. This is a foundational posture, not a per-feature opt-in: see "Localization" below for the concrete pattern.
 
+### 9. Every entity ships with dev-only mock seed data, covering more than the happy and bad cases
+The moment a new entity/table exists, it gets a matching seed method producing representative sample rows — a normal case, at least one edge case (empty/max-length text, zero/boundary numeric values, a soft-deleted or expired row, etc.), and enough volume to exercise pagination. Seeding runs strictly behind `IsDevelopment()` — never in `Production` or any deployed environment. This is not retrofitted after the fact: it ships in the same change that adds the entity. See "Development Data Seeding" below.
+
+### 10. Every failure response carries a stable ErrorCode, not just a localized Message
+`ServiceResult`/`ServiceResult<T>`'s failure factory methods (`Fail`, `NotFound`, `Unauthorized`, `Forbidden`, `Conflict`) require an `ErrorCode` alongside `Message` — a stable, non-localized string, the same resource key already passed to `IStringLocalizer<SharedResource>` for the message (Rule 8), e.g. `"Product.NotFound"`. A client branches on `ErrorCode`, never on `Message` — `Message` changes with `Accept-Language` and can be reworded without notice. This does not duplicate `ExceptionMiddleware`'s dev/prod detail split (Rule 2) — `ErrorCode` is a stable, client-facing value set once per guard clause, not diagnostic detail decided per environment. See "Response envelope" below.
+
 ---
 
 ## Dependency injection — lifetime table
@@ -196,6 +202,7 @@ public class ServiceResult<T>
 {
     public bool Success { get; set; }
     public string? Message { get; set; }
+    public string? ErrorCode { get; set; }
     public T? Data { get; set; }
     public int StatusCode { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
@@ -203,15 +210,17 @@ public class ServiceResult<T>
 
     public static ServiceResult<T> Ok(T data, string message = "Success");
     public static ServiceResult<T> Created(T data, string message = "Created successfully");
-    public static ServiceResult<T> Fail(string message, int statusCode = 400, Dictionary<string, string[]>? errors = null);
-    public static ServiceResult<T> NotFound(string message = "Resource not found");
-    public static ServiceResult<T> Unauthorized(string message = "Unauthorized access");
-    public static ServiceResult<T> Forbidden(string message = "Access forbidden");
-    public static ServiceResult<T> ValidationError(Dictionary<string, string[]> errors, string message = "Validation failed");
-    public static ServiceResult<T> ServerError(string message = "Internal server error");
-    public static ServiceResult<T> Conflict(string message = "Conflict occurred");
+    public static ServiceResult<T> Fail(string message, string errorCode, int statusCode = 400, Dictionary<string, string[]>? errors = null);
+    public static ServiceResult<T> NotFound(string message, string errorCode);
+    public static ServiceResult<T> Unauthorized(string message, string errorCode);
+    public static ServiceResult<T> Forbidden(string message, string errorCode);
+    public static ServiceResult<T> ValidationError(Dictionary<string, string[]> errors, string message = "Validation failed", string errorCode = "Validation.Failed");
+    public static ServiceResult<T> ServerError(string message = "Internal server error", string errorCode = "Server.Error");
+    public static ServiceResult<T> Conflict(string message, string errorCode);
 }
 ```
+
+`ErrorCode` is a stable, non-localized string — the same resource key already passed to `IStringLocalizer<SharedResource>` for `Message` (Architecture rule 8), e.g. `"Product.NotFound"`. `Message` is for display and can be reworded or change language; `ErrorCode` is the contract a client (mobile/frontend) branches on, so it never changes with locale or copy edits. `NotFound`/`Unauthorized`/`Forbidden`/`Conflict`/`Fail` require it explicitly because they're authored per guard clause, where the localizer key is already at hand. `ValidationError`/`ServerError` keep a fixed default (`"Validation.Failed"`/`"Server.Error"`) because they're produced by the automatic FluentValidation pipeline and `ExceptionMiddleware`'s generic exception mapping, not a per-call-site decision — see Architecture rule 10. The non-generic `ServiceResult` mirrors this exactly.
 
 **Exactly one `IActionResult` wrapper exists** — `ResultActionResult<T>` / `ResultActionResult` — which reads `StatusCode` off the `ServiceResult` and returns an `ObjectResult`. Do not create a second wrapper class with a different name that does the same thing; if you find one already in the codebase, that's tech debt to consolidate, not a second option to keep using.
 
@@ -271,6 +280,18 @@ If a secret is ever discovered committed in git history, gitignoring the file go
 - **Response and validation messages:** every string a `ServiceResult` or a FluentValidation rule returns comes from `IStringLocalizer<SharedResource>` (`<Solution>.Services/Resources/SharedResource.cs` marker class + `SharedResource.en.resx`/`SharedResource.ar.resx`), keyed by a resource name — never a hardcoded string literal, even while the app only ships English copy today. `Microsoft.Extensions.Localization`/`Microsoft.AspNetCore.Localization` ship inside the ASP.NET Core shared framework already referenced by `<Solution>.WebAPI` — no separate package needed. See `templates/layers/T5-validator.md`.
 - **The gap to avoid:** a backend that wires `Accept-Language`/`RequestLocalization` but leaves every `ServiceResult`/validator message as a hardcoded English literal is not actually localized — it only looks localized from the middleware alone. Both halves (content fields *and* messages) are required, not just the header-handling plumbing.
 - **Why day-one, not opt-in:** retrofitting bilingual columns onto an entity already in production means a migration plus backfilling every existing row's `Ar` value; retrofitting message localization means finding and replacing every string literal across every service and validator. Both are cheap at creation time and expensive later — hence Architecture rule 8.
+
+---
+
+## Development Data Seeding
+
+`MockDataSeeder` (`<Solution>.WebAPI/Helpers/MockDataSeeder.cs`) is a separate, purely dev-convenience seeder — distinct from `IdentitySeeder`, which bootstraps real, production-needed data (roles, the first `SuperAdmin`) and therefore runs in every environment. `MockDataSeeder` never does.
+
+- **Development-only, no exceptions:** invoked only from inside `app.Environment.IsDevelopment()` in `Program.cs`, alongside `Database.Migrate()`. Never gate it on a config flag or environment variable instead of the real `IsDevelopment()` check — a misconfigured flag is exactly how fake rows end up in `Production`.
+- **Covers more than the happy case:** each entity's seed method produces a normal row, at least one deliberate edge case (an empty optional field, a max-length string, a zero/boundary numeric value, a soft-deleted or expired row), and enough rows to exercise pagination — not just two or three identical-shaped placeholders.
+- **Idempotent:** each seed method checks for existing rows first (`if (await context.Set<Entity>().AnyAsync()) return;`) so repeated `dotnet run` cycles during a dev session don't keep multiplying data.
+- **Grows with every new table:** the same change that adds an entity/configuration/migration adds that entity's seed method to `MockDataSeeder` — not deferred, not "sample data later." A table with zero seed data is an incomplete feature, the same way a DTO with no validator is (Architecture rule 5).
+- **`Bogus`** (already in the Testing package list) generates realistic fake values — product names, addresses, prices — instead of hand-typed `"Test Product 1"` placeholders that don't actually exercise search/formatting/truncation the way real-shaped data does.
 
 ---
 
@@ -347,6 +368,8 @@ Before finishing any task, verify every item:
 - [ ] No secret was added to `appsettings*.json` (Architecture rule 6).
 - [ ] Multi-step writes are transaction-wrapped where partial completion would corrupt state (Architecture rule 7).
 - [ ] New user-facing text fields have an `Ar` counterpart, and new `ServiceResult`/validator messages come from `IStringLocalizer<SharedResource>`, not a string literal (Architecture rule 8).
+- [ ] A new entity has a matching dev-only seed method in `MockDataSeeder` covering a normal case and at least one edge case (Architecture rule 9).
+- [ ] Every new `ServiceResult` failure (`NotFound`/`Conflict`/`Unauthorized`/`Forbidden`/`Fail`) passes an `ErrorCode` using the same key as its localized `Message` (Architecture rule 10).
 - [ ] Logging follows the Information/Warning/Error rules above, with structured templates.
 - [ ] No unnecessary package was added, and any new package was checked for known vulnerabilities (`dotnet list package --vulnerable --include-transitive`).
 - [ ] Acted as a senior partner: non-obvious tradeoffs named, concerns flagged, improvements suggested when genuinely valuable.

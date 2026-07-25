@@ -44,6 +44,8 @@
 
 **Rule 8 reminder:** any entity field in this file set that holds user-facing text (not an internal code/slug/enum) gets an `<Field>Ar` counterpart on the entity, in the same migration — see Rule 8 and `templates/layers/T1-entity.md`.
 
+**Rule 9 reminder:** the entity added here also gets a `Seed<Entity>Async` method added to `<Solution>.WebAPI/Helpers/MockDataSeeder.cs` in the same change — see Rule 9.
+
 ---
 
 ## 2. The Non-Negotiable Rules
@@ -62,7 +64,7 @@ public async Task<ServiceResult<ProductDetailsDto>> GetDetailsAsync(int id)
     if (product is null)
     {
         _logger.LogWarning("Product {ProductId} not found", id);
-        return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound", id]);   // see Rule 8
+        return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound", id], "Product.NotFound");   // see Rule 8, Rule 10
     }
 
     return ServiceResult<ProductDetailsDto>.Ok(_mapper.Map<ProductDetailsDto>(product));
@@ -278,7 +280,7 @@ public class CreateProductDtoValidator : AbstractValidator<CreateProductDto>
 }
 
 // Service
-return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound"]);
+return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound"], "Product.NotFound");   // see Rule 10
 ```
 
 **Wrong — never do this:**
@@ -293,6 +295,71 @@ return ServiceResult<ProductDetailsDto>.NotFound("Product not found");
 ```
 
 See CLAUDE.md "Localization" and `templates/layers/T1-entity.md`, `T4-dto.md`, `T5-validator.md`.
+
+---
+
+### Rule 9 — Every new entity ships with dev-only mock seed data
+
+A new entity/table gets a matching `Seed<Entity>Async` method in `MockDataSeeder` in the same change that adds it — not deferred. The seed data covers a normal case and at least one deliberate edge case, and only ever runs behind `IsDevelopment()` (CLAUDE.md Architecture rule 9).
+
+**Correct:**
+```csharp
+// Helpers/MockDataSeeder.cs
+public static async Task SeedProductsAsync(YourSpaceDbContext context)
+{
+    if (await context.Products.AnyAsync()) return; // idempotent — skip if already seeded
+
+    var faker = new Faker<Product>()
+        .RuleFor(p => p.Name, f => f.Commerce.ProductName())
+        .RuleFor(p => p.Price, f => f.Random.Decimal(1, 500));
+
+    var products = faker.Generate(20);
+    products.Add(new Product { Name = "Edge Case — Zero Price", Price = 0 });       // boundary value
+    products.Add(new Product { Name = "Edge Case — Soft Deleted", DeletedAt = DateTime.UtcNow }); // status edge case
+
+    await context.Products.AddRangeAsync(products);
+    await context.SaveChangesAsync();
+}
+
+// Called only from Program.cs's IsDevelopment() block, via MockDataSeeder.SeedAsync(...)
+```
+
+**Wrong — never do this:**
+```csharp
+// ❌ New entity ships with zero seed data — nobody has sample rows to look at until someone remembers later
+public class Product { /* ... */ }   // no matching SeedProductsAsync anywhere
+
+// ❌ Seeding called outside the IsDevelopment() guard — fake rows would ship into Production
+await MockDataSeeder.SeedAsync(context);
+```
+
+See CLAUDE.md "Development Data Seeding."
+
+---
+
+### Rule 10 — Every failure factory call carries an ErrorCode, not just a Message
+
+`ServiceResult`/`ServiceResult<T>`'s `NotFound`, `Unauthorized`, `Forbidden`, `Conflict`, and `Fail` require an `ErrorCode` argument — the same resource key already passed to the localizer for `Message` (Rule 8). `ErrorCode` never changes with locale and never gets reworded; it's the value a client (mobile/frontend) branches on instead of parsing translated text (CLAUDE.md Architecture rule 10).
+
+**Correct:**
+```csharp
+if (product is null)
+{
+    _logger.LogWarning("Product {ProductId} not found", id);
+    return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound", id], "Product.NotFound");
+}
+```
+
+**Wrong — never do this:**
+```csharp
+// ❌ No ErrorCode — a client can only branch on the localized Message, which changes with
+// Accept-Language and can be reworded in a copy edit without warning
+return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound", id]);
+```
+
+`ValidationError` and `ServerError` keep a fixed default `ErrorCode` (`"Validation.Failed"`, `"Server.Error"`) — they're produced by the automatic FluentValidation pipeline and `ExceptionMiddleware`'s generic exception mapping, not authored per guard clause. Don't invent a per-field or per-exception-type code for these; that would duplicate `ExceptionMiddleware`'s dev/prod detail split (Rule 1 / CLAUDE.md "Error handling"), which stays the only place that decides exception-derived detail.
+
+See CLAUDE.md Architecture rule 10 and "Response envelope."
 
 ---
 
@@ -336,6 +403,7 @@ Before marking a feature complete, verify every item:
 - [ ] Entity has `CreatedAt`/`UpdatedAt` (and `DeletedAt` if soft-deletable, `RowVersion` if written concurrently)
 - [ ] Configuration class declares keys, indexes (including composite indexes for real query patterns), and relationship delete behavior explicitly
 - [ ] Every user-facing text field has an `<Field>Ar` counterpart, and the AutoMapper profile resolves it to one DTO field by `CultureInfo.CurrentUICulture` (Rule 8)
+- [ ] `MockDataSeeder` has a matching `Seed<Entity>Async` method (normal case + at least one edge case), called only from the `IsDevelopment()` block (Rule 9)
 
 **Repository layer**
 - [ ] No domain-specific method added to `IGenericRepository<,>` (Rule 3)
@@ -347,6 +415,7 @@ Before marking a feature complete, verify every item:
 - [ ] `ILogger<TService>` injected and used per CLAUDE.md's Information/Warning/Error rules (Rule 7)
 - [ ] Multi-step writes across tables are transaction-wrapped (Rule 5)
 - [ ] DTOs contain no EF Core / entity references (Rule 4)
+- [ ] Every `ServiceResult` failure (`NotFound`/`Conflict`/`Unauthorized`/`Forbidden`/`Fail`) passes an `ErrorCode` using the same key as its localized message (Rule 10)
 
 **Validation**
 - [ ] Every mutating DTO has a validator class (Rule 2)
@@ -389,3 +458,6 @@ The following patterns were found in real production audits and must not appear 
 | Recurring or business-critical work implemented as fire-and-forget `Task.Run` instead of a hosted service or durable queue | No retry, no observability if the process recycles mid-run, silently drops the work on deploy | `IHostedService` for recurring/critical work; fire-and-forget reserved for genuinely best-effort side effects (§5) |
 | `ServiceResult`/validator messages hardcoded as English string literals while `Accept-Language`/`RequestLocalization` is wired in the pipeline | Looks localized because the middleware is there, but no message actually changes with culture — a real gap observed in a reference project's audit | Every message string comes from `IStringLocalizer<SharedResource>`, keyed and translated in both `.resx` files at creation time (Rule 8) |
 | A new entity's user-facing text field added without an `Ar` counterpart, "to add later when needed" | Retrofitting means a migration plus backfilling every existing row's `Ar` value — cheap now, expensive later | Add `<Field>Ar` alongside `<Field>` in the same migration that introduces the field (Rule 8) |
+| A new table ships with no seed data — QA/demo has nothing to look at until someone remembers to add sample rows later | The table sits empty through review and early testing; edge cases (empty fields, boundary values, soft-deleted rows) never get exercised until real data accumulates in production | Add `Seed<Entity>Async` to `MockDataSeeder` in the same change that adds the entity (Rule 9) |
+| Mock/demo seed data seeded unconditionally instead of behind `IsDevelopment()` | Fake `"Test Product 1"`-style rows ship into `Production` the moment the guard is missing | Gate `MockDataSeeder` calls strictly inside `app.Environment.IsDevelopment()`, same block as `Database.Migrate()` (Rule 9) |
+| A `ServiceResult` failure returned with only a localized `Message`, no `ErrorCode` | Client has no locale-independent, reword-safe value to branch on — forces fragile string-matching against translated text that changes with `Accept-Language` or a copy edit | Pass the same resource key already used for the localized `Message` as `ErrorCode` (Rule 10) |

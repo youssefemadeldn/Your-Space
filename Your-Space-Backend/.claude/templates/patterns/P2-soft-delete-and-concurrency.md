@@ -23,7 +23,7 @@ public async Task<ServiceResult> DeleteAsync(int id)
     var repo = _unitOfWork.Repository<<Entity>, int>();
     var entity = await repo.GetByIdAsync(id);
     if (entity is null || entity.DeletedAt is not null)
-        return ServiceResult.NotFound(_localizer["<Entity>.NotFound", id]);   // see CLAUDE.md "Localization"
+        return ServiceResult.NotFound(_localizer["<Entity>.NotFound", id], "<Entity>.NotFound");   // see CLAUDE.md "Localization" and Architecture rule 10
 
     entity.DeletedAt = DateTime.UtcNow;
     repo.Update(entity);

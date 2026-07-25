@@ -110,6 +110,7 @@ Produce a complete file-by-file plan. For each file specify: full path, responsi
 - `Middleware/ExceptionMiddleware.cs`, `NotFoundException.cs`, `ValidationException.cs` — the one error boundary (CLAUDE.md "Error handling"). `ExceptionMiddleware` maps `ValidationException` → 422 with the errors dictionary, `NotFoundException` → 404, anything else → 500 with dev-only detail gated on `IHostEnvironment.IsDevelopment()`.
 - `Helpers/ResultActionResult.cs` — the one `IActionResult` wrapper (generic and non-generic overloads), reading `StatusCode` off the `ServiceResult`.
 - `Helpers/ServiceRegistration.cs` — `AddApplicationServices(this IServiceCollection)`: `IUnitOfWork`, `IGenericRepository<,>` (open generic registration), AutoMapper (`AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies())`), FluentValidation (auto-validation + client-side adapters), `AddSignalR()` only if Phase-1 confirmed real-time is in scope, API versioning, authorization policies.
+- `Helpers/MockDataSeeder.cs` — a static `SeedAsync(YourSpaceDbContext context)` orchestrator, empty until the first feature's entity exists. Each feature adds its own `Seed<Entity>Async(context)` method here, called from `SeedAsync`. Development-only — see CLAUDE.md "Development Data Seeding." Distinct from any Identity/role bootstrap seeder, which carries real production data and is not gated behind `IsDevelopment()`.
 - `Extensions/IdentityServiceExtension.cs` — `AddIdentityService(IConfiguration)`: Identity + JWT bearer options (issuer/audience/signing key sourced from configuration, never hardcoded), token validation parameters.
 - `Extensions/RateLimitingExtension.cs` — `AddRateLimiting(...)` (spelled correctly — see feature prompt anti-patterns for why this matters).
 - `Extensions/SwaggerServiceExtension.cs` — `AddSwaggerDocumentation()` via NSwag, versioned per the `IApiVersionDescriptionProvider`. The provider isn't resolvable yet when this method runs — the container isn't built — so read it off a short-lived temporary provider scoped only to this lookup, then register one `AddOpenApiDocument` per version:
@@ -161,7 +162,7 @@ builder.Services: Controllers (+ enum-as-string JSON converter) → AddLocalizat
                 → AddRateLimiting() → AddSwaggerDocumentation()
                 → AddHttpLogging() (Development only)
 
-app: (Development: Database.Migrate() + UseOpenApi + UseSwaggerUi + UseHttpLogging)
+app: (Development: Database.Migrate() + MockDataSeeder.SeedAsync(...) + UseOpenApi + UseSwaggerUi + UseHttpLogging)
    → UseHsts() → UseHttpsRedirection()
    → UseCors(...)                          # before authentication/authorization, always
    → UseExceptionHandler("/error") → UseMiddleware<ExceptionMiddleware>()
@@ -195,6 +196,7 @@ Create one at the solution root covering, at minimum: file-scoped namespaces pre
 8. **Nullable reference types on entities:** EF Core sets non-nullable entity properties via reflection/materialization, bypassing constructor nullability checks — decide up front whether required scalar properties use `required` (C# 11+) or are left implicitly non-null-but-uninitialized, and apply the choice consistently rather than mixing both across entities.
 9. **Auto-migrate on boot vs. explicit deploy step:** `Program.cs` may call `Database.Migrate()` after `WebApplication.Build()` to create the database and apply pending migrations automatically — if included, gate it strictly behind `IsDevelopment()`. Never call it unconditionally: concurrent instances racing to migrate, and unreviewed schema changes landing on a live database as a side effect of a restart, are real risks in `Production`. `Production` always applies migrations via the explicit `dotnet ef database update` command from CLAUDE.md's Commands section, run as a deliberate deploy step.
 10. **Resx satellite assemblies must actually publish:** `.resx` files compile to satellite assemblies per culture (e.g. `ar/<Solution>.Services.resources.dll`). Confirm the publish profile/Dockerfile copies them alongside the main assembly — a `.resx` that builds locally but isn't present in the deployed `ar/` folder silently falls back to the neutral (English) resource with no error, which is easy to miss until an Arabic-locale request in production quietly returns English text.
+11. **`MockDataSeeder` runs strictly after `Database.Migrate()`, inside the same `IsDevelopment()` block, never outside it:** seeding before the schema exists throws; seeding outside the `IsDevelopment()` guard is exactly the mistake CLAUDE.md's "Development Data Seeding" section calls out — fake rows shipping into `Production`. Each per-entity `Seed<Entity>Async` method must also be independently idempotent (existence check first), because `dotnet run` re-executes this block on every local restart.
 
 ---
 
