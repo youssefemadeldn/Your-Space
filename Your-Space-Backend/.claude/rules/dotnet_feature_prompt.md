@@ -260,6 +260,7 @@ _logger.LogInformation($"Creating product {dto.Name}");   // ❌ interpolated st
 - One `<Entity>WithSpecs` class per entity, multiple constructors for different query shapes (by id, by SKU, paginated list with filters, etc.) — see `templates/layers/T2-repository.md`.
 - **Shared predicate/include logic across overloads must be extracted, not copy-pasted.** If three constructors all filter on the same multi-field search expression, factor it into a private static method or a composable `Expression<Func<T,bool>>` builder called from each constructor.
 - Every specification for a soft-deletable entity filters `DeletedAt == null` (or relies on a global EF Core query filter — see `patterns/P2-soft-delete-and-concurrency.md`).
+- A short-lived, low-entropy secret (a 6-digit OTP/verification code for email confirmation, password reset, phone verification, 2FA, ...) is never looked up by a hash-uniqueness index the way a high-entropy token (`RefreshToken`) is — its hash can collide across users/requests. The specification resolves `(UserId, not-yet-consumed)` first; the presented value's hash is compared only after that, in application code — see `patterns/P4-hashed-verification-code.md` for the full entity/spec/service shape.
 
 ---
 
@@ -288,6 +289,7 @@ Before marking a feature complete, verify every item:
 **Repository layer**
 - [ ] No domain-specific method added to `IGenericRepository<,>` (Rule 3)
 - [ ] Specification constructors share predicate logic instead of duplicating it (§4)
+- [ ] If this feature includes an OTP/verification code, it's looked up by `(UserId, not-yet-consumed)`, never by its hash (§4, `patterns/P4-hashed-verification-code.md`)
 
 **Service layer**
 - [ ] No whole-method `try/catch` swallowing exceptions into a generic failure (Rule 1)
@@ -324,6 +326,7 @@ The following patterns were found in real production audits and must not appear 
 | Two `IActionResult` wrapper classes with different names doing identical `StatusCode`-from-`ServiceResult` work | Pure duplication with no behavioral difference; splits the codebase into two conventions for the same job, for no reason | Exactly one `ResultActionResult<T>` / `ResultActionResult` |
 | A domain-specific method (e.g. a formatted sequence-number generator) added directly to the generic repository interface | Every entity type now nominally exposes a method that only makes sense for one of them | Put it on `IUnitOfWork` or a dedicated repository interface (Rule 3) |
 | The same multi-field search predicate copy-pasted across several specification constructor overloads | A typo fix or business-rule change now has to be applied N times; overloads silently drift out of sync | Extract the shared predicate into one place, called from every overload (§4) |
+| Looking up a low-entropy secret (a 6-digit OTP/verification code) by a hash-uniqueness index, the way a high-entropy `RefreshToken` is | A 6-digit code has only 1,000,000 possible values — its hash *will* collide across users/requests at real scale, unlike a 64-byte random token's hash | Look up the active row by `(UserId, not-yet-consumed)` first, then compare the presented code's hash in application code with a constant-time comparison (§4, `patterns/P4-hashed-verification-code.md`) |
 | FluentValidation wired globally, but most DTOs have no validator class, so mutating endpoints fall back to ad hoc `if`-checks or nothing | Coverage looks systematic (one global registration call) but is actually sparse and inconsistent per endpoint | Every mutating DTO gets a validator the moment it's created — no validator is an incomplete feature, not an optional extra (Rule 2) |
 | `[Authorize]` commented out "temporarily" while testing | Ships as a live authorization gap the moment the branch merges; easy to forget, easy to miss in review | Never comment out an authorization attribute — use a role/policy actually satisfiable in the test environment instead (Rule 6) |
 | A fully-referenced third-party package with zero call sites anywhere in the codebase | Dead weight in the dependency tree and build; misleads readers into thinking it's in active use | Remove a package the moment its last call site is removed — a `.csproj` reference is not free |
