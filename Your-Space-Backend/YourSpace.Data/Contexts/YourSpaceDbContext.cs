@@ -7,6 +7,8 @@ namespace YourSpace.Data.Contexts;
 public class YourSpaceDbContext(DbContextOptions<YourSpaceDbContext> options)
     : IdentityDbContext<AppUser>(options)
 {
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

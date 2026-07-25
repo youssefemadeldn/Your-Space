@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using YourSpace.Data.Contexts;
@@ -11,9 +12,11 @@ using YourSpace.Data.Contexts;
 namespace YourSpace.Data.Migrations
 {
     [DbContext(typeof(YourSpaceDbContext))]
-    partial class YourSpaceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260725090445_AddAuthProfileAndRefreshTokens")]
+    partial class AddAuthProfileAndRefreshTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

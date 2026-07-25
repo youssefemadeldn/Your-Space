@@ -37,6 +37,7 @@ builder.Services.AddStackExchangeRedisCache(o =>
 
 builder.Services.AddApplicationServices();
 builder.Services.AddIdentityService(builder.Configuration);
+builder.Services.AddEmailService(builder.Configuration);
 builder.Services.AddRateLimiting(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 
@@ -63,6 +64,11 @@ else
     app.UseHsts();
 }
 
+using (var seedScope = app.Services.CreateScope())
+{
+    await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
+}
+
 app.UseHttpsRedirection();
 
 app.UseCors("DefaultCors");
@@ -79,3 +85,6 @@ app.MapControllers();
 app.Map("/error", (HttpContext _) => Results.Problem());
 
 app.Run();
+
+// Exposes the implicit top-level Program class to WebApplicationFactory<Program> in tests.
+public partial class Program;
