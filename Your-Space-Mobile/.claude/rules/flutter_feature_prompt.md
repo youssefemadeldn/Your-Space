@@ -236,6 +236,12 @@ try {
 `lib/core/network/failure_messages.dart` (created during scaffold phase — see §9).
 No screen or cubit hardcodes error strings.
 
+**Corollary:** `Failure.errorCode` (nullable — not every endpoint sends one) is for
+*behavior*, never display: a cubit/screen may switch on it to navigate, retry, or force
+logout, always with a fallback branch when it's null or unrecognized. `message`/
+`failureToMessage()` stays the only source of display text — never string-match `message`
+to decide behavior. See §9.
+
 ---
 
 ### Rule 3 — Domain entities are never response models
@@ -423,9 +429,10 @@ final class BookListSuccess extends BookListState {
 
 final class BookListError extends BookListState {
   final String message;
-  const BookListError(this.message);
+  final String? errorCode;
+  const BookListError(this.message, {this.errorCode});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, errorCode];
 }
 ```
 
@@ -725,6 +732,35 @@ String failureToMessage(Failure failure) => switch (failure) {
 No screen or widget ever maps a `Failure` directly.
 Do not create a feature-level `failure_messages.dart` unless a unique status code requires it.
 
+### Preferring `errorCode` over `statusCode`
+
+Multiple distinct failures can share one HTTP status — e.g. an expired, a revoked, and a
+reused refresh token might all come back as 401. `statusCode` alone can't tell them apart;
+`errorCode` (when the backend sends one) can. Read it off the `Error` state in the screen's
+`BlocListener`, where side effects like navigation already belong (§12 checklist) — don't
+mint a separate state variant per code:
+
+```dart
+// presentation/pages/login_screen.dart
+BlocListener<LoginCubit, LoginState>(
+  listener: (context, state) {
+    if (state is! LoginError) return;
+    switch (state.errorCode) {
+      case 'Auth.EmailNotConfirmed':
+        Navigator.pushNamed(context, AppRoutes.confirmEmail,
+            arguments: ConfirmEmailArgs(email: emailController.text));
+      default:
+        getIt<SnackBarHelper>().showError(state.message);
+    }
+  },
+  child: ...,
+)
+```
+
+The `default` branch is required — `errorCode` is nullable and not every backend/endpoint
+sends one, so unmatched or missing codes must still fall back to showing `state.message`,
+not silently do nothing.
+
 ---
 
 ## 10. Route Args
@@ -842,6 +878,7 @@ Before marking a feature complete, verify every item:
 - [ ] All states are `sealed class` extending `Equatable`
 - [ ] Action and query state machines are in separate cubits (Rule 5) if feature has both
 - [ ] All error messages go through `failureToMessage()` — no inline string literals
+- [ ] Any `errorCode`-based behavior branching has a fallback for null/unmatched codes — never assumes a specific code is always present
 - [ ] Screens use `BlocListener` for side effects, `BlocBuilder` for rendering
 - [ ] `BlocProvider` is created in `AppRouter`, not inside the screen widget
 - [ ] All directional spacing uses `EdgeInsetsDirectional` — no `EdgeInsets.only(left/right: …)`
@@ -880,6 +917,7 @@ in this codebase:
 | 13 trivial use case classes each wrapping one repo call | File count explodes; no benefit over direct repo call | Add use case only when Rule 4 applies |
 | One cubit taking 9 constructor-injected use cases | Fragile DI, god-object cubit, unclear responsibility | Split into action cubit + query cubit |
 | Error string literals inline in data source / cubit | Can't localize, can't change centrally | `failureToMessage()` in one file |
+| Cubit/screen string-matches `failure.message`/`state.message` to decide behavior (navigation, retry) | `message` is locale-dependent display text that can be reworded server-side without warning — the match breaks silently | Switch on `errorCode` instead, with a fallback for null/unmatched values (§9) |
 | Numbered comments (`// 1. Send Friend Request`) | Noise; file structure and method names carry this | Clean code, no redundant comments |
 | `isRtl ? Icons.chevron_left : Icons.chevron_right` ternary | Fragile; pollutes every caller; `isRtl` variable noise throughout the file | Use `Icons.chevron_right_rounded` — `matchTextDirection` is baked into the `IconData`; the `Icon` widget mirrors automatically |
 | `Alignment.topLeft / bottomRight` in gradients | Hard-coded LTR diagonal; gradient does not flip in RTL | `AlignmentDirectional.topStart / bottomEnd` |

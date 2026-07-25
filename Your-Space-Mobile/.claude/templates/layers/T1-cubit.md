@@ -32,7 +32,7 @@ class <Action>Cubit extends Cubit<<Action>State> {
     emit(const <Action>Loading());
     final result = await _repository.<method>(<args>);
     result.fold(
-      (failure) => emit(<Action>Error(core.failureToMessage(failure))),
+      (failure) => emit(<Action>Error(core.failureToMessage(failure), errorCode: failure.errorCode)),
       (data)    => emit(<Action>Success(data)),
     );
   }
@@ -71,9 +71,10 @@ final class <Action>Success extends <Action>State {
 
 final class <Action>Error extends <Action>State {
   final String message;
-  const <Action>Error(this.message);
+  final String? errorCode;
+  const <Action>Error(this.message, {this.errorCode});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, errorCode];
 }
 ```
 
@@ -86,3 +87,4 @@ final class <Action>Error extends <Action>State {
 - **`as core` alias is required** for `failureToMessage` in any cubit that also imports a feature-level `failure_messages.dart`. Use it consistently in all cubits for uniformity.
 - **Use case swap-in:** if §2 Rule 4 applies, inject `<Verb><Noun>UseCase` instead of the repository and call `await _useCase(<args>)`.
 - **`BlocProvider`** is created in `AppRouter.generateRoute`, never inside the screen widget.
+- **`errorCode` for behavior, not display:** `<Action>Error.errorCode` mirrors `Failure.errorCode` (nullable — not every backend/endpoint sends one). A screen's `BlocListener` may switch on it for navigation/retry/forced-logout side effects, always with a fallback for null/unmatched values; `message` stays the only display text (feature guide §9).

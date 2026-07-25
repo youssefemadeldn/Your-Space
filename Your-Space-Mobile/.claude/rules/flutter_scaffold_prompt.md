@@ -264,11 +264,14 @@ These three widgets live in `lib/core/widgets/` and are used by every feature's
 **Networking:**
 
 - `lib/core/network/failure.dart`
-  Abstract class Failure extends Equatable.
-  Subtypes: ServerFailure(statusCode, message), NetworkFailure,
-  UnauthorizedFailure, CacheFailure, ValidationFailure(message),
+  Abstract class Failure extends Equatable, with an optional `final String? errorCode`
+  (default null) on the base class — a stable, non-localized code the backend may send
+  alongside `message` (e.g. `"Auth.InvalidCredentials"`), for cubits to branch on instead
+  of matching `message` text. Not every backend/endpoint sends one — always nullable.
+  Subtypes: ServerFailure(statusCode, message, {errorCode}), NetworkFailure,
+  UnauthorizedFailure({errorCode}), CacheFailure, ValidationFailure(message, {errorCode}),
   UnexpectedFailure(message).
-  Each overrides props for Equatable.
+  Each overrides props for Equatable (include errorCode where the subtype carries it).
 
 - `lib/core/network/api_result.dart`
   Internal sealed class (not exposed outside network layer).
@@ -311,6 +314,9 @@ These three widgets live in `lib/core/widgets/` and are used by every feature's
   `DioExceptionType.badResponse` with a null `statusCode` maps to
   `UnexpectedFailure`, never `ServerFailure(0, ...)` — `ServerFailure` only
   carries real HTTP statuses.
+  When `e.response?.data` is a JSON object containing an `errorCode` key, `_mapDioError`
+  reads it into the constructed `Failure` — defensively: a non-Map body, a missing key, or
+  a non-string value all resolve to `errorCode: null` rather than throwing.
   Conversion chain: DioResponse → ApiResult → Either<Failure, T>.
   Never throws — always returns Either.
 

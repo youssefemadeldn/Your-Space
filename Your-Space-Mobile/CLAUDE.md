@@ -139,7 +139,7 @@ Both forms come from the `injectable` package: `@lazySingleton` is the no-arg co
 DioException → ApiManager._mapDioError() → Failure subtype
                                           → Left(failure)
 cubit: result.fold(
-  (failure) => emit(XxxError(failureToMessage(failure))),  // import from core
+  (failure) => emit(XxxError(failureToMessage(failure), errorCode: failure.errorCode)),
   (data)    => emit(XxxSuccess(data)),
 )
 ```
@@ -153,6 +153,8 @@ import 'package:booksplatform/core/network/failure_messages.dart' as core;
 The `as core` alias is **required** in any cubit that also imports a feature-level `failure_messages.dart` — without it the two top-level functions clash. Use it consistently across all cubits for uniformity.
 
 Create a feature-level override (`presentation/cubit/failure_messages.dart`) only when a feature has unique status codes (e.g. 423 Account Locked) — delegate all other cases to core.
+
+If the backend includes a stable `errorCode` on an error response (independent of `message`, which is display text and can be reworded/localized), `ApiManager` captures it onto `Failure.errorCode`. Cubits/screens may read it to decide *behavior* — navigation, disabling a button, forcing logout — never to decide what text to display; `message`/`failureToMessage()` stays the only source of display text. Prefer `errorCode` over `statusCode` matching when several distinct failures share one HTTP status (e.g. multiple 401 cases needing different handling). Not every endpoint sends `errorCode` yet, so every `errorCode` switch needs a fallback for `null`/unmatched values.
 
 ---
 
@@ -188,7 +190,7 @@ sealed class XxxState extends Equatable {
 final class XxxInitial   extends XxxState { const XxxInitial(); }
 final class XxxLoading   extends XxxState { const XxxLoading(); }
 final class XxxSuccess   extends XxxState { /* data fields, override props */ }
-final class XxxError     extends XxxState { final String message; ... }
+final class XxxError     extends XxxState { final String message; final String? errorCode; ... }
 ```
 
 ---
