@@ -20,6 +20,7 @@ entities, services, or controllers — only the infrastructure layer.
 - API surface: `Asp.Versioning.Mvc`, `Asp.Versioning.Mvc.ApiExplorer` (the actively-maintained successor to the now-frozen `Microsoft.AspNetCore.Mvc.Versioning` — same versioning team, tracks .NET's own version numbering), `Microsoft.AspNetCore.OpenApi`, `NSwag.AspNetCore`
 - Caching/resilience: `Microsoft.Extensions.Caching.StackExchangeRedis`, `Polly`
 - Testing: `xunit`, `Moq`, `FluentAssertions`, `Bogus`, `Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.EntityFrameworkCore.Sqlite`, `Testcontainers` (+ the module for any real external dependency, e.g. `Testcontainers.Redis`), `NetArchTest.Rules`
+- Localization: `Microsoft.Extensions.Localization` (`IStringLocalizer<T>`) + `Microsoft.AspNetCore.Localization` (`RequestLocalizationOptions`) — both ship inside the ASP.NET Core shared framework already referenced by `<Solution>.WebAPI`; no separate NuGet package needed. See CLAUDE.md "Localization."
 - Only add anything beyond this list when a concrete, active feature needs it (see CLAUDE.md "Dependencies rule") — never speculatively.
 - After installing, run `dotnet list package --vulnerable --include-transitive` across every project and substitute or pin any flagged package before writing code — a package's own "latest stable" can still be vulnerable if the package itself is stale or superseded, not just outdated.
 
@@ -100,6 +101,8 @@ Produce a complete file-by-file plan. For each file specify: full path, responsi
 **`<Solution>.Services`:**
 
 - `Helper/ServiceResult.cs` — the envelope from CLAUDE.md "Response envelope," written once here, never redefined per feature.
+- `Resources/SharedResource.cs` — an empty marker class (no members) that anchors `IStringLocalizer<SharedResource>` to the `Resources/` folder's `.resx` files. Created once, here, during scaffolding — see CLAUDE.md "Localization."
+- `Resources/SharedResource.en.resx`, `Resources/SharedResource.ar.resx` — the two resource files every `ServiceResult`/validator message key is added to, in both languages, in the same commit that introduces the message — never English-only "for now."
 - `Validators/` — empty until the first feature's validators exist; the assembly-scan registration (`AddValidatorsFromAssemblyContaining<T>`) is wired in `ServiceRegistration` pointing at whichever validator type exists first — update the anchor type as needed, but the registration call itself is written once, here.
 
 **`<Solution>.WebAPI`:**
@@ -151,7 +154,8 @@ Produce a complete file-by-file plan. For each file specify: full path, responsi
 Middleware order is load-bearing — reordering silently changes behavior:
 
 ```
-builder.Services: Controllers (+ enum-as-string JSON converter) → DataProtection → CORS policy
+builder.Services: Controllers (+ enum-as-string JSON converter) → AddLocalization() + RequestLocalizationOptions (en default, en/ar supported)
+                → DataProtection → CORS policy
                 → DbContext → Redis multiplexer → Options bindings (typed settings classes)
                 → AddApplicationServices() → HostedServices → AddIdentityService()
                 → AddRateLimiting() → AddSwaggerDocumentation()
@@ -162,7 +166,7 @@ app: (Development: Database.Migrate() + UseOpenApi + UseSwaggerUi + UseHttpLoggi
    → UseCors(...)                          # before authentication/authorization, always
    → UseExceptionHandler("/error") → UseMiddleware<ExceptionMiddleware>()
    → UseRateLimiter()
-   → UseRequestLocalization(...)           # only if the API serves more than one culture
+   → UseRequestLocalization(...)           # always — en/ar from day one, see CLAUDE.md "Localization"
    → UseAuthentication() → UseAuthorization()
    → MapControllers() → MapHub<...>(...)   # only if SignalR is in scope
 ```
@@ -190,6 +194,7 @@ Create one at the solution root covering, at minimum: file-scoped namespaces pre
 7. **Retry strategy vs. manual transactions:** if `EnableRetryOnFailure` is ever added to the `DbContext` options, every `BeginTransactionAsync` call site in the codebase must be wrapped in `IExecutionStrategy.ExecuteAsync(...)` per EF Core's docs — Npgsql's (and SQL Server's) retrying execution strategy is incompatible with user-initiated transactions otherwise. Default to **not** enabling retry-on-failure until this is deliberately taken on solution-wide.
 8. **Nullable reference types on entities:** EF Core sets non-nullable entity properties via reflection/materialization, bypassing constructor nullability checks — decide up front whether required scalar properties use `required` (C# 11+) or are left implicitly non-null-but-uninitialized, and apply the choice consistently rather than mixing both across entities.
 9. **Auto-migrate on boot vs. explicit deploy step:** `Program.cs` may call `Database.Migrate()` after `WebApplication.Build()` to create the database and apply pending migrations automatically — if included, gate it strictly behind `IsDevelopment()`. Never call it unconditionally: concurrent instances racing to migrate, and unreviewed schema changes landing on a live database as a side effect of a restart, are real risks in `Production`. `Production` always applies migrations via the explicit `dotnet ef database update` command from CLAUDE.md's Commands section, run as a deliberate deploy step.
+10. **Resx satellite assemblies must actually publish:** `.resx` files compile to satellite assemblies per culture (e.g. `ar/<Solution>.Services.resources.dll`). Confirm the publish profile/Dockerfile copies them alongside the main assembly — a `.resx` that builds locally but isn't present in the deployed `ar/` folder silently falls back to the neutral (English) resource with no error, which is easy to miss until an Arabic-locale request in production quietly returns English text.
 
 ---
 

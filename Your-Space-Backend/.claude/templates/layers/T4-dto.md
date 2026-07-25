@@ -1,6 +1,6 @@
 ---
 name: T4-dto
-governed-by: CLAUDE.md Architecture rule 4 · dotnet_feature_prompt.md Rule 4 & §3
+governed-by: CLAUDE.md Architecture rule 4 · CLAUDE.md Architecture rule 8 ("Localization") · dotnet_feature_prompt.md Rule 4, Rule 8 & §3
 ---
 
 # T4 — Request/Response DTOs
@@ -71,7 +71,8 @@ public class <Entity>ProfileDto
 ## Notes
 
 - **`<Entity>DetailsDto` and `<Entity>ProfileDto` are never the same class** — a list endpoint that's actually returning the full details shape is sending unused fields over the wire on every single row, at whatever the list's page size is.
-- **AutoMapper profile:** one `Profile` class per feature (`<Feature>Profile.cs`) mapping `<Entity>` → `<Entity>DetailsDto`/`<Entity>ProfileDto`, and `Create<Entity>Dto`/`Update<Entity>Dto` → `<Entity>`. Keep transformation logic (formatting, conditional fields) in the profile or the service, never in the DTO itself — a DTO is a data shape, not a place for behavior.
+- **`Name` on a DTO is already the resolved, single-language value** — the entity's `Name`/`NameAr` pair never both appear on a DTO; the AutoMapper profile (below) picks one based on `CultureInfo.CurrentUICulture` (CLAUDE.md "Localization," `dotnet_feature_prompt.md` Rule 8).
+- **AutoMapper profile:** one `Profile` class per feature (`<Feature>Profile.cs`) mapping `<Entity>` → `<Entity>DetailsDto`/`<Entity>ProfileDto`, and `Create<Entity>Dto`/`Update<Entity>Dto` → `<Entity>`. Keep transformation logic (formatting, conditional fields, and the `Name`/`NameAr` culture resolution) in the profile or the service, never in the DTO itself — a DTO is a data shape, not a place for behavior.
 - **Architecture test to add/extend** (whole-solution version, in `WebAPI.Tests/Architecture/ArchitectureLayeringTests.cs`, seeded during scaffolding):
   ```csharp
   [Fact]

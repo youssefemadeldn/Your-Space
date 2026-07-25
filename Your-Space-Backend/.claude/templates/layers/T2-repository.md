@@ -1,6 +1,6 @@
 ---
 name: T2-repository
-governed-by: CLAUDE.md Architecture rules 1 & 3 · dotnet_feature_prompt.md Rule 3 & §4 · patterns/P4-hashed-verification-code.md
+governed-by: CLAUDE.md Architecture rules 1, 3 & 8 ("Localization") · dotnet_feature_prompt.md Rule 3, Rule 8 & §4 · patterns/P4-hashed-verification-code.md
 ---
 
 # T2 — Specification (+ generic repository usage)
@@ -63,6 +63,7 @@ var entity = await repo.GetByIdWithSpecAsync(spec);
 ## Notes
 
 - **Every constructor overload calls the shared predicate builder** (`BuildListPredicate` above) instead of copy-pasting the search expression — this is the fix for the most common specification anti-pattern (see `dotnet_feature_prompt.md` §7 anti-patterns table). If two overloads' predicates genuinely diverge, that's a sign they're not actually variations of the same query shape — consider whether they belong in two differently-named specification classes instead of two constructors on one.
+- **The `x.NameAr` branch above is the bilingual-search half of Rule 8** — any entity with a `<Field>Ar` column (CLAUDE.md "Localization") should let a search predicate match either language, exactly as shown, not just the default `Name` column.
 - **A feature adds a repository *method* only when the operation cannot be expressed as a specification** — an atomic update (`ExecuteUpdateAsync` with a guard predicate) or a raw-SQL sequence read are the two legitimate cases, and both belong on `IUnitOfWork`, never on `IGenericRepository<TEntity,TKey>` (Rule 3).
 - **A low-entropy secret (a 6-digit OTP/verification code) is looked up by owner, not by value** — unlike `RefreshTokenWithSpecs`, which safely looks a row up directly by its high-entropy token's hash, a specification for a verification code resolves `(UserId, not-yet-consumed)` and never indexes or filters on the code's hash itself. See `patterns/P4-hashed-verification-code.md`.
 - **Architecture test to add/extend** (whole-solution version, in `WebAPI.Tests/Architecture/ArchitectureLayeringTests.cs`, seeded during scaffolding):

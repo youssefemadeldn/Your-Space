@@ -1,6 +1,6 @@
 ---
 name: T3-service
-governed-by: CLAUDE.md "Error handling" · CLAUDE.md "Logging" · CLAUDE.md "Dependency injection" · dotnet_feature_prompt.md Rules 1, 5, 7
+governed-by: CLAUDE.md "Error handling" · CLAUDE.md "Logging" · CLAUDE.md "Dependency injection" · CLAUDE.md Architecture rule 8 ("Localization") · dotnet_feature_prompt.md Rules 1, 5, 7, 8
 di-lifetime: "Scoped"
 ---
 
@@ -31,11 +31,13 @@ public interface I<Feature>Service
 
 ```csharp
 using AutoMapper;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using <Solution>.Data.Entities;
 using <Solution>.Repository.Interfaces;
 using <Solution>.Repository.Specifications.<Feature>Specifications;
 using <Solution>.Services.Helper;
+using <Solution>.Services.Resources;
 using <Solution>.Services.Services.<Feature>Service.Dtos;
 
 namespace <Solution>.Services.Services.<Feature>Service;
@@ -45,12 +47,16 @@ public class <Feature>Service : I<Feature>Service
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<<Feature>Service> _logger;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public <Feature>Service(IUnitOfWork unitOfWork, IMapper mapper, ILogger<<Feature>Service> logger)
+    public <Feature>Service(
+        IUnitOfWork unitOfWork, IMapper mapper, ILogger<<Feature>Service> logger,
+        IStringLocalizer<SharedResource> localizer)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
+        _localizer = localizer;
     }
 
     // Query — guard clause for the expected "not found" outcome, no try/catch (Rule 1).
@@ -64,7 +70,7 @@ public class <Feature>Service : I<Feature>Service
         if (entity is null)
         {
             _logger.LogWarning("{Entity} {Id} not found", nameof(<Entity>), id);
-            return ServiceResult<<Entity>DetailsDto>.NotFound($"{nameof(<Entity>)} {id} not found");
+            return ServiceResult<<Entity>DetailsDto>.NotFound(_localizer["<Entity>.NotFound", id]);
         }
 
         return ServiceResult<<Entity>DetailsDto>.Ok(_mapper.Map<<Entity>DetailsDto>(entity));
@@ -93,7 +99,7 @@ public class <Feature>Service : I<Feature>Service
         var repo = _unitOfWork.Repository<<Entity>, int>();
         var entity = await repo.GetByIdAsync(id);
         if (entity is null)
-            return ServiceResult.NotFound($"{nameof(<Entity>)} {id} not found");
+            return ServiceResult.NotFound(_localizer["<Entity>.NotFound", id]);
 
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
@@ -122,3 +128,4 @@ public class <Feature>Service : I<Feature>Service
 - **When to extract a helper/domain-service instead of growing the service class:** only when (a) the same multi-step orchestration is needed by two or more services, or (b) the operation has non-trivial domain logic beyond "map, save, return" that deserves its own unit tests in isolation. A single repo-call-and-map operation stays a plain method on the feature's own service — don't build a ceremony layer for something with one caller.
 - **Never inject `I<Feature>Service` into another service's constructor if it creates a cycle** — if two features' services need each other, the shared logic belongs in a helper both can depend on, not a mutual reference.
 - Query methods that return a list use `<Entity>ProfileDto` (the list-row shape), never `<Entity>DetailsDto` — see `T4-dto.md`.
+- **Every `ServiceResult` message comes from `_localizer`, never an interpolated/concatenated string literal** — `IStringLocalizer<SharedResource>` supports positional format args (`_localizer["<Entity>.NotFound", id]`), so a message needing a value still avoids hardcoding the English sentence. Add the key to both `.resx` files in the same commit. See CLAUDE.md "Localization" and Rule 8.

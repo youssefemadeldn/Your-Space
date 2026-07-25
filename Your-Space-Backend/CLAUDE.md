@@ -141,6 +141,9 @@ No connection string password, signing key, API key, or credential of any kind i
 ### 7. Multi-step writes are transaction-wrapped
 Any service operation that writes to more than one table/aggregate where a partial write would leave invalid state must use `IUnitOfWork.BeginTransactionAsync()` → do the work → `CommitAsync()`, with a `catch { await RollbackAsync(); throw; }` around the work — never swallow inside the catch. See `patterns/P3-transactional-write.md`.
 
+### 8. The solution is localization-ready (English/Arabic) by default
+Every entity with user-facing text, every DTO that carries it, and every message a service or validator produces is built with English/Arabic support the moment it's created — regardless of whether the feature that introduces it explicitly asks for translation. This is a foundational posture, not a per-feature opt-in: see "Localization" below for the concrete pattern.
+
 ---
 
 ## Dependency injection — lifetime table
@@ -259,6 +262,18 @@ If a secret is ever discovered committed in git history, gitignoring the file go
 
 ---
 
+## Localization
+
+`Accept-Language: en` or `ar` drives every response — wired once in the foundation and never re-decided per feature (Architecture rule 8).
+
+- **Culture resolution:** `Program.cs` calls `AddLocalization()` and wires `RequestLocalizationOptions` with default culture `en` and supported cultures `en`/`ar`, read from the `Accept-Language` header via `app.UseRequestLocalization(...)`. This runs unconditionally from day one — not gated behind "only if the API serves more than one culture."
+- **Bilingual content fields:** any entity field holding user-facing text (a name, a title, a description — not an internal code/slug/enum) gets a nullable `<Field>Ar` column alongside the default `<Field>` column, e.g. `Name` + `NameAr`. The AutoMapper profile resolves to a **single** field on the DTO based on `CultureInfo.CurrentUICulture.TwoLetterISOLanguageName`, falling back to the default column when the `Ar` value is null or empty. A DTO never exposes both `Name` and `NameAr` — the client always receives one already-resolved field. See `templates/layers/T1-entity.md` and `T4-dto.md`.
+- **Response and validation messages:** every string a `ServiceResult` or a FluentValidation rule returns comes from `IStringLocalizer<SharedResource>` (`<Solution>.Services/Resources/SharedResource.cs` marker class + `SharedResource.en.resx`/`SharedResource.ar.resx`), keyed by a resource name — never a hardcoded string literal, even while the app only ships English copy today. `Microsoft.Extensions.Localization`/`Microsoft.AspNetCore.Localization` ship inside the ASP.NET Core shared framework already referenced by `<Solution>.WebAPI` — no separate package needed. See `templates/layers/T5-validator.md`.
+- **The gap to avoid:** a backend that wires `Accept-Language`/`RequestLocalization` but leaves every `ServiceResult`/validator message as a hardcoded English literal is not actually localized — it only looks localized from the middleware alone. Both halves (content fields *and* messages) are required, not just the header-handling plumbing.
+- **Why day-one, not opt-in:** retrofitting bilingual columns onto an entity already in production means a migration plus backfilling every existing row's `Ar` value; retrofitting message localization means finding and replacing every string literal across every service and validator. Both are cheap at creation time and expensive later — hence Architecture rule 8.
+
+---
+
 ## Code quality
 
 - **Small files and classes** — a service file handling one feature area; split when a class takes on a second, unrelated responsibility.
@@ -331,6 +346,7 @@ Before finishing any task, verify every item:
 - [ ] Every new mutating endpoint has a validator and an explicit `[Authorize]` (Architecture rule 5).
 - [ ] No secret was added to `appsettings*.json` (Architecture rule 6).
 - [ ] Multi-step writes are transaction-wrapped where partial completion would corrupt state (Architecture rule 7).
+- [ ] New user-facing text fields have an `Ar` counterpart, and new `ServiceResult`/validator messages come from `IStringLocalizer<SharedResource>`, not a string literal (Architecture rule 8).
 - [ ] Logging follows the Information/Warning/Error rules above, with structured templates.
 - [ ] No unnecessary package was added, and any new package was checked for known vulnerabilities (`dotnet list package --vulnerable --include-transitive`).
 - [ ] Acted as a senior partner: non-obvious tradeoffs named, concerns flagged, improvements suggested when genuinely valuable.

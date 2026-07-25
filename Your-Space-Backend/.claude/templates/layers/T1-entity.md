@@ -1,6 +1,6 @@
 ---
 name: T1-entity
-governed-by: CLAUDE.md "Architecture" (Data project layout) · CLAUDE.md Architecture rule 4 · patterns/P2-soft-delete-and-concurrency.md
+governed-by: CLAUDE.md "Architecture" (Data project layout) · CLAUDE.md Architecture rule 4 · CLAUDE.md Architecture rule 8 ("Localization") · patterns/P2-soft-delete-and-concurrency.md
 ---
 
 # T1 — Entity + EF Core Configuration
@@ -22,6 +22,7 @@ public class <Entity>
     public int Id { get; set; }
 
     public required string Name { get; set; }
+    public string? NameAr { get; set; }   // nullable — falls back to Name when absent; see CLAUDE.md "Localization"
 
     [Column(TypeName = "decimal(10,2)")]
     public decimal <PriceOrAmount> { get; set; }
@@ -80,6 +81,7 @@ public class <Entity>Configurations : IEntityTypeConfiguration<<Entity>>
 ## Notes
 
 - **Scalar constraints via data annotations, relationships/indexes via Fluent API** — never `[ForeignKey]`/`[Index]` attributes on the entity itself; keep all relationship/index knowledge in the configuration class where it's easy to audit in one place per entity.
+- **User-facing text fields are bilingual from creation, not internal-only ones** — `Name` (default/English) plus a nullable `NameAr`, same pattern for any other user-facing text field (`Description`/`DescriptionAr`, etc.). Internal-only fields (slugs, codes, enums) don't need an `Ar` counterpart. See CLAUDE.md "Localization" and `dotnet_feature_prompt.md` Rule 8.
 - **`DeletedAt` and `RowVersion` are opt-in, not default** — add them only when the feature actually needs soft-delete or concurrency-safe writes. Adding both unconditionally to every entity is premature generalization; an entity that's genuinely hard-deleted and never written concurrently doesn't need either.
 - **`HasQueryFilter` vs. manual `DeletedAt == null` in every specification** — a global query filter removes the chance of forgetting the filter in a new specification, but it also silently excludes soft-deleted rows from *every* query including ones that might legitimately want them (an admin "restore" screen). Decide once per entity and document the choice in the configuration class's comment; don't mix both approaches for the same entity.
 - **Migrations:** after adding or changing an entity/configuration, run `dotnet ef migrations add <Description> --project <Solution>.Data --startup-project <Solution>.WebAPI` and review the generated migration before applying it — EF Core's diff is usually right but not infallible, especially around index/rename detection.

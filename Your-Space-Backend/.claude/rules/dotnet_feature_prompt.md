@@ -42,6 +42,8 @@
 
 **Rule:** never add an empty folder speculatively. Only create `Validators/Update<Entity>DtoValidator.cs` if an update endpoint actually exists; only create a background job file if the feature actually has recurring/scheduled work (see `templates/layers/T7-background-job.md`).
 
+**Rule 8 reminder:** any entity field in this file set that holds user-facing text (not an internal code/slug/enum) gets an `<Field>Ar` counterpart on the entity, in the same migration — see Rule 8 and `templates/layers/T1-entity.md`.
+
 ---
 
 ## 2. The Non-Negotiable Rules
@@ -60,7 +62,7 @@ public async Task<ServiceResult<ProductDetailsDto>> GetDetailsAsync(int id)
     if (product is null)
     {
         _logger.LogWarning("Product {ProductId} not found", id);
-        return ServiceResult<ProductDetailsDto>.NotFound($"Product {id} not found");
+        return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound", id]);   // see Rule 8
     }
 
     return ServiceResult<ProductDetailsDto>.Ok(_mapper.Map<ProductDetailsDto>(product));
@@ -247,11 +249,59 @@ _logger.LogInformation($"Creating product {dto.Name}");   // ❌ interpolated st
 
 ---
 
+### Rule 8 — Every user-facing string ships bilingual (EN/AR) from the moment it's created
+
+Any entity field, DTO field, or service/validator message a client can see is built with English/Arabic support the moment it's created — not added later once someone actually asks for translation (CLAUDE.md Architecture rule 8).
+
+**Correct — entity + mapping resolve to one field:**
+```csharp
+// Entity
+public required string Name { get; set; }
+public string? NameAr { get; set; }
+
+// AutoMapper profile — resolves to ONE field; the client never sees both
+CreateMap<Product, ProductDetailsDto>()
+    .ForMember(d => d.Name, opt => opt.MapFrom(s =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" && !string.IsNullOrEmpty(s.NameAr)
+            ? s.NameAr
+            : s.Name));
+```
+
+**Correct — messages come from the localizer:**
+```csharp
+public class CreateProductDtoValidator : AbstractValidator<CreateProductDto>
+{
+    public CreateProductDtoValidator(IStringLocalizer<SharedResource> localizer)
+    {
+        RuleFor(x => x.Name).NotEmpty().WithMessage(localizer["Product.Name.Required"]);
+    }
+}
+
+// Service
+return ServiceResult<ProductDetailsDto>.NotFound(_localizer["Product.NotFound"]);
+```
+
+**Wrong — never do this:**
+```csharp
+// ❌ Entity has no Ar counterpart — retrofitting later means a migration plus backfilling every row
+public required string Name { get; set; }
+
+// ❌ Hardcoded English literal — looks localized because Accept-Language is wired in the pipeline,
+// but the message itself never actually changes with culture
+RuleFor(x => x.Name).NotEmpty().WithMessage("Name is required");
+return ServiceResult<ProductDetailsDto>.NotFound("Product not found");
+```
+
+See CLAUDE.md "Localization" and `templates/layers/T1-entity.md`, `T4-dto.md`, `T5-validator.md`.
+
+---
+
 ## 3. Response Model Rules
 
 - **`<Entity>DetailsDto`** — single-item shape, used by get-by-id and create/update responses. Include navigation data the client actually renders (images, category name) — not raw foreign keys the client can't use.
 - **`<Entity>ProfileDto`** — list-row shape, deliberately smaller than `DetailsDto`. Never reuse the details DTO for a paginated list response — list endpoints are called far more often and the extra fields are wasted bandwidth at scale.
 - Request DTOs (`Create<Entity>Dto`, `Update<Entity>Dto`) carry only the fields the caller may set — never a server-assigned field like `Id` (on create), `CreatedAt`, or `RowVersion`.
+- **A response DTO exposes one resolved language field, never a raw `Name`/`NameAr` pair.** The AutoMapper profile picks the right value based on `CultureInfo.CurrentUICulture` at mapping time (Rule 8) — the client never branches on locale itself.
 
 ---
 
@@ -285,6 +335,7 @@ Before marking a feature complete, verify every item:
 **Data layer**
 - [ ] Entity has `CreatedAt`/`UpdatedAt` (and `DeletedAt` if soft-deletable, `RowVersion` if written concurrently)
 - [ ] Configuration class declares keys, indexes (including composite indexes for real query patterns), and relationship delete behavior explicitly
+- [ ] Every user-facing text field has an `<Field>Ar` counterpart, and the AutoMapper profile resolves it to one DTO field by `CultureInfo.CurrentUICulture` (Rule 8)
 
 **Repository layer**
 - [ ] No domain-specific method added to `IGenericRepository<,>` (Rule 3)
@@ -300,6 +351,7 @@ Before marking a feature complete, verify every item:
 **Validation**
 - [ ] Every mutating DTO has a validator class (Rule 2)
 - [ ] No manual shape-checking left in the service for anything the validator now owns
+- [ ] Every `ServiceResult`/validator message comes from `IStringLocalizer<SharedResource>`, not a hardcoded string literal (Rule 8), with both `.resx` files updated in the same commit
 
 **API layer**
 - [ ] Every mutating endpoint has an explicit `[Authorize]` or a stated reason it's public (Rule 6)
@@ -335,3 +387,5 @@ The following patterns were found in real production audits and must not appear 
 | Secrets (DB password, signing key, third-party API key) committed directly in a tracked `appsettings.json` | Every clone — and every remote it's pushed to — now has the real credential in history; gitignoring afterward doesn't remove what's already committed | `dotnet user-secrets` locally, environment variables/secrets manager in deployed environments; rotate anything ever committed |
 | A per-request `Scoped` service injected directly into a `Singleton` constructor | The scoped instance is captured once and lives for the app's lifetime — a captive-dependency bug that surfaces as stale or cross-request data | Singletons needing scoped data take `IServiceScopeFactory` and create a scope per use |
 | Recurring or business-critical work implemented as fire-and-forget `Task.Run` instead of a hosted service or durable queue | No retry, no observability if the process recycles mid-run, silently drops the work on deploy | `IHostedService` for recurring/critical work; fire-and-forget reserved for genuinely best-effort side effects (§5) |
+| `ServiceResult`/validator messages hardcoded as English string literals while `Accept-Language`/`RequestLocalization` is wired in the pipeline | Looks localized because the middleware is there, but no message actually changes with culture — a real gap observed in a reference project's audit | Every message string comes from `IStringLocalizer<SharedResource>`, keyed and translated in both `.resx` files at creation time (Rule 8) |
+| A new entity's user-facing text field added without an `Ar` counterpart, "to add later when needed" | Retrofitting means a migration plus backfilling every existing row's `Ar` value — cheap now, expensive later | Add `<Field>Ar` alongside `<Field>` in the same migration that introduces the field (Rule 8) |

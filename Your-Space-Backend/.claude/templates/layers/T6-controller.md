@@ -1,6 +1,6 @@
 ---
 name: T6-controller
-governed-by: CLAUDE.md "Response envelope" · dotnet_feature_prompt.md Rule 6 & §6 (API layer checklist)
+governed-by: CLAUDE.md "Response envelope" · CLAUDE.md Architecture rule 8 ("Localization") · dotnet_feature_prompt.md Rule 6, Rule 8 & §6 (API layer checklist)
 ---
 
 # T6 — API Controller
@@ -85,8 +85,9 @@ public class <Feature>Controller : ControllerBase
 ```csharp
 var userIdClaim = User.FindFirst("uid")?.Value;
 if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-    return new ResultActionResult<SomeDto>(ServiceResult<SomeDto>.Unauthorized("Invalid user ID"));
+    return new ResultActionResult<SomeDto>(ServiceResult<SomeDto>.Unauthorized(_localizer["Auth.InvalidUserId"]));
 ```
+(`_localizer` here is the controller's own injected `IStringLocalizer<SharedResource>` — see CLAUDE.md "Localization"; a controller may inject it directly for the rare message it generates itself, same rule as a service.)
 
 ---
 
