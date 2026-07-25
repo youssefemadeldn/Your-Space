@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using YourSpace.Data.Entities;
+using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService;
 
 namespace YourSpace.WebAPI.Helpers;
@@ -47,16 +48,42 @@ public static class IdentitySeeder
             EmailConfirmed = true
         };
 
-        var result = await userManager.CreateAsync(superAdmin, password);
-        if (!result.Succeeded)
+        // Transaction-wrapped for the same reason as AuthService.RegisterAsync: without it, a failed
+        // AddToRoleAsync would leave a role-less user account behind, and since the idempotency check
+        // above looks for a SuperAdmin *role* (not this email), every future boot would retry
+        // CreateAsync on the same email and fail forever on the unique-email constraint.
+        var unitOfWork = services.GetRequiredService<IUnitOfWork>();
+        await using (var transaction = await unitOfWork.BeginTransactionAsync())
         {
-            logger.LogError(
-                "Failed to seed the initial SuperAdmin account: {Errors}",
-                string.Join(", ", result.Errors.Select(e => e.Code)));
-            return;
+            try
+            {
+                var createResult = await userManager.CreateAsync(superAdmin, password);
+                if (!createResult.Succeeded)
+                {
+                    logger.LogError(
+                        "Failed to seed the initial SuperAdmin account: {Errors}",
+                        string.Join(", ", createResult.Errors.Select(e => e.Code)));
+                    return;
+                }
+
+                var roleResult = await userManager.AddToRoleAsync(superAdmin, RoleNames.SuperAdmin);
+                if (!roleResult.Succeeded)
+                {
+                    logger.LogError(
+                        "Failed to assign the SuperAdmin role during bootstrap seed: {Errors}",
+                        string.Join(", ", roleResult.Errors.Select(e => e.Code)));
+                    return;
+                }
+
+                await unitOfWork.CommitAsync(transaction);
+            }
+            catch
+            {
+                await unitOfWork.RollbackAsync(transaction);
+                throw;
+            }
         }
 
-        await userManager.AddToRoleAsync(superAdmin, RoleNames.SuperAdmin);
         logger.LogInformation("Seeded initial SuperAdmin account {Email}", email);
     }
 }

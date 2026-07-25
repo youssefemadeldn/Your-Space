@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StackExchange.Redis;
@@ -47,6 +48,21 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+// Must run before anything that reads Request.Scheme or Connection.RemoteIpAddress (rate limiting's
+// IP partitioning, RefreshToken.CreatedByIp/RevokedByIp, UseHttpsRedirection) — otherwise those all
+// see the reverse proxy's address instead of the real client's. KnownNetworks/KnownProxies are
+// cleared because a container's reverse proxy is rarely at a fixed, known IP; that also means this
+// trusts X-Forwarded-For from whatever sits in front of the app, so it's only safe as long as that
+// front door actually overwrites the header rather than passing an untrusted client value through —
+// tighten to the real proxy's IP/network once a hosting target is chosen.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 if (app.Environment.IsDevelopment())
 {

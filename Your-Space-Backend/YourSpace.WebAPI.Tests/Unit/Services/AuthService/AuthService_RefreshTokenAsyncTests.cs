@@ -60,14 +60,17 @@ public class AuthService_RefreshTokenAsyncTests
     }
 
     [Fact]
-    public async Task Revokes_all_active_tokens_when_a_revoked_token_is_replayed()
+    public async Task Revokes_all_active_tokens_when_a_rotated_away_token_is_replayed()
     {
+        // ReplacedByTokenHash set = revoked via rotation, so a newer token already exists downstream.
+        // Presenting this one again is the reuse-of-a-superseded-token signal, not just a stale client.
         var revoked = new RefreshToken
         {
             Id = Guid.NewGuid(),
             UserId = User.Id,
             TokenHash = "hash-of-stolen-token",
             RevokedAt = DateTime.UtcNow.AddMinutes(-1),
+            ReplacedByTokenHash = "hash-of-the-token-that-superseded-it",
             ExpiresAt = DateTime.UtcNow.AddDays(1),
             User = User
         };
@@ -89,6 +92,31 @@ public class AuthService_RefreshTokenAsyncTests
 
         result.StatusCode.Should().Be(401);
         _refreshTokenRepo.Verify(r => r.Update(It.Is<RefreshToken>(rt => rt.Id == stillActive.Id && rt.RevokedAt != null)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Does_not_mass_revoke_when_a_plain_logged_out_token_is_reused()
+    {
+        // RevokedAt set but ReplacedByTokenHash null = revoked via logout, not rotation — no signal
+        // that a newer token exists, so this must not be treated as theft (e.g. a client retry racing
+        // a logout call would otherwise force-log-out every other device for nothing stolen).
+        var loggedOut = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = User.Id,
+            TokenHash = "hash-of-logged-out-token",
+            RevokedAt = DateTime.UtcNow.AddMinutes(-1),
+            ExpiresAt = DateTime.UtcNow.AddDays(1),
+            User = User
+        };
+        _refreshTokenRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<RefreshToken>>()))
+            .ReturnsAsync(loggedOut);
+
+        var result = await CreateSut().RefreshTokenAsync("logged-out-token", "127.0.0.1");
+
+        result.StatusCode.Should().Be(401);
+        _refreshTokenRepo.Verify(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<RefreshToken>>()), Times.Never);
+        _refreshTokenRepo.Verify(r => r.Update(It.IsAny<RefreshToken>()), Times.Never);
     }
 
     [Fact]

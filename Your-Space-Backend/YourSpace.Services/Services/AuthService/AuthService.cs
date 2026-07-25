@@ -39,14 +39,36 @@ public class AuthService(
             PhoneNumber = dto.PhoneNumber
         };
 
-        var createResult = await userManager.CreateAsync(user, dto.Password);
-        if (!createResult.Succeeded)
+        // CreateAsync (AspNetUsers) and AddToRoleAsync (AspNetUserRoles) are two separate writes —
+        // wrapped so a role-assignment failure can never leave a fully-created account with no role.
+        await using (var transaction = await unitOfWork.BeginTransactionAsync())
         {
-            logger.LogWarning("Registration failed for {Email}: {Errors}", dto.Email, string.Join(", ", createResult.Errors.Select(e => e.Code)));
-            return ServiceResult<UserProfileDto>.ValidationError(MapIdentityErrors(createResult.Errors), "Registration failed.");
-        }
+            try
+            {
+                var createResult = await userManager.CreateAsync(user, dto.Password);
+                if (!createResult.Succeeded)
+                {
+                    logger.LogWarning("Registration failed for {Email}: {Errors}", dto.Email, string.Join(", ", createResult.Errors.Select(e => e.Code)));
+                    return ServiceResult<UserProfileDto>.ValidationError(MapIdentityErrors(createResult.Errors), "Registration failed.");
+                }
 
-        await userManager.AddToRoleAsync(user, RoleNames.User);
+                var roleResult = await userManager.AddToRoleAsync(user, RoleNames.User);
+                if (!roleResult.Succeeded)
+                {
+                    logger.LogError("Failed to assign the default role to new user {Email}: {Errors}", dto.Email, string.Join(", ", roleResult.Errors.Select(e => e.Code)));
+                    return ServiceResult<UserProfileDto>.ServerError("Registration could not be completed. Please try again.");
+                }
+
+                await unitOfWork.CommitAsync(transaction);
+            }
+            catch
+            {
+                await unitOfWork.RollbackAsync(transaction);
+                throw;
+            }
+        }
+        // Any return above this point (validation/role failure) leaves the transaction uncommitted —
+        // disposing it here rolls it back, so no partially-created account survives either path.
 
         var confirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
         await TrySendEmailAsync(
@@ -115,9 +137,20 @@ public class AuthService(
 
         if (stored.RevokedAt is not null)
         {
-            logger.LogWarning("Refresh token reuse detected for user {UserId} — revoking all active sessions", stored.UserId);
-            await RevokeAllUserTokensAsync(stored.UserId);
-            return ServiceResult<AuthResponseDto>.Fail("This refresh token has already been used. Please log in again.", 401);
+            // ReplacedByTokenHash only gets set by rotation (below) — a token revoked that way being
+            // presented again means a *newer* token already exists downstream, the signature of a
+            // stolen/replayed token, not just a stale client. A plain logout-revoked token doesn't
+            // carry that signal, so it shouldn't nuke every other session on what could just be a
+            // client retry racing a logout.
+            if (stored.ReplacedByTokenHash is not null)
+            {
+                logger.LogWarning("Refresh token reuse detected for user {UserId} — revoking all active sessions", stored.UserId);
+                await RevokeAllUserTokensAsync(stored.UserId);
+                return ServiceResult<AuthResponseDto>.Fail("This refresh token has already been used. Please log in again.", 401);
+            }
+
+            logger.LogWarning("Refresh attempted with an already-revoked token for user {UserId}", stored.UserId);
+            return ServiceResult<AuthResponseDto>.Fail("This refresh token has been revoked. Please log in again.", 401);
         }
 
         if (stored.ExpiresAt < DateTime.UtcNow)

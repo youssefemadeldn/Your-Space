@@ -101,6 +101,8 @@ public class AuthController(IAuthService authService) : ControllerBase
         return new ResultActionResult<UserProfileDto>(result);
     }
 
+    // Safe: every action calling this is behind [Authorize], and TokenService.GenerateAccessToken
+    // always emits a NameIdentifier claim, so it's never actually missing here.
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     private string? GetClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
