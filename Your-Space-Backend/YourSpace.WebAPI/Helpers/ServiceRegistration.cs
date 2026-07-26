@@ -5,8 +5,14 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Repositories;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService;
+using YourSpace.Services.Services.EventGuestService;
+using YourSpace.Services.Services.EventService;
+using YourSpace.Services.Services.GroupService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.PersonOccasionHistoryService;
+using YourSpace.Services.Services.PersonService;
 using YourSpace.Services.Services.TokenService;
+using YourSpace.Services.Services.UserSettingsService;
 
 namespace YourSpace.WebAPI.Helpers;
 
@@ -29,6 +35,14 @@ public static class ServiceRegistration
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IOtpService, OtpService>();
         services.AddSingleton<ITokenService, TokenService>();
+
+        // People, Groups, Events (Invitation Planner)
+        services.AddScoped<IGroupService, GroupService>();
+        services.AddScoped<IPersonService, PersonService>();
+        services.AddScoped<IPersonOccasionHistoryService, PersonOccasionHistoryService>();
+        services.AddScoped<IEventService, EventService>();
+        services.AddScoped<IEventGuestService, EventGuestService>();
+        services.AddScoped<IUserSettingsService, UserSettingsService>();
 
         // API versioning
         services.AddApiVersioning(options =>

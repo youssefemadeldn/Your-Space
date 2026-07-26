@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Group.NotFound" xml:space="preserve">
+    <value>Group not found.</value>
+  </data>
+  <data name="Group.HasActivePersons" xml:space="preserve">
+    <value>This group still has people assigned to it. Reassign or remove them before deleting the group.</value>
+  </data>
+  <data name="Person.NotFound" xml:space="preserve">
+    <value>Person not found.</value>
+  </data>
+  <data name="Person.GroupNotFound" xml:space="preserve">
+    <value>The specified group was not found.</value>
+  </data>
+  <data name="PersonOccasionHistory.NotFound" xml:space="preserve">
+    <value>Occasion history entry not found.</value>
+  </data>
+  <data name="Event.NotFound" xml:space="preserve">
+    <value>Event not found.</value>
+  </data>
+  <data name="EventGuest.NotFound" xml:space="preserve">
+    <value>Guest not found.</value>
+  </data>
+  <data name="EventGuest.EventNotFound" xml:space="preserve">
+    <value>Event not found.</value>
+  </data>
+  <data name="EventGuest.PersonNotFound" xml:space="preserve">
+    <value>One or more of the specified people were not found.</value>
+  </data>
+  <data name="EventGuest.GroupNotFound" xml:space="preserve">
+    <value>The specified group was not found.</value>
+  </data>
+  <data name="Group.Name.Required" xml:space="preserve">
+    <value>Group name is required.</value>
+  </data>
+  <data name="Group.Name.MaxLength" xml:space="preserve">
+    <value>Group name must not exceed 200 characters.</value>
+  </data>
+  <data name="Person.Name.Required" xml:space="preserve">
+    <value>Name is required.</value>
+  </data>
+  <data name="Person.Name.MaxLength" xml:space="preserve">
+    <value>Name must not exceed 200 characters.</value>
+  </data>
+  <data name="Person.PhoneNumber.InvalidFormat" xml:space="preserve">
+    <value>Phone number must be a valid international format, e.g. +201234567890.</value>
+  </data>
+  <data name="Person.GroupId.Invalid" xml:space="preserve">
+    <value>A valid group must be selected.</value>
+  </data>
+  <data name="PersonOccasionHistory.InviteMethod.MustBeNullWhenNotInvitedMe" xml:space="preserve">
+    <value>Invite method can only be set when this person invited you.</value>
+  </data>
+  <data name="PersonOccasionHistory.OccasionDate.CannotBeFuture" xml:space="preserve">
+    <value>Occasion date cannot be in the future.</value>
+  </data>
+  <data name="Event.Name.Required" xml:space="preserve">
+    <value>Event name is required.</value>
+  </data>
+  <data name="Event.Name.MaxLength" xml:space="preserve">
+    <value>Event name must not exceed 200 characters.</value>
+  </data>
+  <data name="EventGuest.PersonIds.Required" xml:space="preserve">
+    <value>At least one person must be specified.</value>
+  </data>
+  <data name="EventGuest.PersonIds.NoDuplicates" xml:space="preserve">
+    <value>The same person cannot be listed more than once.</value>
+  </data>
+  <data name="EventGuest.InviteMethod.Required" xml:space="preserve">
+    <value>A valid invite method is required.</value>
+  </data>
+</root>

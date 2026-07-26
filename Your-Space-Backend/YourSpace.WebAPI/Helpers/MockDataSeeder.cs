@@ -1,11 +1,14 @@
 using System.Security.Cryptography;
 using System.Text;
+using Bogus;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using YourSpace.Data.Contexts;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Services.Services.AuthService;
 using YourSpace.Services.Services.OtpService;
+using Person = YourSpace.Data.Entities.Person; // disambiguates from Bogus.Person, used by the Faker<Person> below
 
 namespace YourSpace.WebAPI.Helpers;
 
@@ -25,6 +28,13 @@ public static class MockDataSeeder
         await SeedRefreshTokensAsync(context, activeUserId, lockedUserId);
         await SeedEmailConfirmationCodesAsync(context, activeUserId, lockedUserId);
         await SeedPasswordResetCodesAsync(context, activeUserId, lockedUserId);
+
+        await SeedGroupsAsync(context, activeUserId, lockedUserId);
+        await SeedPersonsAsync(context, activeUserId, lockedUserId);
+        await SeedEventsAsync(context, activeUserId, lockedUserId);
+        await SeedEventGuestsAsync(context, activeUserId);
+        await SeedPersonOccasionHistoriesAsync(context, activeUserId);
+        await SeedUserSettingsAsync(context, activeUserId, lockedUserId);
     }
 
     // Dedicated, disposable local-dev fixture accounts — distinct from IdentitySeeder's real SuperAdmin
@@ -184,6 +194,205 @@ public static class MockDataSeeder
                 AttemptCount = OtpConstants.MaxAttempts,
                 ConsumedAt = now.AddMinutes(-1)
             });
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    {
+        if (await context.Groups.AnyAsync())
+        {
+            return;
+        }
+
+        await context.Groups.AddRangeAsync(
+            new Group { OwnerUserId = activeUserId, Name = "Relatives", NameAr = "الأقارب" },
+            new Group { OwnerUserId = activeUserId, Name = "Village Friends", NameAr = "أصدقاء القرية" },
+            new Group { OwnerUserId = activeUserId, Name = "University Friends", NameAr = "أصدقاء الجامعة" },
+            new Group { OwnerUserId = activeUserId, Name = new string('A', 200) }, // edge case — max-length name
+            new Group // edge case — soft-deleted
+            {
+                OwnerUserId = activeUserId,
+                Name = "Old Neighbors (Archived)",
+                DeletedAt = DateTime.UtcNow.AddDays(-10)
+            },
+            new Group { OwnerUserId = lockedUserId, Name = "Neighboring Village Friends" });
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedPersonsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    {
+        if (await context.People.AnyAsync())
+        {
+            return;
+        }
+
+        var relatives = await context.Groups.SingleAsync(g => g.OwnerUserId == activeUserId && g.Name == "Relatives");
+        var villageFriends = await context.Groups.SingleAsync(g => g.OwnerUserId == activeUserId && g.Name == "Village Friends");
+        var universityFriends = await context.Groups.SingleAsync(g => g.OwnerUserId == activeUserId && g.Name == "University Friends");
+        var lockedUserGroup = await context.Groups.SingleAsync(g => g.OwnerUserId == lockedUserId);
+
+        var faker = new Faker<Person>()
+            .RuleFor(p => p.OwnerUserId, _ => activeUserId)
+            .RuleFor(p => p.Name, f => f.Name.FullName())
+            .RuleFor(p => p.PhoneNumber, f => f.Random.Replace("+2010#######"))
+            .RuleFor(p => p.GroupId, f => f.PickRandom(relatives.Id, villageFriends.Id, universityFriends.Id));
+
+        var persons = faker.Generate(15); // enough rows to exercise pagination
+
+        persons.Add(new Person { OwnerUserId = activeUserId, Name = "Friend With No Phone", GroupId = villageFriends.Id }); // edge case — null PhoneNumber
+        persons.Add(new Person { OwnerUserId = activeUserId, Name = new string('B', 200), GroupId = relatives.Id }); // edge case — max-length name
+        persons.Add(new Person // edge case — soft-deleted
+        {
+            OwnerUserId = activeUserId,
+            Name = "Departed Contact",
+            GroupId = relatives.Id,
+            DeletedAt = DateTime.UtcNow.AddDays(-5)
+        });
+
+        persons.Add(new Person { OwnerUserId = lockedUserId, Name = "Locked User's Friend", PhoneNumber = "+201111111111", GroupId = lockedUserGroup.Id });
+
+        await context.People.AddRangeAsync(persons);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedEventsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    {
+        if (await context.Events.AnyAsync())
+        {
+            return;
+        }
+
+        await context.Events.AddRangeAsync(
+            new Event // normal case — upcoming, with date and notes
+            {
+                OwnerUserId = activeUserId,
+                Name = "Brother's Wedding",
+                NameAr = "فرح أخي",
+                EventDate = DateTime.UtcNow.AddMonths(2),
+                Notes = "Village hall, evening reception."
+            },
+            new Event // normal case — already happened
+            {
+                OwnerUserId = activeUserId,
+                Name = "Cousin's Engagement",
+                EventDate = DateTime.UtcNow.AddMonths(-3)
+            },
+            new Event { OwnerUserId = activeUserId, Name = "Graduation Party" }, // edge case — no date set yet, still being planned
+            new Event // edge case — soft-deleted (cancelled)
+            {
+                OwnerUserId = activeUserId,
+                Name = "Cancelled Gathering",
+                DeletedAt = DateTime.UtcNow.AddDays(-1)
+            },
+            new Event { OwnerUserId = lockedUserId, Name = "Locked User's Event" });
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedEventGuestsAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.EventGuests.AnyAsync())
+        {
+            return;
+        }
+
+        var wedding = await context.Events.SingleAsync(e => e.OwnerUserId == activeUserId && e.Name == "Brother's Wedding");
+        var persons = await context.People
+            .Where(p => p.OwnerUserId == activeUserId && p.DeletedAt == null)
+            .OrderBy(p => p.Id)
+            .Take(5)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        await context.EventGuests.AddRangeAsync(
+            new EventGuest // normal case — invited via WhatsApp
+            {
+                EventId = wedding.Id,
+                PersonId = persons[0].Id,
+                Status = EventGuestStatus.Invited,
+                InviteMethod = InviteMethod.WhatsApp,
+                InvitedAt = now.AddDays(-2)
+            },
+            new EventGuest // normal case — invited via phone call
+            {
+                EventId = wedding.Id,
+                PersonId = persons[1].Id,
+                Status = EventGuestStatus.Invited,
+                InviteMethod = InviteMethod.PhoneCall,
+                InvitedAt = now.AddDays(-1)
+            },
+            new EventGuest // normal case — invited in person
+            {
+                EventId = wedding.Id,
+                PersonId = persons[2].Id,
+                Status = EventGuestStatus.Invited,
+                InviteMethod = InviteMethod.Physical,
+                InvitedAt = now
+            },
+            new EventGuest { EventId = wedding.Id, PersonId = persons[3].Id, Status = EventGuestStatus.NotInvited }, // normal case — not reached yet
+            new EventGuest { EventId = wedding.Id, PersonId = persons[4].Id, Status = EventGuestStatus.Skipped }); // edge case — deliberately excluded
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedPersonOccasionHistoriesAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.PersonOccasionHistories.AnyAsync())
+        {
+            return;
+        }
+
+        var persons = await context.People
+            .Where(p => p.OwnerUserId == activeUserId && p.DeletedAt == null)
+            .OrderBy(p => p.Id)
+            .Take(3)
+            .ToListAsync();
+
+        await context.PersonOccasionHistories.AddRangeAsync(
+            new PersonOccasionHistory // normal case — invited the user via WhatsApp
+            {
+                PersonId = persons[0].Id,
+                InvitedMe = true,
+                InviteMethod = InviteMethod.WhatsApp,
+                OccasionName = "His Wedding",
+                OccasionDate = DateTime.UtcNow.AddYears(-1)
+            },
+            new PersonOccasionHistory // normal case — did not invite the user
+            {
+                PersonId = persons[0].Id,
+                InvitedMe = false,
+                OccasionName = "Her Graduation",
+                OccasionDate = DateTime.UtcNow.AddMonths(-6)
+            },
+            new PersonOccasionHistory // edge case — max-length notes, no name/date recorded
+            {
+                PersonId = persons[1].Id,
+                InvitedMe = true,
+                InviteMethod = InviteMethod.PhoneCall,
+                Notes = new string('C', 2000)
+            },
+            new PersonOccasionHistory // edge case — minimal detail, invited via a physical visit
+            {
+                PersonId = persons[2].Id,
+                InvitedMe = true,
+                InviteMethod = InviteMethod.Physical
+            });
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedUserSettingsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    {
+        if (await context.UserSettings.AnyAsync())
+        {
+            return;
+        }
+
+        await context.UserSettings.AddRangeAsync(
+            new UserSettings { UserId = activeUserId, ReciprocitySuggestionsEnabled = true }, // edge case — enabled
+            new UserSettings { UserId = lockedUserId, ReciprocitySuggestionsEnabled = false }); // normal case — default off
 
         await context.SaveChangesAsync();
     }

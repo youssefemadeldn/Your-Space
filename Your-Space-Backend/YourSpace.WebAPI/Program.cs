@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -38,6 +39,15 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddDataProtection();
+
+builder.Services.AddLocalization();
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    string[] supportedCultures = ["en", "ar"];
+    options.SetDefaultCulture("en")
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures);
+});
 
 builder.Services.AddCors(options => options.AddPolicy("DefaultCors", policy =>
     policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
@@ -116,6 +126,8 @@ await using (var seedScope = app.Services.CreateAsyncScope())
 app.UseHttpsRedirection();
 
 app.UseCors("DefaultCors");
+
+app.UseRequestLocalization();
 
 app.UseExceptionHandler("/error");
 app.UseMiddleware<ExceptionMiddleware>();
