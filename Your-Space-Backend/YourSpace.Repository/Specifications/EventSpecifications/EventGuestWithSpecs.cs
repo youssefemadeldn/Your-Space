@@ -12,12 +12,6 @@ public class EventGuestWithSpecs : BaseSpecification<EventGuest>
     {
     }
 
-    // Duplicate-add check for one (event, person) pair
-    public EventGuestWithSpecs(int eventId, string ownerUserId, int personId)
-        : base(eg => eg.EventId == eventId && eg.Event.OwnerUserId == ownerUserId && eg.PersonId == personId)
-    {
-    }
-
     // Count for the grouped/filterable guest-list read (no Skip/Take — see PaginationSpecification's
     // count/list pairing note)
     public EventGuestWithSpecs(int eventId, string ownerUserId, int? groupId, EventGuestStatus? status)
@@ -52,6 +46,12 @@ public class EventGuestWithSpecs : BaseSpecification<EventGuest>
         spec.AddInclude(eg => eg.Person.Group);
         return spec;
     }
+
+    // All guest rows across a batch of events, unpaginated — feeds a single upfront query for
+    // per-event guest counts (e.g. EventService.GetAllAsync's list view), grouped by EventId in
+    // C# afterward, instead of one CountWithSpecAsync round-trip per event on the page.
+    public static EventGuestWithSpecs ForEvents(List<int> eventIds, string ownerUserId)
+        => new(eg => eventIds.Contains(eg.EventId) && eg.Event.OwnerUserId == ownerUserId);
 
     private static Expression<Func<EventGuest, bool>> BuildListPredicate(int eventId, string ownerUserId, int? groupId, EventGuestStatus? status)
         => eg => eg.EventId == eventId

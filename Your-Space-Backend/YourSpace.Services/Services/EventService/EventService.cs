@@ -54,14 +54,22 @@ public class EventService(
         var totalItems = await repo.CountWithSpecAsync(new EventWithSpecs(ownerUserId, search));
         var events = await repo.ListAllWithSpecAsync(new EventWithSpecs(ownerUserId, search, pagination));
 
+        // Single upfront query for every event's guest count on this page, grouped in C# —
+        // avoids one CountWithSpecAsync round-trip per event (up to MaxPageSize).
+        var eventIds = events.Select(e => e.Id).ToList();
         var guestRepo = unitOfWork.Repository<EventGuest, int>();
-        var items = new List<EventProfileDto>();
-        foreach (var @event in events)
+        var guestCountsByEventId = eventIds.Count == 0
+            ? []
+            : (await guestRepo.ListAllWithSpecAsync(EventGuestWithSpecs.ForEvents(eventIds, ownerUserId)))
+                .GroupBy(g => g.EventId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+        var items = events.Select(e =>
         {
-            var dto = mapper.Map<EventProfileDto>(@event);
-            dto.TotalGuestCount = await guestRepo.CountWithSpecAsync(new EventGuestWithSpecs(@event.Id, ownerUserId, null, null));
-            items.Add(dto);
-        }
+            var dto = mapper.Map<EventProfileDto>(e);
+            dto.TotalGuestCount = guestCountsByEventId.GetValueOrDefault(e.Id);
+            return dto;
+        }).ToList();
 
         var totalPages = (int)Math.Ceiling(totalItems / (double)pagination.PageSize);
 
