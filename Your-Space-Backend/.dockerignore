@@ -1,0 +1,27 @@
+# Build results
+**/bin/
+**/obj/
+
+# Visual Studio / Rider / VS Code
+**/.vs/
+**/.vscode/
+*.user
+*.suo
+
+# Git
+.git/
+.gitignore
+
+# User secrets — never bundled into the image, injected via env vars at deploy time
+**/secrets.json
+
+# Test results and test project (not needed in the runtime image)
+**/TestResults/
+YourSpace.WebAPI.Tests/
+
+# Docs
+doc/
+
+# Docker
+Dockerfile
+.dockerignore
