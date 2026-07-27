@@ -96,13 +96,19 @@ forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
+app.Logger.LogInformation("Applying database migrations");
+using (var migrationScope = app.Services.CreateScope())
+{
+    var migrationDbContext = migrationScope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
+    await migrationDbContext.Database.MigrateAsync();
+}
+app.Logger.LogInformation("Database migrations applied successfully");
+
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
-        dbContext.Database.Migrate();
-
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         await MockDataSeeder.SeedAsync(dbContext, userManager);
     }
