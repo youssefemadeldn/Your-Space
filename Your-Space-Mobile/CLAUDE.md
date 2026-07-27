@@ -97,7 +97,7 @@ features/<feature>/
 ## Architecture rules
 
 ### 1. Auth is invisible to the data layer
-`AuthInterceptor` handles Bearer token injection and 401 → logout. Data sources never read tokens, build headers, or call auth services.
+`AuthInterceptor` handles Bearer token injection and silent token refresh on 401 — concurrent 401s share one in-flight refresh call, the failed request is retried once with the new token, and only a failed refresh triggers logout. Data sources never read tokens, build headers, or call auth services.
 
 ### 2. No try/catch outside ApiManager
 `ApiManager` is the sole error boundary. It converts every `DioException` to `Either<Failure, T>`. Data source methods return that `Either` directly — no wrapping, no try/catch.
@@ -146,7 +146,7 @@ cubit: result.fold(
 
 `failureToMessage()` lives in `lib/core/network/failure_messages.dart`. Import it as:
 ```dart
-import 'package:booksplatform/core/network/failure_messages.dart' as core;
+import 'package:<package_name>/core/network/failure_messages.dart' as core;
 // usage: core.failureToMessage(failure)
 ```
 
@@ -226,7 +226,7 @@ Verify new registrations appear in `lib/core/di/injection_container.config.dart`
   1. Dart SDK (`dart:`)
   2. Flutter SDK (`package:flutter/`)
   3. Third-party packages (`package:`)
-  4. Project imports (`package:booksplatform/`)
+  4. Project imports (`package:<package_name>/`)
   - Use relative imports within the same feature; use package imports across features.
   - Never leave unused imports.
 

@@ -20,8 +20,8 @@ Use when: total widget code is **under ~250 lines** and there is **no embedded `
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:booksplatform/core/widgets/app_loading_indicator.dart';
-import 'package:booksplatform/core/widgets/error_state_widget.dart';
+import 'package:<package_name>/core/widgets/app_loading_indicator.dart';
+import 'package:<package_name>/core/widgets/error_state_widget.dart';
 import '../cubit/<query>_cubit/<query>_cubit.dart';
 import '../cubit/<query>_cubit/<query>_state.dart';
 
@@ -86,8 +86,8 @@ presentation/pages/<feature>_screen/
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:booksplatform/core/widgets/app_loading_indicator.dart';
-import 'package:booksplatform/core/widgets/error_state_widget.dart';
+import 'package:<package_name>/core/widgets/app_loading_indicator.dart';
+import 'package:<package_name>/core/widgets/error_state_widget.dart';
 import '../../cubit/<query>_cubit/<query>_cubit.dart';
 import '../../cubit/<query>_cubit/<query>_state.dart';
 import '<feature>_body.dart';

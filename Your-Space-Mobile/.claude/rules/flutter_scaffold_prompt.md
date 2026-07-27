@@ -12,7 +12,7 @@ screens or business logic — only the infrastructure layer.
 
 **Package context (ignore versions — use latest compatible):**
 - HTTP & networking: dio, pretty_dio_logger
-- State management: flutter_bloc (Cubits only, no classic BLoC)
+- State management: flutter_bloc (Cubit by default; Bloc only for complex event-driven flows Cubit can't express cleanly — see CLAUDE.md's "State management discipline")
 - DI: get_it + injectable + injectable_generator (build_runner)
 - Functional programming: dartz (Either for error handling)
 - Storage: flutter_secure_storage
@@ -147,7 +147,7 @@ foundation files, and DI scope (if registered).
 - `lib/core/constants/app_constants.dart`
   Exports: kDesignWidth (390.0), kDesignHeight (844.0), kAppName,
   kAnimationDuration, kSplashDuration, kDefaultPageSize, kTokenKey,
-  kUserKey.
+  kRefreshTokenKey, kUserKey.
 
 - `lib/core/constants/api_constants.dart`
   Exports: ApiConstants class with static `baseUrl` getter (env-aware via
@@ -285,8 +285,22 @@ These three widgets live in `lib/core/widgets/` and are used by every feature's
   circular dependency).
   onRequest: reads token → if not null, sets Authorization: Bearer header;
   if null, skips silently (public route).
-  onError: if 401 → clears token via SecureStorageHelper →
-  `_router.go(AppRoutes.login)`. `.go` (path-based, not `.goNamed`) replaces
+  onError — silent refresh, not eager logout: a 401 on the refresh-token call
+  itself (matched against `ApiConstants.refreshToken`) goes straight to logout,
+  no retry. Any other 401 attempts a silent refresh first: POST to
+  `ApiConstants.refreshToken` on a second, interceptor-free "bare" `Dio` (so the
+  refresh call can never recurse back into `AuthInterceptor`), response
+  unwrapped via `unwrapServiceResult` expecting `{ accessToken, refreshToken }`
+  in `data`. Concurrent 401s share one in-flight refresh via a
+  `Completer<String?>` — only the first triggers a network call; the rest await
+  the same future instead of causing a refresh storm. On success: save both new
+  tokens via `SecureStorageHelper`, retry the original failed request once on
+  the bare Dio with the new Authorization header, and `handler.resolve()` it —
+  the original caller never sees the 401. On failure (no refresh token stored,
+  the refresh call throws, or it 401s itself): clear both tokens via
+  `SecureStorageHelper` → `_router.go(AppRoutes.login)` → `handler.next(err)` so
+  the original error still reaches `ApiManager` as a normal `Failure`.
+  `.go` (path-based, not `.goNamed`) replaces
   the whole stack (same effect as the old `pushNamedAndRemoveUntil`) while
   keeping `GoRouter`'s own route-matching state in sync — calling the raw
   `Navigator` underneath it directly would desync `GoRouter`'s idea of the
@@ -344,7 +358,7 @@ These three widgets live in `lib/core/widgets/` and are used by every feature's
   - All other subtypes: environment-independent, always user-friendly.
   Single source of truth for error strings. Never duplicated per feature.
   Feature layer imports as:
-  `import 'package:booksplatform/core/network/failure_messages.dart' as core;`
+  `import 'package:<package_name>/core/network/failure_messages.dart' as core;`
 
 - `lib/core/network/api_envelope.dart` *(create only when backend wraps every response)*
   Top-level function: `unwrapServiceResult(json, fromJson)`.
@@ -452,9 +466,10 @@ These three widgets live in `lib/core/widgets/` and are used by every feature's
   Registered as @lazySingleton.
   Constructor receives FlutterSecureStorage (injected).
   Typed methods: saveToken(String), getToken() → Future<String?>,
-  deleteToken(), saveString(key, value), getString(key) → Future<String?>,
+  deleteToken(), saveRefreshToken(String), getRefreshToken() → Future<String?>,
+  deleteRefreshToken(), saveString(key, value), getString(key) → Future<String?>,
   deleteKey(key), clearAll().
-  Keys sourced from AppConstants (kTokenKey, kUserKey).
+  Keys sourced from AppConstants (kTokenKey, kRefreshTokenKey, kUserKey).
 
 **Dependency Injection:**
 
@@ -609,6 +624,12 @@ These three widgets live in `lib/core/widgets/` and are used by every feature's
     Note: `EasyLocalization.ensureInitialized()` internally calls
     `WidgetsFlutterBinding.ensureInitialized()`; calling it explicitly first is still
     recommended for clarity.
+
+15. **Auth refresh must not recurse or storm:** The refresh POST goes out on a
+    second, interceptor-free "bare" `Dio` — if it reused the main `Dio`, its own
+    401 would re-enter `AuthInterceptor.onError` and recurse. Concurrent 401s
+    must share one in-flight refresh (a `Completer<String?>`) rather than each
+    firing its own refresh call.
 
 ---
 

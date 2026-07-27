@@ -719,8 +719,8 @@ feature-specific status codes to handle. Delegate everything else to core:
 
 ```dart
 // lib/features/auth/presentation/cubit/failure_messages.dart
-import 'package:booksplatform/core/network/failure_messages.dart' as core;
-import 'package:booksplatform/core/network/failure.dart';
+import 'package:<package_name>/core/network/failure_messages.dart' as core;
+import 'package:<package_name>/core/network/failure.dart';
 
 String failureToMessage(Failure failure) => switch (failure) {
       ServerFailure(statusCode: 423, message: final m) =>

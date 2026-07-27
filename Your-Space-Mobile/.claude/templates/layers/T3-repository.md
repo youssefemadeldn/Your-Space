@@ -16,7 +16,7 @@ Single file. Replace all `<Placeholder>` tokens before use.
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:booksplatform/core/network/failure.dart';
+import 'package:<package_name>/core/network/failure.dart';
 import '../../domain/entities/<entity>.dart';
 import '../../domain/repositories/base_<feature>_repository.dart';
 import '../datasources/<feature>_remote_data_source_impl.dart';

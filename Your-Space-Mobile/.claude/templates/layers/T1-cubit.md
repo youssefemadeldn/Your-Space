@@ -16,7 +16,7 @@ Two files per cubit concern. Replace all `<Placeholder>` tokens before use.
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:booksplatform/core/network/failure_messages.dart' as core;
+import 'package:<package_name>/core/network/failure_messages.dart' as core;
 import '../../domain/repositories/base_<feature>_repository.dart';
 import '<action>_state.dart';
 

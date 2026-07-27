@@ -23,7 +23,7 @@ Replace all `<Placeholder>` tokens before use.
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:booksplatform/core/network/failure.dart';
+import 'package:<package_name>/core/network/failure.dart';
 import '../entities/<entity>.dart';
 import '../repositories/base_<feature>_repository.dart';
 // Add second repository import here if combining calls:

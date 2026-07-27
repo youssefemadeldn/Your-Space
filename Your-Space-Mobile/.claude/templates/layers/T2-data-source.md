@@ -16,10 +16,10 @@ Single file. Replace all `<Placeholder>` tokens before use.
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:booksplatform/core/network/api_manager.dart';
-import 'package:booksplatform/core/network/api_envelope.dart';
-import 'package:booksplatform/core/network/failure.dart';
-import 'package:booksplatform/core/constants/api_constants.dart';
+import 'package:<package_name>/core/network/api_manager.dart';
+import 'package:<package_name>/core/network/api_envelope.dart';
+import 'package:<package_name>/core/network/failure.dart';
+import 'package:<package_name>/core/constants/api_constants.dart';
 import '../models/<resource>_response.dart';
 import '../models/<action>_request.dart';
 
