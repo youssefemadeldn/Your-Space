@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "your_space_mobile (dev)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define=ENVIRONMENT=dev"]
+    },
+    {
+      "name": "your_space_mobile (prod)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define=ENVIRONMENT=prod"]
+    },
+    {
+      "name": "your_space_mobile (dev, profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "args": ["--dart-define=ENVIRONMENT=dev"]
+    },
+    {
+      "name": "your_space_mobile (prod, release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": ["--dart-define=ENVIRONMENT=prod"]
+    }
+  ]
+}

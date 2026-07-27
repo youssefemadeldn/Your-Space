@@ -747,8 +747,8 @@ BlocListener<LoginCubit, LoginState>(
     if (state is! LoginError) return;
     switch (state.errorCode) {
       case 'Auth.EmailNotConfirmed':
-        Navigator.pushNamed(context, AppRoutes.confirmEmail,
-            arguments: ConfirmEmailArgs(email: emailController.text));
+        context.pushNamed(AppRoutes.confirmEmail,
+            extra: ConfirmEmailArgs(email: emailController.text));
       default:
         getIt<SnackBarHelper>().showError(state.message);
     }
@@ -794,27 +794,37 @@ class BookDetailArgs {
 }
 ```
 
-`AppRouter.generateRoute` casts with a null guard:
+`AppRouter.router`'s `GoRoute` entry casts `state.extra` with a null guard:
 
 ```dart
-case AppRoutes.bookDetail:
-  final args = settings.arguments as BookDetailArgs?;
-  if (args == null) return _unknown(settings);
-  return MaterialPageRoute(
-    settings: settings,
-    builder: (_) => BlocProvider(
+GoRoute(
+  path: '/book-detail',
+  name: AppRoutes.bookDetail,
+  builder: (context, state) {
+    final args = state.extra as BookDetailArgs?;
+    if (args == null) return const _UnknownScreen();
+    return BlocProvider(
       create: (_) => getIt<BookDetailCubit>(),
       child: BookDetailScreen(args: args),
-    ),
-  );
+    );
+  },
+),
 ```
 
 Caller in any feature:
 ```dart
-Navigator.pushNamed(
-  context,
+context.pushNamed(
   AppRoutes.bookDetail,
-  arguments: BookDetailArgs(bookId: '123', title: 'My Book'),
+  extra: BookDetailArgs(bookId: '123', title: 'My Book'),
+);
+```
+
+Non-widget callers with no `BuildContext` (e.g. a push-notification tap handler)
+use the DI-registered router instead:
+```dart
+getIt<GoRouter>().pushNamed(
+  AppRoutes.bookDetail,
+  extra: BookDetailArgs(bookId: '123', title: 'My Book'),
 );
 ```
 

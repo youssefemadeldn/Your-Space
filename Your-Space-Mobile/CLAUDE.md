@@ -62,7 +62,7 @@ Features must never import from other features. Cross-feature navigation uses ar
 | `di/` | `injection_container.dart` (getIt + `@InjectableInit`), `register_module.dart` (`@module` for `FlutterSecureStorage`, `GlobalKey<NavigatorState>`, `Dio`) |
 | `helpers/` | `DialogHelper`, `SnackBarHelper` (`@lazySingleton`, constructor-injected with `GlobalKey<NavigatorState>`); `BottomSheetHelper` (static utility class — takes `BuildContext` at call site, no DI registration) |
 | `network/` | `ApiManager`, `ApiResult` (sealed internal transport — never imported outside `ApiManager`; converted to `Either<Failure, T>` before leaving the network layer), `Failure` hierarchy, `failure_messages.dart`, `DioFactory`, `AuthInterceptor`, `ConnectivityHelper` |
-| `router/` | `AppRouter.generateRoute`, `AppRoutes` (route name constants), `args/` (typed args classes per screen) |
+| `router/` | `AppRouter.router` (`GoRouter` instance), `AppRoutes` (route name constants), `args/` (typed args classes per screen) |
 | `storage/` | `SecureStorageHelper` (`@lazySingleton`, wraps `FlutterSecureStorage`) |
 | `theme/` | `AppColors`, `AppFontWeight`, `AppTextStyles`, `AppTheme.lightTheme` |
 | `widgets/` | `AppLoadingIndicator`, `EmptyStateWidget`, `ErrorStateWidget` |
@@ -129,7 +129,7 @@ If a screen's total widget code is under ~250 lines and contains no embedded `St
 
 Both forms come from the `injectable` package: `@lazySingleton` is the no-arg const shorthand for `@LazySingleton()`; `@LazySingleton(as: Repo)` is used when binding a concrete class to an interface. Use whichever fits — they are not inconsistent.
 
-`BlocProvider` is always created in `AppRouter.generateRoute`, never inside a screen widget. When a screen depends on more than one cubit, use `MultiBlocProvider` in the same route case instead of nesting `BlocProvider` calls.
+`BlocProvider` is always created in the `GoRoute` builder inside `AppRouter.router`, never inside a screen widget. When a screen depends on more than one cubit, use `MultiBlocProvider` in the same route's builder instead of nesting `BlocProvider` calls.
 
 ---
 
@@ -174,7 +174,9 @@ If the backend includes a stable `errorCode` on an error response (independent o
 New screens:
 1. Add route name constant to `lib/core/router/app_routes.dart`
 2. If the screen needs navigation arguments, create `lib/core/router/args/<screen>_args.dart` (immutable plain Dart class)
-3. Add a case to `AppRouter.generateRoute` that casts `settings.arguments` with a null guard (null → `_unknown(settings)`) and wraps the screen in `BlocProvider(create: (_) => getIt<XxxCubit>())`
+3. Add a `GoRoute` to the `routes:` list in `AppRouter.router` that casts `state.extra` with a null guard (null → `_unknown(state)`) and wraps the screen in `BlocProvider(create: (_) => getIt<XxxCubit>())`
+
+Navigate with `context.pushNamed(AppRoutes.xxx, extra: XxxArgs(...))` from widgets, or `getIt<GoRouter>().pushNamed(...)` from non-widget code (e.g. a push-notification tap handler) — the reason this project moved off manual `Navigator` routing.
 
 ---
 

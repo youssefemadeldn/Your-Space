@@ -86,5 +86,5 @@ final class <Action>Error extends <Action>State {
 - **Never `@lazySingleton` for a cubit** — the sole exception is `CartCubit` (CLAUDE.md DI table). All other cubits are `@injectable` (factory).
 - **`as core` alias is required** for `failureToMessage` in any cubit that also imports a feature-level `failure_messages.dart`. Use it consistently in all cubits for uniformity.
 - **Use case swap-in:** if §2 Rule 4 applies, inject `<Verb><Noun>UseCase` instead of the repository and call `await _useCase(<args>)`.
-- **`BlocProvider`** is created in `AppRouter.generateRoute`, never inside the screen widget.
+- **`BlocProvider`** is created in the `GoRoute` builder inside `AppRouter.router`, never inside the screen widget.
 - **`errorCode` for behavior, not display:** `<Action>Error.errorCode` mirrors `Failure.errorCode` (nullable — not every backend/endpoint sends one). A screen's `BlocListener` may switch on it for navigation/retry/forced-logout side effects, always with a fallback for null/unmatched values; `message` stays the only display text (feature guide §9).
