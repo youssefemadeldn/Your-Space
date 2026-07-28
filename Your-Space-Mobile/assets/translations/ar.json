@@ -56,8 +56,7 @@
     "changePassword": {
       "title": "تغيير كلمة المرور",
       "submit": "تحديث كلمة المرور",
-      "doneMessage": "تم تحديث كلمة المرور. يرجى تسجيل الدخول مرة أخرى.",
-      "currentPasswordIncorrect": "كلمة المرور الحالية غير صحيحة"
+      "doneMessage": "تم تحديث كلمة المرور. يرجى تسجيل الدخول مرة أخرى."
     },
     "validation": {
       "requiredFirstName": "أدخل اسمك الأول",
@@ -65,7 +64,8 @@
       "invalidEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
       "invalidPhone": "أدخل رقم هاتف صحيحًا، مثل ‎+201234567890",
       "passwordMismatch": "كلمتا المرور غير متطابقتين",
-      "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام"
+      "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
+      "requiredCurrentPassword": "أدخل كلمة المرور الحالية"
     }
   }
 }

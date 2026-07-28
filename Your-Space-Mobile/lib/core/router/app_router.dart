@@ -28,8 +28,7 @@ class AppRouter {
   static GoRouter router(GlobalKey<NavigatorState> navigatorKey) {
     return GoRouter(
       navigatorKey: navigatorKey,
-      // TEMP-VERIFY: land on Login for manual QA of the 6 auth screens — revert to AppRoutes.splash after.
-      initialLocation: AppRoutes.login,
+      initialLocation: AppRoutes.splash,
       routes: [
         GoRoute(
           path: AppRoutes.login,
@@ -98,21 +97,8 @@ class _UnknownScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Page not found'),
-            // TEMP-VERIFY: throwaway entry point to Change Password (no
-            // Settings screen exists yet to host it) — remove after QA.
-            TextButton(
-              onPressed: () => context.push(AppRoutes.changePassword),
-              child: const Text('[QA] Change password'),
-            ),
-          ],
-        ),
-      ),
+    return const Scaffold(
+      body: Center(child: Text('Page not found')),
     );
   }
 }

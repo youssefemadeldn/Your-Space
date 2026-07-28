@@ -56,8 +56,7 @@
     "changePassword": {
       "title": "Change password",
       "submit": "Update password",
-      "doneMessage": "Password updated. Please log in again.",
-      "currentPasswordIncorrect": "Your current password is incorrect"
+      "doneMessage": "Password updated. Please log in again."
     },
     "validation": {
       "requiredFirstName": "Enter your first name",
@@ -65,7 +64,8 @@
       "invalidEmail": "Enter a valid email",
       "invalidPhone": "Enter a valid phone number, e.g. +201234567890",
       "passwordMismatch": "Passwords don't match",
-      "otpIncomplete": "Enter the 6-digit code"
+      "otpIncomplete": "Enter the 6-digit code",
+      "requiredCurrentPassword": "Enter your current password"
     }
   }
 }

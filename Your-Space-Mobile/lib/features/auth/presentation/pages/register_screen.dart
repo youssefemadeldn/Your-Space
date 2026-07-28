@@ -226,7 +226,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('auth.register.haveAccount'.tr()),
+                    Flexible(
+                      child: Text(
+                        'auth.register.haveAccount'.tr(),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     TextButton(
                       onPressed: () => context.pop(),
                       child: Text('auth.register.logIn'.tr()),

@@ -44,7 +44,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final confirmNewPassword = _confirmNewPasswordController.text;
     setState(() {
       _currentPasswordError =
-          currentPassword.isEmpty ? 'auth.changePassword.currentPasswordIncorrect'.tr() : null;
+          currentPassword.isEmpty ? 'auth.validation.requiredCurrentPassword'.tr() : null;
       _newPasswordError =
           RegexHelper.validate(RegexHelper.accountPassword, newPassword) ? null : 'auth.passwordRule'.tr();
       _confirmNewPasswordError =

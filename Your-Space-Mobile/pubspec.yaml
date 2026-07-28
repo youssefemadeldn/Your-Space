@@ -67,6 +67,11 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   injectable_generator: ^3.1.1
   build_runner: ^2.15.1
+  # bloc_test is deliberately NOT a dependency: it requires a test/test_api
+  # version incompatible with injectable_generator ^3.1.1 on this project's
+  # Dart SDK (version solving fails). Cubit tests instead use mocktail +
+  # `expectLater(cubit.stream, emitsInOrder([...]))`, which asserts the same
+  # state sequences without bloc_test's sugar.
   mocktail: ^1.0.5
 
 # For information on the generic Dart part of this file, see the

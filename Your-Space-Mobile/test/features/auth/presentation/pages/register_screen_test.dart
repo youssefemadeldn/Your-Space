@@ -7,26 +7,18 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:your_space_mobile/core/theme/app_theme.dart';
+import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
-import 'package:your_space_mobile/features/auth/presentation/cubit/login_cubit/login_cubit.dart';
-import 'package:your_space_mobile/features/auth/presentation/cubit/login_cubit/login_state.dart';
-import 'package:your_space_mobile/features/auth/presentation/pages/login_screen.dart';
+import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubit/register_cubit.dart';
+import 'package:your_space_mobile/features/auth/presentation/pages/register_screen.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
-/// `Cubit.emit` is `@protected` — exposing it via a same-hierarchy subclass
-/// (rather than calling it from the test file directly) keeps `flutter
-/// analyze` clean while still letting the test drive specific states.
-class _TestLoginCubit extends LoginCubit {
-  _TestLoginCubit(super.repository);
-  void emitTestState(LoginState state) => emit(state);
-}
-
-Future<void> _pumpLoginScreen(WidgetTester tester, _TestLoginCubit cubit) async {
+Future<void> _pumpRegisterScreen(WidgetTester tester, RegisterCubit cubit) async {
   // The default 800x600 test surface doesn't represent any real phone and,
   // combined with ScreenUtil's scaling off a 390x844 design canvas, produces
-  // spurious overflow in shared widgets (e.g. AppCheckbox) that never occurs
-  // on an actual device. Size the surface to the design canvas itself.
+  // spurious overflow/hit-test failures that never occur on an actual device.
+  // Size the surface to the design canvas itself.
   //
   // `tester.binding.setSurfaceSize` only resizes the rendering surface — it
   // does not change what `MediaQuery.of(context).size` reports (still
@@ -53,9 +45,9 @@ Future<void> _pumpLoginScreen(WidgetTester tester, _TestLoginCubit cubit) async 
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: context.supportedLocales,
             locale: context.locale,
-            home: BlocProvider<LoginCubit>.value(
+            home: BlocProvider<RegisterCubit>.value(
               value: cubit,
-              child: const LoginScreen(),
+              child: const RegisterScreen(),
             ),
           ),
         ),
@@ -72,25 +64,19 @@ void main() {
     await EasyLocalization.ensureInitialized();
   });
 
-  testWidgets('renders email/password fields with no error initially', (tester) async {
-    final cubit = _TestLoginCubit(MockAuthRepository());
-    await _pumpLoginScreen(tester, cubit);
+  testWidgets('shows client-side validation errors when submitted empty', (tester) async {
+    final cubit = RegisterCubit(MockAuthRepository());
+    await _pumpRegisterScreen(tester, cubit);
 
-    expect(find.text('Email'), findsOneWidget);
-    expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Incorrect email or password'), findsNothing);
-
-    await cubit.close();
-  });
-
-  testWidgets('shows the inline invalid-credentials error under the password field', (tester) async {
-    final cubit = _TestLoginCubit(MockAuthRepository());
-    await _pumpLoginScreen(tester, cubit);
-
-    cubit.emitTestState(const LoginError('unused', errorCode: 'Auth.InvalidCredentials'));
+    await tester.ensureVisible(find.byType(AppButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(AppButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Incorrect email or password'), findsOneWidget);
+    expect(find.text('Enter your first name'), findsOneWidget);
+    expect(find.text('Enter your last name'), findsOneWidget);
+    expect(find.text('Enter a valid email'), findsOneWidget);
+    expect(find.text('Enter a valid phone number, e.g. +201234567890'), findsOneWidget);
 
     await cubit.close();
   });

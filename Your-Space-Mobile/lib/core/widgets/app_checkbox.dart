@@ -35,7 +35,13 @@ class AppCheckbox extends StatelessWidget {
         children: [
           checkbox,
           SizedBox(width: 8.w),
-          Text(label!, style: AppTextStyles.bodyMedium),
+          Flexible(
+            child: Text(
+              label!,
+              style: AppTextStyles.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

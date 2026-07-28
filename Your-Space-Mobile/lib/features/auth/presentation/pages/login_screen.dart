@@ -102,14 +102,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Left at its natural size — "Remember me" is short and
+                    // fixed; only the link on the right needs to flex/shrink
+                    // for a longer translation or narrower screen.
                     AppCheckbox(
                       checked: _rememberMe,
                       label: 'auth.login.remember'.tr(),
                       onChanged: (value) => setState(() => _rememberMe = value),
                     ),
-                    TextButton(
-                      onPressed: () => context.pushNamed(AppRoutes.forgotPassword),
-                      child: Text('auth.login.forgot'.tr()),
+                    Flexible(
+                      child: TextButton(
+                        onPressed: () => context.pushNamed(AppRoutes.forgotPassword),
+                        child: Text('auth.login.forgot'.tr(), overflow: TextOverflow.ellipsis),
+                      ),
                     ),
                   ],
                 ),
@@ -126,7 +131,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('auth.login.noAccount'.tr()),
+                    Flexible(
+                      child: Text(
+                        'auth.login.noAccount'.tr(),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     TextButton(
                       onPressed: () => context.pushNamed(AppRoutes.register),
                       child: Text('auth.login.signUp'.tr()),

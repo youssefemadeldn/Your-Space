@@ -3,8 +3,6 @@ class ApiConstants {
 
   // Android emulator alias for the host machine's localhost. Swap this to your
   // machine's LAN IP when testing on a physical device or iOS simulator.
-  // Android emulator alias for the host machine's localhost. Swap this to your
-  // machine's LAN IP when testing on a physical device or iOS simulator.
   static const String _devBaseUrl = 'http://10.0.2.2:5145/api/v1';
   static const String _prodBaseUrl =
       'http://bcd1i88mdmvzb563lwx1vnas.49.13.218.137.sslip.io/api/v1';
