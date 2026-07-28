@@ -11,15 +11,24 @@ class SnackBarHelper {
 
   SnackBarHelper(this._navigatorKey);
 
-  void showSuccess(String message) => _show(message, AppColors.success);
+  void showSuccess(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, AppColors.success, actionLabel: actionLabel, onAction: onAction);
 
-  void showError(String message) => _show(message, AppColors.error);
+  void showError(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, AppColors.error, actionLabel: actionLabel, onAction: onAction);
 
-  void showInfo(String message) => _show(message, AppColors.primary);
+  void showInfo(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, AppColors.primary, actionLabel: actionLabel, onAction: onAction);
 
-  void showWarning(String message) => _show(message, AppColors.warning);
+  void showWarning(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, AppColors.warning, actionLabel: actionLabel, onAction: onAction);
 
-  void _show(String message, Color backgroundColor) {
+  void _show(
+    String message,
+    Color backgroundColor, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     final context = _navigatorKey.currentContext;
     if (context == null) return;
 
@@ -33,6 +42,13 @@ class SnackBarHelper {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
         margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        action: actionLabel == null
+            ? null
+            : SnackBarAction(
+                label: actionLabel,
+                textColor: AppColors.surface,
+                onPressed: onAction ?? () {},
+              ),
       ),
     );
   }

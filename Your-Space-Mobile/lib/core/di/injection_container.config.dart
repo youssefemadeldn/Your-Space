@@ -25,6 +25,24 @@ import 'package:your_space_mobile/core/network/connectivity_helper.dart' as _i0;
 import 'package:your_space_mobile/core/network/dio_factory.dart' as _i927;
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart'
     as _i134;
+import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_data_source_impl.dart'
+    as _i1073;
+import 'package:your_space_mobile/features/auth/data/repositories/auth_repository_impl.dart'
+    as _i722;
+import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart'
+    as _i680;
+import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart'
+    as _i1019;
+import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart'
+    as _i723;
+import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart'
+    as _i613;
+import 'package:your_space_mobile/features/auth/presentation/cubit/login_cubit/login_cubit.dart'
+    as _i968;
+import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubit/register_cubit.dart'
+    as _i44;
+import 'package:your_space_mobile/features/auth/presentation/cubit/reset_password_cubit/reset_password_cubit.dart'
+    as _i115;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -65,6 +83,33 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i361.Dio>(() => registerModule.dio(gh<_i927.DioFactory>()));
     gh.lazySingleton<_i531.ApiManager>(() => _i531.ApiManager(gh<_i361.Dio>()));
+    gh.lazySingleton<_i1073.AuthRemoteDataSourceImpl>(
+      () => _i1073.AuthRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+    );
+    gh.lazySingleton<_i680.AuthRepository>(
+      () => _i722.AuthRepositoryImpl(
+        gh<_i1073.AuthRemoteDataSourceImpl>(),
+        gh<_i134.SecureStorageHelper>(),
+      ),
+    );
+    gh.factory<_i1019.ChangePasswordCubit>(
+      () => _i1019.ChangePasswordCubit(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i723.ConfirmEmailCubit>(
+      () => _i723.ConfirmEmailCubit(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i613.ForgotPasswordCubit>(
+      () => _i613.ForgotPasswordCubit(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i968.LoginCubit>(
+      () => _i968.LoginCubit(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i44.RegisterCubit>(
+      () => _i44.RegisterCubit(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i115.ResetPasswordCubit>(
+      () => _i115.ResetPasswordCubit(gh<_i680.AuthRepository>()),
+    );
     return this;
   }
 }

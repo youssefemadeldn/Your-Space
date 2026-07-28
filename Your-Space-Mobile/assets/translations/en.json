@@ -1,6 +1,71 @@
 {
   "common": {
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "networkError": "Something went wrong. Check your connection and try again.",
+    "retry": "Retry"
+  },
+  "auth": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone number",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "currentPassword": "Current password",
+    "passwordRule": "At least 8 characters, with an uppercase and lowercase letter, a number and a symbol",
+    "login": {
+      "submit": "Log in",
+      "remember": "Remember me",
+      "forgot": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "invalidCredentials": "Incorrect email or password"
+    },
+    "register": {
+      "title": "Create your account",
+      "body": "Plan events and keep up with your people",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "logIn": "Log in",
+      "doneMessage": "Account created! Next: confirm your email."
+    },
+    "confirmEmail": {
+      "title": "Confirm your email",
+      "bodyPrefix": "Enter the 6-digit code we sent to",
+      "verify": "Verify",
+      "resend": "Resend code",
+      "resendIn": "Resend code in",
+      "done": "Email confirmed",
+      "doneMessage": "Email confirmed. Please log in."
+    },
+    "forgotPassword": {
+      "title": "Forgot your password?",
+      "body": "Enter your email and we'll send you a reset code",
+      "submit": "Send reset code",
+      "sent": "If that email is registered, a reset code is on its way. Check your inbox."
+    },
+    "resetPassword": {
+      "title": "Reset your password",
+      "body": "Enter the code we sent and choose a new password",
+      "submit": "Reset password",
+      "doneMessage": "Password reset — log in with your new password."
+    },
+    "changePassword": {
+      "title": "Change password",
+      "submit": "Update password",
+      "doneMessage": "Password updated. Please log in again.",
+      "currentPasswordIncorrect": "Your current password is incorrect"
+    },
+    "validation": {
+      "requiredFirstName": "Enter your first name",
+      "requiredLastName": "Enter your last name",
+      "invalidEmail": "Enter a valid email",
+      "invalidPhone": "Enter a valid phone number, e.g. +201234567890",
+      "passwordMismatch": "Passwords don't match",
+      "otpIncomplete": "Enter the 6-digit code"
+    }
   }
 }

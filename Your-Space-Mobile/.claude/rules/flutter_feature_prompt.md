@@ -1,4 +1,4 @@
-# BooksPlatform — Feature Scaffold Guide
+# Feature Scaffold Guide
 
 > **Companion to `flutter_scaffold_prompt.md`.**
 > That file owns the foundation and core layer (DI, networking, storage, routing, theming).
@@ -115,24 +115,24 @@ live only on the concrete local class, never on the shared interface.
 The repository impl holds `_remote` typed against the abstraction (swappable, no extra
 methods) and `_local` typed against its **concrete** class (so it can call the save methods):
 ```dart
-@LazySingleton(as: BookRepository)
-class BookRepositoryImpl implements BookRepository {
-  final BaseBookDataSource _remote;        // abstract — read-only contract
-  final BookLocalDataSourceImpl _local;    // concrete — exposes save* too
+@LazySingleton(as: <Feature>Repository)
+class <Feature>RepositoryImpl implements <Feature>Repository {
+  final Base<Feature>DataSource _remote;        // abstract — read-only contract
+  final <Feature>LocalDataSourceImpl _local;    // concrete — exposes save* too
 
-  BookRepositoryImpl(
+  <Feature>RepositoryImpl(
     @Named('remote') this._remote,
     @Named('local') this._local,
   );
 
   @override
-  Future<Either<Failure, Book>> getBook(String id) async {
-    final result = await _remote.getBook(id);
+  Future<Either<Failure, <Entity>>> get<Entity>(String id) async {
+    final result = await _remote.get<Entity>(id);
     return result.fold(
-      (_) => _local.getBook(id),
-      (book) async {
-        await _local.saveBook(book);
-        return right(book);
+      (_) => _local.get<Entity>(id),
+      (entity) async {
+        await _local.save<Entity>(entity);
+        return right(entity);
       },
     );
   }
@@ -153,7 +153,7 @@ store — decide per feature against this table, not preemptively:
 | Signal | Storage choice |
 |---|---|
 | Bounded reference/user data (settings, wishlist, cart, recently-viewed, small paginated lists) | `SharedPreferences` |
-| Caching a full catalog for real offline-first browsing (e.g. entire books list so search/filter/sort work with no connection) | `Hive` — SharedPreferences forces decoding the entire JSON blob on every read just to filter a subset, and rewriting the whole blob on every write |
+| Caching a full catalog for real offline-first browsing (e.g. an entire list so search/filter/sort work with no connection) | `Hive` — SharedPreferences forces decoding the entire JSON blob on every read just to filter a subset, and rewriting the whole blob on every write |
 | Relational queries across cached entities (joins, filtered counts, cross-entity lookups) | `drift` — Hive is still a KV/box store; `drift` gives real type-safe SQL queries |
 | Sync/conflict resolution (bi-directional offline edits) | Out of scope for a read cache — needs its own design |
 
@@ -183,10 +183,10 @@ Data source methods must never touch a token, call an auth service, or manually 
 
 **Correct:**
 ```dart
-Future<Either<Failure, BookResponse>> getBook(String id) =>
-    _api.get<BookResponse>(
-      path: '/books/$id',
-      fromJson: (json) => BookResponse.fromJson(json as Map<String, dynamic>),
+Future<Either<Failure, <Entity>Response>> get<Entity>(String id) =>
+    _api.get<<Entity>Response>(
+      path: '/<feature>/$id',
+      fromJson: (json) => <Entity>Response.fromJson(json as Map<String, dynamic>),
     );
 ```
 
@@ -195,7 +195,7 @@ Future<Either<Failure, BookResponse>> getBook(String id) =>
 // ❌ Manual token in data source — violates Rule 1
 final token = await storage.getToken();
 final headers = {'Authorization': 'Bearer $token'};
-final response = await dio.get('/books/$id', options: Options(headers: headers));
+final response = await dio.get('/<feature>/$id', options: Options(headers: headers));
 ```
 
 ---
@@ -256,27 +256,27 @@ layers. The repository implementation maps them with `toEntity()`.
 
 **Correct domain contract:**
 ```dart
-// domain/repositories/base_book_repository.dart
-abstract class BookRepository {
-  Future<Either<Failure, Book>> getBook(String id);           // ✅ entity
-  Future<Either<Failure, List<Book>>> searchBooks(String q);  // ✅ entity list
-  Future<Either<Failure, Unit>> addToFavourites(String id);   // ✅ Unit
+// domain/repositories/base_<feature>_repository.dart
+abstract class <Feature>Repository {
+  Future<Either<Failure, <Entity>>> get<Entity>(String id);           // ✅ entity
+  Future<Either<Failure, List<Entity>>> search<Entity>s(String q);    // ✅ entity list
+  Future<Either<Failure, Unit>> addToFavourites(String id);           // ✅ Unit
 }
 ```
 
 **Wrong:**
 ```dart
 // ❌ Response model in domain contract — violates Rule 3
-abstract class BookRepository {
-  Future<Either<Failure, BookResponseModel>> getBook(String id);
+abstract class <Feature>Repository {
+  Future<Either<Failure, <Entity>ResponseModel>> get<Entity>(String id);
 }
 ```
 
 **Mapping in the repository impl:**
 ```dart
 @override
-Future<Either<Failure, Book>> getBook(String id) async {
-  final result = await _remote.getBook(id);
+Future<Either<Failure, <Entity>>> get<Entity>(String id) async {
+  final result = await _remote.get<Entity>(id);
   return result.fold(
     (failure) async => Left(failure),
     (response) async => Right(response.toEntity()),  // ← toEntity() lives on the model
@@ -306,19 +306,19 @@ Do not add use cases by default.
 
 **Use case template (when warranted):**
 ```dart
-// domain/use_cases/get_book_recommendations_use_case.dart
+// domain/use_cases/get_<feature>_recommendations_use_case.dart
 @injectable
-class GetBookRecommendationsUseCase {
-  final BookRepository _bookRepo;
+class Get<Feature>RecommendationsUseCase {
+  final <Feature>Repository _featureRepo;
   final UserRepository _userRepo;
 
-  GetBookRecommendationsUseCase(this._bookRepo, this._userRepo);
+  Get<Feature>RecommendationsUseCase(this._featureRepo, this._userRepo);
 
-  Future<Either<Failure, List<Book>>> call(String userId) async {
+  Future<Either<Failure, List<Entity>>> call(String userId) async {
     final profileResult = await _userRepo.getProfile(userId);
     return profileResult.fold(
       Left.new,
-      (profile) => _bookRepo.getRecommendations(profile.preferences),
+      (profile) => _featureRepo.getRecommendations(profile.preferences),
     );
   }
 }
@@ -359,17 +359,17 @@ cubit/
 
 **In the screen — `BlocConsumer` for action, `BlocBuilder` for list:**
 ```dart
-BlocConsumer<BookActionCubit, BookActionState>(
+BlocConsumer<<Feature>ActionCubit, <Feature>ActionState>(
   listener: (context, state) {
-    if (state is BookActionSuccess) {
+    if (state is <Feature>ActionSuccess) {
       getIt<SnackBarHelper>().showSuccess(state.message);
-      context.read<BookListCubit>().refresh();  // ← action triggers list refresh
-    } else if (state is BookActionError) {
+      context.read<<Feature>ListCubit>().refresh();  // ← action triggers list refresh
+    } else if (state is <Feature>ActionError) {
       getIt<SnackBarHelper>().showError(state.message);
     }
   },
   builder: (context, _) {
-    return BlocBuilder<BookListCubit, BookListState>(
+    return BlocBuilder<<Feature>ListCubit, <Feature>ListState>(
       builder: (context, state) {
         // render list
       },
@@ -405,32 +405,32 @@ Every cubit state file uses a `sealed class` as the base and `final class` for e
 Extend `Equatable` and override `props`.
 
 ```dart
-// presentation/cubit/book_list/book_list_state.dart
-sealed class BookListState extends Equatable {
-  const BookListState();
+// presentation/cubit/<feature>_list/<feature>_list_state.dart
+sealed class <Feature>ListState extends Equatable {
+  const <Feature>ListState();
   @override
   List<Object?> get props => const [];
 }
 
-final class BookListInitial extends BookListState {
-  const BookListInitial();
+final class <Feature>ListInitial extends <Feature>ListState {
+  const <Feature>ListInitial();
 }
 
-final class BookListLoading extends BookListState {
-  const BookListLoading();
+final class <Feature>ListLoading extends <Feature>ListState {
+  const <Feature>ListLoading();
 }
 
-final class BookListSuccess extends BookListState {
-  final List<Book> books;
-  const BookListSuccess(this.books);
+final class <Feature>ListSuccess extends <Feature>ListState {
+  final List<Entity> items;
+  const <Feature>ListSuccess(this.items);
   @override
-  List<Object?> get props => [books];
+  List<Object?> get props => [items];
 }
 
-final class BookListError extends BookListState {
+final class <Feature>ListError extends <Feature>ListState {
   final String message;
   final String? errorCode;
-  const BookListError(this.message, {this.errorCode});
+  const <Feature>ListError(this.message, {this.errorCode});
   @override
   List<Object?> get props => [message, errorCode];
 }
@@ -517,11 +517,11 @@ A column of fixed-height widgets will overflow on short phones or when the keybo
 
 ```dart
 // ❌ Wrong — total height can exceed viewport on short devices
-Column(children: [HeroSection(), CategorySection(), BooksSection(), StatsStrip()])
+Column(children: [HeroSection(), CategorySection(), ContentSection(), StatsStrip()])
 
 // ✅ Correct — scrolls when content is taller than the screen
 SingleChildScrollView(
-  child: Column(children: [HeroSection(), CategorySection(), BooksSection(), StatsStrip()]),
+  child: Column(children: [HeroSection(), CategorySection(), ContentSection(), StatsStrip()]),
 )
 ```
 
@@ -529,10 +529,10 @@ Use `Expanded` for a section that should fill remaining space (e.g. a list insid
 
 ```dart
 // ❌ Wrong — fixed height overflows on short phones
-Container(height: 400.h, child: BookList())
+Container(height: 400.h, child: <Feature>List())
 
 // ✅ Correct — takes whatever space is left
-Expanded(child: BookList())
+Expanded(child: <Feature>List())
 ```
 
 Use `Flexible` + `TextOverflow.ellipsis` for text beside other content in a `Row`:
@@ -541,19 +541,19 @@ Use `Flexible` + `TextOverflow.ellipsis` for text beside other content in a `Row
 Row(
   children: [
     Flexible(
-      child: Text(book.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+      child: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
     ),
-    Text(book.price),
+    Text(item.subtitle),
   ],
 )
 ```
 
-Use `AspectRatio` for book covers — never a fixed `.h` on an image:
+Use `AspectRatio` for thumbnail/cover images — never a fixed `.h` on an image:
 
 ```dart
 AspectRatio(
   aspectRatio: 2 / 3,
-  child: BookCoverImage(book: book),
+  child: ThumbnailImage(item: item),
 )
 ```
 
@@ -574,20 +574,20 @@ SafeArea(
 )
 ```
 
-For screens with a pinned bottom button (BookDetail, Cart, Checkout), use `Scaffold.bottomNavigationBar` — not `Positioned`:
+For screens with a pinned bottom button (a detail screen, a form, a checkout-style flow), use `Scaffold.bottomNavigationBar` — not `Positioned`:
 
 ```dart
 // ❌ Wrong — home indicator hides the button; Scaffold body scroll doesn't account for it
 Scaffold(
-  body: Stack(children: [BookContent(), Positioned(bottom: 0, child: AddToCartButton())]),
+  body: Stack(children: [ScreenContent(), Positioned(bottom: 0, child: PrimaryActionButton())]),
 )
 
 // ✅ Correct — Flutter pads the scroll body automatically; SafeArea clears the home indicator
 Scaffold(
-  body: SingleChildScrollView(child: BookContent()),
+  body: SingleChildScrollView(child: ScreenContent()),
   bottomNavigationBar: SafeArea(
     top: false,
-    child: AddToCartButton(),
+    child: PrimaryActionButton(),
   ),
 )
 ```
@@ -601,32 +601,32 @@ Response models live in `data/models/` and have two responsibilities only:
 2. `toEntity()` — return the domain entity
 
 ```dart
-// data/models/book_response.dart
-class BookResponse {
+// data/models/<entity>_response.dart
+class <Entity>Response {
   final String id;
   final String title;
-  final String authorName;
-  final String? coverUrl;
+  final String ownerName;
+  final String? imageUrl;
 
-  const BookResponse({
+  const <Entity>Response({
     required this.id,
     required this.title,
-    required this.authorName,
-    this.coverUrl,
+    required this.ownerName,
+    this.imageUrl,
   });
 
-  factory BookResponse.fromJson(Map<String, dynamic> json) => BookResponse(
+  factory <Entity>Response.fromJson(Map<String, dynamic> json) => <Entity>Response(
         id: json['id'] as String,
         title: json['title'] as String,
-        authorName: json['authorName'] as String,
-        coverUrl: json['coverUrl'] as String?,
+        ownerName: json['ownerName'] as String,
+        imageUrl: json['imageUrl'] as String?,
       );
 
-  Book toEntity() => Book(
+  <Entity> toEntity() => <Entity>(
         id: id,
         title: title,
-        authorName: authorName,
-        coverUrl: coverUrl,
+        ownerName: ownerName,
+        imageUrl: imageUrl,
       );
 }
 ```
@@ -641,20 +641,20 @@ They are data transfer objects — instantiated once, mapped to entity, then dis
 Request models live in `data/models/` and expose only `toJson()`.
 
 ```dart
-// data/models/add_review_request.dart
-class AddReviewRequest {
-  final String bookId;
+// data/models/add_note_request.dart
+class AddNoteRequest {
+  final String parentId;
   final int rating;
   final String? comment;
 
-  const AddReviewRequest({
-    required this.bookId,
+  const AddNoteRequest({
+    required this.parentId,
     required this.rating,
     this.comment,
   });
 
   Map<String, dynamic> toJson() => {
-        'bookId': bookId,
+        'parentId': parentId,
         'rating': rating,
         if (comment != null) 'comment': comment,   // ← omit null fields
       };
@@ -773,9 +773,9 @@ lib/core/router/
 ├── app_router.dart
 ├── app_routes.dart
 └── args/
-    ├── book_detail_args.dart
-    ├── author_profile_args.dart
-    └── reader_args.dart
+    ├── <entity>_detail_args.dart
+    ├── <entity>_profile_args.dart
+    └── <entity>_reader_args.dart
 ```
 
 **Why `core/router/args/` and not next to the screen?**
@@ -786,11 +786,11 @@ Placing args in `core/router/args/` makes the dependency direction clean:
 Feature → Core, never Feature → Feature.
 
 ```dart
-// lib/core/router/args/book_detail_args.dart
-class BookDetailArgs {
-  final String bookId;
+// lib/core/router/args/<entity>_detail_args.dart
+class <Entity>DetailArgs {
+  final String entityId;
   final String title;
-  const BookDetailArgs({required this.bookId, required this.title});
+  const <Entity>DetailArgs({required this.entityId, required this.title});
 }
 ```
 
@@ -798,14 +798,14 @@ class BookDetailArgs {
 
 ```dart
 GoRoute(
-  path: '/book-detail',
-  name: AppRoutes.bookDetail,
+  path: '/<entity>-detail',
+  name: AppRoutes.<entity>Detail,
   builder: (context, state) {
-    final args = state.extra as BookDetailArgs?;
+    final args = state.extra as <Entity>DetailArgs?;
     if (args == null) return const _UnknownScreen();
     return BlocProvider(
-      create: (_) => getIt<BookDetailCubit>(),
-      child: BookDetailScreen(args: args),
+      create: (_) => getIt<<Entity>DetailCubit>(),
+      child: <Entity>DetailScreen(args: args),
     );
   },
 ),
@@ -814,8 +814,8 @@ GoRoute(
 Caller in any feature:
 ```dart
 context.pushNamed(
-  AppRoutes.bookDetail,
-  extra: BookDetailArgs(bookId: '123', title: 'My Book'),
+  AppRoutes.<entity>Detail,
+  extra: <Entity>DetailArgs(entityId: '123', title: 'My Title'),
 );
 ```
 
@@ -823,8 +823,8 @@ Non-widget callers with no `BuildContext` (e.g. a push-notification tap handler)
 use the DI-registered router instead:
 ```dart
 getIt<GoRouter>().pushNamed(
-  AppRoutes.bookDetail,
-  extra: BookDetailArgs(bookId: '123', title: 'My Book'),
+  AppRoutes.<entity>Detail,
+  extra: <Entity>DetailArgs(entityId: '123', title: 'My Title'),
 );
 ```
 
@@ -851,7 +851,7 @@ extracts `data` so that `fromJson` only sees the inner object and never knows th
 ```dart
 fromJson: (json) => unwrapServiceResult(
   json,
-  (inner) => BookResponse.fromJson(inner as Map<String, dynamic>),
+  (inner) => <Entity>Response.fromJson(inner as Map<String, dynamic>),
 ),
 ```
 
@@ -899,7 +899,7 @@ Before marking a feature complete, verify every item:
 - [ ] Screens with tall/variable content are wrapped in `SingleChildScrollView` or `CustomScrollView`
 - [ ] Dynamic lists use `Expanded`, not `Container(height: X.h)`
 - [ ] Text beside sibling widgets in `Row` uses `Flexible` + `TextOverflow.ellipsis`
-- [ ] Book covers use `AspectRatio(2/3)`, not a fixed `.h`
+- [ ] Thumbnail/cover images use `AspectRatio(2/3)`, not a fixed `.h`
 - [ ] `SafeArea` applied at Scaffold body level on every screen
 - [ ] Pinned bottom buttons use `Scaffold.bottomNavigationBar` + `SafeArea(top: false)`, not `Positioned`
 - [ ] Bottom nav uses `SafeArea(top: false)` to clear the home indicator

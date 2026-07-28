@@ -10,6 +10,17 @@ class RegexHelper {
   static final RegExp strongPassword =
       RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$');
 
+  /// Matches the backend's international phone format exactly
+  /// (`RegisterDto.PhoneNumber` validator): optional leading `+`, first digit
+  /// 1-9, then 8-14 more digits, e.g. `+201234567890`.
+  static final RegExp internationalPhone = RegExp(r'^\+?[1-9]\d{7,14}$');
+
+  /// Matches the backend's strong-password rule exactly (any non-alphanumeric
+  /// character counts, unlike [strongPassword]'s fixed symbol set) — used
+  /// wherever a password field must accept everything the backend accepts.
+  static final RegExp accountPassword =
+      RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$');
+
   static final RegExp username = RegExp(r'^[a-zA-Z0-9_]{3,20}$');
 
   static final RegExp numericOnly = RegExp(r'^[0-9]+$');
