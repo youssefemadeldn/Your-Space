@@ -15,6 +15,12 @@ class AppColors {
   static const Color warning = Color(0xFFCA8A04);
   static const Color info = Color(0xFF1D4ED8);
 
+  // Soft tint backgrounds (Badge component) — mirrors the design system's CSS soft-tint tokens
+  static const Color tintSuccess = Color(0xFFE8F2EC);
+  static const Color tintWarning = Color(0xFFFAF3E0);
+  static const Color tintInfo = Color(0xFFE4EAFB);
+  static const Color tintError = Color(0xFFFBE7E7);
+
   // Backgrounds & Surfaces
   static const Color background = Color(0xFFFAFAFA); // gray-50
   static const Color surface = Color(0xFFFFFFFF);
