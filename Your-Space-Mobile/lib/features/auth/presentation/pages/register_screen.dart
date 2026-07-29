@@ -14,11 +14,11 @@ import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/confirm_email_args.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
+import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 import 'package:your_space_mobile/core/widgets/app_password_input.dart';
 
 import '../cubit/register_cubit/register_cubit.dart';
 import '../cubit/register_cubit/register_state.dart';
-import '../widgets/auth_logo_header.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AuthLogoHeader(compact: true),
+                const AppLogoHeader(compact: true),
                 Text(
                   'auth.register.title'.tr(),
                   textAlign: TextAlign.center,

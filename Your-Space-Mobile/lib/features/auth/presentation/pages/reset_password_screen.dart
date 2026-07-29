@@ -12,12 +12,12 @@ import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/reset_password_args.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
+import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 import 'package:your_space_mobile/core/widgets/app_otp_input.dart';
 import 'package:your_space_mobile/core/widgets/app_password_input.dart';
 
 import '../cubit/reset_password_cubit/reset_password_cubit.dart';
 import '../cubit/reset_password_cubit/reset_password_state.dart';
-import '../widgets/auth_logo_header.dart';
 
 const _kResendCooldownSeconds = 30;
 
@@ -137,7 +137,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AuthLogoHeader(compact: true),
+                const AppLogoHeader(compact: true),
                 Text(
                   'auth.resetPassword.title'.tr(),
                   textAlign: TextAlign.center,

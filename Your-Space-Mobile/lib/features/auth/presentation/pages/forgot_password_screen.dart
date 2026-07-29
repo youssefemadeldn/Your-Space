@@ -16,10 +16,10 @@ import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
+import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 
 import '../cubit/forgot_password_cubit/forgot_password_cubit.dart';
 import '../cubit/forgot_password_cubit/forgot_password_state.dart';
-import '../widgets/auth_logo_header.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -81,7 +81,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AuthLogoHeader(compact: true),
+                const AppLogoHeader(compact: true),
                 Text(
                   'auth.forgotPassword.title'.tr(),
                   textAlign: TextAlign.center,

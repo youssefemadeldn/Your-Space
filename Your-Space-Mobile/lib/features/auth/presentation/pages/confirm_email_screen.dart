@@ -16,11 +16,11 @@ import 'package:your_space_mobile/core/router/args/confirm_email_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
+import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 import 'package:your_space_mobile/core/widgets/app_otp_input.dart';
 
 import '../cubit/confirm_email_cubit/confirm_email_cubit.dart';
 import '../cubit/confirm_email_cubit/confirm_email_state.dart';
-import '../widgets/auth_logo_header.dart';
 
 const _kResendCooldownSeconds = 30;
 
@@ -125,7 +125,7 @@ class _ConfirmEmailScreenState extends State<ConfirmEmailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AuthLogoHeader(compact: true),
+                const AppLogoHeader(compact: true),
                 Text(
                   'auth.confirmEmail.title'.tr(),
                   textAlign: TextAlign.center,

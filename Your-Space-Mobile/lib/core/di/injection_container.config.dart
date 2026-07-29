@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart' as _i460;
 import 'package:your_space_mobile/core/di/register_module.dart' as _i876;
 import 'package:your_space_mobile/core/helpers/dialog_helper.dart' as _i733;
 import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart' as _i967;
+import 'package:your_space_mobile/core/mock/mock_data_store.dart' as _i679;
 import 'package:your_space_mobile/core/network/api_manager.dart' as _i531;
 import 'package:your_space_mobile/core/network/connectivity_helper.dart' as _i0;
 import 'package:your_space_mobile/core/network/dio_factory.dart' as _i927;
@@ -43,6 +44,36 @@ import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubi
     as _i44;
 import 'package:your_space_mobile/features/auth/presentation/cubit/reset_password_cubit/reset_password_cubit.dart'
     as _i115;
+import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_action_cubit/add_guests_action_cubit.dart'
+    as _i426;
+import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_list_cubit/add_guests_list_cubit.dart'
+    as _i895;
+import 'package:your_space_mobile/features/events/presentation/cubit/event_details_cubit/event_details_cubit.dart'
+    as _i391;
+import 'package:your_space_mobile/features/events/presentation/cubit/event_form_cubit/event_form_cubit.dart'
+    as _i755;
+import 'package:your_space_mobile/features/events/presentation/cubit/event_guest_action_cubit/event_guest_action_cubit.dart'
+    as _i410;
+import 'package:your_space_mobile/features/events/presentation/cubit/event_guests_list_cubit/event_guests_list_cubit.dart'
+    as _i889;
+import 'package:your_space_mobile/features/events/presentation/cubit/events_list_cubit/events_list_cubit.dart'
+    as _i890;
+import 'package:your_space_mobile/features/events/presentation/cubit/reciprocity_suggestions_cubit/reciprocity_suggestions_cubit.dart'
+    as _i147;
+import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_cubit.dart'
+    as _i965;
+import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list_cubit/groups_list_cubit.dart'
+    as _i771;
+import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_cubit.dart'
+    as _i136;
+import 'package:your_space_mobile/features/people/presentation/cubit/add_occasion_cubit/add_occasion_cubit.dart'
+    as _i641;
+import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart'
+    as _i512;
+import 'package:your_space_mobile/features/people/presentation/cubit/person_details_cubit/person_details_cubit.dart'
+    as _i930;
+import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart'
+    as _i228;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -62,6 +93,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => registerModule.secureStorage,
     );
+    gh.lazySingleton<_i679.MockDataStore>(() => _i679.MockDataStore());
     gh.lazySingleton<_i0.ConnectivityHelper>(() => _i0.ConnectivityHelper());
     gh.lazySingleton<_i134.SecureStorageHelper>(
       () => _i134.SecureStorageHelper(gh<_i558.FlutterSecureStorage>()),
@@ -74,6 +106,51 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i967.SnackBarHelper>(
       () => _i967.SnackBarHelper(gh<_i409.GlobalKey<_i409.NavigatorState>>()),
+    );
+    gh.factory<_i426.AddGuestsActionCubit>(
+      () => _i426.AddGuestsActionCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i895.AddGuestsListCubit>(
+      () => _i895.AddGuestsListCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i391.EventDetailsCubit>(
+      () => _i391.EventDetailsCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i755.EventFormCubit>(
+      () => _i755.EventFormCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i410.EventGuestActionCubit>(
+      () => _i410.EventGuestActionCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i889.EventGuestsListCubit>(
+      () => _i889.EventGuestsListCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i890.EventsListCubit>(
+      () => _i890.EventsListCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i147.ReciprocitySuggestionsCubit>(
+      () => _i147.ReciprocitySuggestionsCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i965.GroupActionCubit>(
+      () => _i965.GroupActionCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i771.GroupsListCubit>(
+      () => _i771.GroupsListCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i136.HomeStatsCubit>(
+      () => _i136.HomeStatsCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i641.AddOccasionCubit>(
+      () => _i641.AddOccasionCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i512.PeopleListCubit>(
+      () => _i512.PeopleListCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i930.PersonDetailsCubit>(
+      () => _i930.PersonDetailsCubit(gh<_i679.MockDataStore>()),
+    );
+    gh.factory<_i228.PersonFormCubit>(
+      () => _i228.PersonFormCubit(gh<_i679.MockDataStore>()),
     );
     gh.lazySingleton<_i927.DioFactory>(
       () => _i927.DioFactory(

@@ -3,7 +3,22 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "networkError": "Something went wrong. Check your connection and try again.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "create": "Create",
+    "inviteMethod": {
+      "whatsApp": "WhatsApp",
+      "phoneCall": "Phone call",
+      "physical": "In person"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "groups": "Groups",
+    "people": "People",
+    "events": "Events"
   },
   "auth": {
     "firstName": "First name",
@@ -66,6 +81,132 @@
       "passwordMismatch": "Passwords don't match",
       "otpIncomplete": "Enter the 6-digit code",
       "requiredCurrentPassword": "Enter your current password"
+    }
+  },
+  "home": {
+    "title": "Your Space",
+    "greeting": "Welcome back",
+    "groupsLabel": "Groups",
+    "peopleLabel": "People",
+    "eventsLabel": "Events",
+    "emptyTitle": "Start with one group",
+    "emptySubtitle": "Groups help you organize who's who — family, friends, work, neighbors.",
+    "emptyAction": "Create your first group"
+  },
+  "groups": {
+    "list": {
+      "title": "Groups",
+      "searchHint": "Search groups",
+      "emptyTitle": "No groups yet",
+      "emptyAction": "Add group"
+    },
+    "form": {
+      "createTitle": "New group",
+      "editTitle": "Edit group",
+      "nameLabel": "Group name",
+      "nameRequired": "Enter a group name",
+      "createCta": "Create group"
+    },
+    "savedMessage": "Group saved"
+  },
+  "people": {
+    "list": {
+      "title": "People",
+      "searchHint": "Search people",
+      "allChip": "All",
+      "emptyTitle": "Nobody in this group yet",
+      "emptyAction": "Add person",
+      "reciprocityBadge": "Invited you"
+    },
+    "form": {
+      "createTitle": "Add person",
+      "editTitle": "Edit person",
+      "nameLabel": "Name",
+      "nameRequired": "Enter a name",
+      "phoneLabel": "Phone (optional)",
+      "groupLabel": "Group",
+      "saveCta": "Save person",
+      "savedMessage": "Person saved",
+      "noGroupsCallout": "Everyone belongs to a group — create one first to add people.",
+      "createGroupCta": "Create a group"
+    },
+    "details": {
+      "occasionsTitle": "Occasions",
+      "addOccasion": "Add occasion",
+      "reciprocityBanner": "You have been invited by {name} before",
+      "emptyTitle": "Nothing logged with {name} yet",
+      "emptyAction": "Add occasion",
+      "occasionUnnamed": "Occasion",
+      "notFound": "Person not found"
+    },
+    "occasion": {
+      "addTitle": "Add occasion",
+      "invitedSwitch": "Were you invited by {name}?",
+      "methodHint": "Turn this on to say how the invite was sent.",
+      "nameLabel": "Occasion name",
+      "dateLabel": "Date",
+      "dateFutureHint": "Can't be in the future",
+      "notesLabel": "Notes"
+    }
+  },
+  "events": {
+    "list": {
+      "title": "Events",
+      "searchHint": "Search events",
+      "emptyTitle": "No events yet",
+      "emptyAction": "Create event",
+      "guestCount": "{count} guests"
+    },
+    "form": {
+      "createTitle": "New event",
+      "editTitle": "Edit event",
+      "nameLabel": "Event name",
+      "nameArLabel": "Event name (Arabic, optional)",
+      "dateLabel": "Event date (optional)",
+      "notesLabel": "Notes",
+      "createCta": "Create event",
+      "nameRequired": "Enter an event name"
+    },
+    "savedMessage": "Event saved",
+    "details": {
+      "guestProgressTitle": "Guest progress",
+      "byGroupTitle": "By group",
+      "manageGuestsCta": "Manage guests",
+      "addGuestsCta": "Add guests",
+      "noGuestsHint": "No guests added yet",
+      "notFound": "Event not found",
+      "groupNoneAdded": "{total} in group · none added yet",
+      "groupCaption": "{total} in group · {added} added — {notInvited} not invited, {invited} invited, {skipped} skipped",
+      "reciprocitySuggestionsCta": "Reciprocity suggestions"
+    },
+    "guests": {
+      "title": "Guests",
+      "statusAll": "All",
+      "statusNotInvited": "Not invited",
+      "statusInvited": "Invited",
+      "statusSkipped": "Skipped",
+      "emptyTitle": "No guests added to this event yet",
+      "emptyAction": "Add guests",
+      "actionMarkInvited": "Mark invited",
+      "actionSkip": "Skip",
+      "actionRevert": "Revert to not invited",
+      "actionRemove": "Remove from event",
+      "inviteMethodTitle": "How was the invite sent to {name}?",
+      "inviteMethodConfirm": "Confirm"
+    },
+    "addGuests": {
+      "title": "Add guests",
+      "peopleTab": "People",
+      "byGroupTab": "By group",
+      "addNPeople": "Add {count} people",
+      "addGroupCta": "Add group",
+      "groupPeopleCount": "{count} people",
+      "resultMessage": "{added} added, {alreadyPresent} already on the list"
+    },
+    "reciprocity": {
+      "title": "Reciprocity suggestions",
+      "emptyTitle": "No one new to suggest right now.",
+      "addAsGuestCta": "Add as guest"
     }
   }
 }

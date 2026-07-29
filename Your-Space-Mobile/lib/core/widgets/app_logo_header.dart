@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import 'package:your_space_mobile/core/theme/app_colors.dart';
-import 'package:your_space_mobile/core/theme/app_text_styles.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
-/// Shared "Your Space" wordmark header used across the auth screens.
-/// [compact] is used on screens with more content below (Register, Confirm
-/// Email, Forgot/Reset Password) to leave more vertical room for the form.
-class AuthLogoHeader extends StatelessWidget {
+/// Shared "Your Space" wordmark header — used across the auth screens and
+/// Home. [compact] leaves more vertical room for content below (Register,
+/// Confirm Email, Forgot/Reset Password, Home).
+class AppLogoHeader extends StatelessWidget {
   final bool compact;
 
-  const AuthLogoHeader({super.key, this.compact = false});
+  const AppLogoHeader({super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context) {

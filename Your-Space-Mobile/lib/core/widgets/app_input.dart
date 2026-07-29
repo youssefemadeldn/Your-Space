@@ -18,6 +18,7 @@ class AppInput extends StatefulWidget {
   final bool obscureText;
   final bool multiline;
   final bool enabled;
+  final int? maxLength;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final List<TextInputFormatter>? inputFormatters;
@@ -40,6 +41,7 @@ class AppInput extends StatefulWidget {
     this.obscureText = false,
     this.multiline = false,
     this.enabled = true,
+    this.maxLength,
     this.keyboardType,
     this.textInputAction,
     this.inputFormatters,
@@ -85,6 +87,7 @@ class _AppInputState extends State<AppInput> {
       focusNode: _focusNode,
       obscureText: widget.obscureText,
       enabled: widget.enabled,
+      maxLength: widget.maxLength,
       maxLines: widget.multiline ? 3 : 1,
       minLines: widget.multiline ? 3 : 1,
       textAlignVertical:

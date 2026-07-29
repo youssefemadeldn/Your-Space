@@ -3,7 +3,22 @@
     "showPassword": "إظهار كلمة المرور",
     "hidePassword": "إخفاء كلمة المرور",
     "networkError": "حدث خطأ ما. تحقق من اتصالك وحاول مرة أخرى.",
-    "retry": "إعادة المحاولة"
+    "retry": "إعادة المحاولة",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "saveChanges": "حفظ التغييرات",
+    "create": "إنشاء",
+    "inviteMethod": {
+      "whatsApp": "واتساب",
+      "phoneCall": "مكالمة هاتفية",
+      "physical": "شخصيًا"
+    }
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "groups": "المجموعات",
+    "people": "الأشخاص",
+    "events": "المناسبات"
   },
   "auth": {
     "firstName": "الاسم الأول",
@@ -66,6 +81,132 @@
       "passwordMismatch": "كلمتا المرور غير متطابقتين",
       "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
       "requiredCurrentPassword": "أدخل كلمة المرور الحالية"
+    }
+  },
+  "home": {
+    "title": "مساحتك",
+    "greeting": "أهلاً بعودتك",
+    "groupsLabel": "المجموعات",
+    "peopleLabel": "الأشخاص",
+    "eventsLabel": "المناسبات",
+    "emptyTitle": "ابدأ بمجموعة واحدة",
+    "emptySubtitle": "تساعدك المجموعات على تنظيم من هو من — العائلة، الأصدقاء، العمل، الجيران.",
+    "emptyAction": "أنشئ مجموعتك الأولى"
+  },
+  "groups": {
+    "list": {
+      "title": "المجموعات",
+      "searchHint": "ابحث عن مجموعة",
+      "emptyTitle": "لا توجد مجموعات بعد",
+      "emptyAction": "إضافة مجموعة"
+    },
+    "form": {
+      "createTitle": "مجموعة جديدة",
+      "editTitle": "تعديل المجموعة",
+      "nameLabel": "اسم المجموعة",
+      "nameRequired": "أدخل اسم المجموعة",
+      "createCta": "إنشاء المجموعة"
+    },
+    "savedMessage": "تم حفظ المجموعة"
+  },
+  "people": {
+    "list": {
+      "title": "الأشخاص",
+      "searchHint": "ابحث عن شخص",
+      "allChip": "الكل",
+      "emptyTitle": "لا يوجد أحد في هذه المجموعة بعد",
+      "emptyAction": "إضافة شخص",
+      "reciprocityBadge": "دعاك من قبل"
+    },
+    "form": {
+      "createTitle": "إضافة شخص",
+      "editTitle": "تعديل الشخص",
+      "nameLabel": "الاسم",
+      "nameRequired": "أدخل الاسم",
+      "phoneLabel": "الهاتف (اختياري)",
+      "groupLabel": "المجموعة",
+      "saveCta": "حفظ الشخص",
+      "savedMessage": "تم حفظ الشخص",
+      "noGroupsCallout": "كل شخص ينتمي إلى مجموعة — أنشئ مجموعة أولاً لإضافة أشخاص.",
+      "createGroupCta": "إنشاء مجموعة"
+    },
+    "details": {
+      "occasionsTitle": "المناسبات",
+      "addOccasion": "إضافة مناسبة",
+      "reciprocityBanner": "لقد دعاك {name} من قبل",
+      "emptyTitle": "لا يوجد شيء مسجّل مع {name} بعد",
+      "emptyAction": "إضافة مناسبة",
+      "occasionUnnamed": "مناسبة",
+      "notFound": "الشخص غير موجود"
+    },
+    "occasion": {
+      "addTitle": "إضافة مناسبة",
+      "invitedSwitch": "هل دعاك {name}؟",
+      "methodHint": "فعّل هذا الخيار لتوضيح كيف تم إرسال الدعوة.",
+      "nameLabel": "اسم المناسبة",
+      "dateLabel": "التاريخ",
+      "dateFutureHint": "لا يمكن أن يكون في المستقبل",
+      "notesLabel": "ملاحظات"
+    }
+  },
+  "events": {
+    "list": {
+      "title": "المناسبات",
+      "searchHint": "ابحث عن مناسبة",
+      "emptyTitle": "لا توجد مناسبات بعد",
+      "emptyAction": "إنشاء مناسبة",
+      "guestCount": "{count} من الضيوف"
+    },
+    "form": {
+      "createTitle": "مناسبة جديدة",
+      "editTitle": "تعديل المناسبة",
+      "nameLabel": "اسم المناسبة",
+      "nameArLabel": "اسم المناسبة (عربي، اختياري)",
+      "dateLabel": "تاريخ المناسبة (اختياري)",
+      "notesLabel": "ملاحظات",
+      "createCta": "إنشاء المناسبة",
+      "nameRequired": "أدخل اسم المناسبة"
+    },
+    "savedMessage": "تم حفظ المناسبة",
+    "details": {
+      "guestProgressTitle": "تقدّم الضيوف",
+      "byGroupTitle": "حسب المجموعة",
+      "manageGuestsCta": "إدارة الضيوف",
+      "addGuestsCta": "إضافة ضيوف",
+      "noGuestsHint": "لم تتم إضافة ضيوف بعد",
+      "notFound": "المناسبة غير موجودة",
+      "groupNoneAdded": "{total} في المجموعة · لم تتم إضافة أحد بعد",
+      "groupCaption": "{total} في المجموعة · تمت إضافة {added} — {notInvited} غير مدعوين، {invited} مدعوين، {skipped} تم تخطيهم",
+      "reciprocitySuggestionsCta": "اقتراحات المجاملة"
+    },
+    "guests": {
+      "title": "الضيوف",
+      "statusAll": "الكل",
+      "statusNotInvited": "غير مدعو",
+      "statusInvited": "مدعو",
+      "statusSkipped": "تم تخطيه",
+      "emptyTitle": "لم تتم إضافة ضيوف إلى هذه المناسبة بعد",
+      "emptyAction": "إضافة ضيوف",
+      "actionMarkInvited": "تحديد كمدعو",
+      "actionSkip": "تخطي",
+      "actionRevert": "الرجوع لغير مدعو",
+      "actionRemove": "إزالة من المناسبة",
+      "inviteMethodTitle": "كيف تم إرسال الدعوة إلى {name}؟",
+      "inviteMethodConfirm": "تأكيد"
+    },
+    "addGuests": {
+      "title": "إضافة ضيوف",
+      "peopleTab": "الأشخاص",
+      "byGroupTab": "حسب المجموعة",
+      "addNPeople": "إضافة {count} أشخاص",
+      "addGroupCta": "إضافة المجموعة",
+      "groupPeopleCount": "{count} أشخاص",
+      "resultMessage": "تمت إضافة {added}، و{alreadyPresent} موجودون بالفعل في القائمة"
+    },
+    "reciprocity": {
+      "title": "اقتراحات المجاملة",
+      "emptyTitle": "لا يوجد أحد جديد لاقتراحه الآن.",
+      "addAsGuestCta": "إضافة كضيف"
     }
   }
 }

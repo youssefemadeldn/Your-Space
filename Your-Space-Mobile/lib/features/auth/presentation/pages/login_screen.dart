@@ -14,11 +14,11 @@ import 'package:your_space_mobile/core/router/args/confirm_email_args.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/core/widgets/app_checkbox.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
+import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 import 'package:your_space_mobile/core/widgets/app_password_input.dart';
 
 import '../cubit/login_cubit/login_cubit.dart';
 import '../cubit/login_cubit/login_state.dart';
-import '../widgets/auth_logo_header.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,6 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: BlocListener<LoginCubit, LoginState>(
           listener: (context, state) {
+            if (state is LoginSuccess) {
+              context.go(AppRoutes.home); // .go, not .pushNamed — replaces the auth stack
+              return;
+            }
             if (state is! LoginError) return;
             switch (state.errorCode) {
               case 'Auth.EmailNotConfirmed':
@@ -80,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AuthLogoHeader(),
+                const AppLogoHeader(),
                 AppInput(
                   label: 'auth.email'.tr(),
                   hintText: 'you@example.com',
