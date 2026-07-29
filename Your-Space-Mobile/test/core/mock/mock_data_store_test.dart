@@ -38,6 +38,10 @@ void main() {
   });
 
   group('People', () {
+    test('personById returns null for an id that does not exist', () {
+      expect(store.personById(-1), isNull);
+    });
+
     test('people() filters by groupId', () {
       final family = store.groups().firstWhere((g) => g.name == 'Family');
       final results = store.people(groupId: family.id);
@@ -166,6 +170,17 @@ void main() {
       store.markSkipped(guest.id);
       final result = store.markSkipped(guest.id);
       expect(result.status, EventGuestStatus.skipped);
+    });
+
+    test('markInvited on an already-skipped guest still succeeds unconditionally', () {
+      final event = store.events().firstWhere((e) => e.name == "Sara's Birthday");
+      final guest = store.eventGuests(event.id).first;
+
+      store.markSkipped(guest.id);
+      final result = store.markInvited(guest.id, inviteMethod: InviteMethod.phoneCall);
+
+      expect(result.status, EventGuestStatus.invited);
+      expect(result.inviteMethod, InviteMethod.phoneCall);
     });
 
     test('removeGuest deletes the row entirely', () {

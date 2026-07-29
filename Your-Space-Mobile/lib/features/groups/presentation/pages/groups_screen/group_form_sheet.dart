@@ -33,6 +33,7 @@ class GroupFormSheet extends StatefulWidget {
 
 class _GroupFormSheetState extends State<GroupFormSheet> {
   late final _nameController = TextEditingController(text: widget.group?.name);
+  late final _nameArController = TextEditingController(text: widget.group?.nameAr);
   String? _nameError;
 
   bool get _isEditing => widget.group != null;
@@ -40,6 +41,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameArController.dispose();
     super.dispose();
   }
 
@@ -49,11 +51,12 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
       setState(() => _nameError = 'groups.form.nameRequired'.tr());
       return;
     }
+    final nameAr = _nameArController.text.trim();
     final cubit = context.read<GroupActionCubit>();
     if (_isEditing) {
-      cubit.updateGroup(id: widget.group!.id, name: name);
+      cubit.updateGroup(id: widget.group!.id, name: name, nameAr: nameAr.isEmpty ? null : nameAr);
     } else {
-      cubit.createGroup(name: name);
+      cubit.createGroup(name: name, nameAr: nameAr.isEmpty ? null : nameAr);
     }
   }
 
@@ -85,6 +88,15 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                 },
               );
             },
+          ),
+          SizedBox(height: 12.h),
+          BlocBuilder<GroupActionCubit, GroupActionState>(
+            builder: (context, state) => AppInput(
+              label: 'groups.form.nameArLabel'.tr(),
+              controller: _nameArController,
+              enabled: state is! GroupActionSubmitting,
+              maxLength: 200,
+            ),
           ),
           SizedBox(height: 12.h),
           Row(

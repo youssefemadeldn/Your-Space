@@ -21,23 +21,27 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(28.r);
-    final content = Container(
-      padding: padding ?? EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: radius,
-        boxShadow: elevated ? AppShadows.soft : null,
-      ),
-      child: child,
-    );
+    final padded = Padding(padding: padding ?? EdgeInsets.all(16.w), child: child);
 
-    if (onTap == null) return content;
-
-    return Material(
-      color: Colors.transparent,
+    // Material itself carries the card's background — children (e.g.
+    // ListTile/InkWell rows) paint ink splashes on the nearest Material
+    // ancestor, and an opaque Container/DecoratedBox sitting between it and
+    // them would silently paint over that ink, which a plain Container here
+    // used to do.
+    Widget card = Material(
+      color: AppColors.cardBackground,
       borderRadius: radius,
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: content),
+      child: onTap == null ? padded : InkWell(onTap: onTap, child: padded),
     );
+
+    if (elevated) {
+      card = Container(
+        decoration: BoxDecoration(borderRadius: radius, boxShadow: AppShadows.soft),
+        child: card,
+      );
+    }
+
+    return card;
   }
 }

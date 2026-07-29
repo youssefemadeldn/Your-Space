@@ -12,6 +12,7 @@ import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
 import 'package:your_space_mobile/core/widgets/app_card.dart';
 import 'package:your_space_mobile/core/widgets/app_list_tile.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
+import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 import 'package:your_space_mobile/core/widgets/empty_state_widget.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
 
@@ -54,15 +55,33 @@ class _HomeContent extends StatelessWidget {
     required this.eventsCount,
   });
 
+  Widget get _logoLockup => AppLogoHeader(
+        compact: true,
+        centered: false,
+        logoSize: 28.w,
+        padding: EdgeInsets.only(bottom: 16.h),
+      );
+
   @override
   Widget build(BuildContext context) {
     if (groupsCount == 0) {
-      return EmptyStateWidget(
-        icon: Icons.groups_rounded,
-        title: 'home.emptyTitle'.tr(),
-        subtitle: 'home.emptySubtitle'.tr(),
-        actionLabel: 'home.emptyAction'.tr(),
-        onAction: () => context.go(AppRoutes.groups),
+      return Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _logoLockup,
+            Expanded(
+              child: EmptyStateWidget(
+                icon: Icons.groups_rounded,
+                title: 'home.emptyTitle'.tr(),
+                subtitle: 'home.emptySubtitle'.tr(),
+                actionLabel: 'home.emptyAction'.tr(),
+                onAction: () => context.go(AppRoutes.groups),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -71,6 +90,7 @@ class _HomeContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _logoLockup,
           Text('home.greeting'.tr(), style: AppTextStyles.headlineSmall),
           SizedBox(height: 16.h),
           Row(

@@ -36,7 +36,10 @@ class _AddGuestsScreenState extends State<AddGuestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar(title: 'events.addGuests.title'.tr(), onBack: () => context.pop()),
+      appBar: AppAppBar(
+        title: 'events.addGuests.title'.tr(namedArgs: {'eventName': widget.args.eventName}),
+        onBack: () => context.pop(),
+      ),
       body: SafeArea(
         child: BlocListener<AddGuestsActionCubit, AddGuestsActionState>(
           listener: (context, state) {

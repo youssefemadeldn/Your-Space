@@ -104,6 +104,7 @@
       "createTitle": "New group",
       "editTitle": "Edit group",
       "nameLabel": "Group name",
+      "nameArLabel": "Group name (Arabic)",
       "nameRequired": "Enter a group name",
       "createCta": "Create group"
     },
@@ -180,7 +181,7 @@
       "reciprocitySuggestionsCta": "Reciprocity suggestions"
     },
     "guests": {
-      "title": "Guests",
+      "title": "Guests · {eventName}",
       "statusAll": "All",
       "statusNotInvited": "Not invited",
       "statusInvited": "Invited",
@@ -195,7 +196,7 @@
       "inviteMethodConfirm": "Confirm"
     },
     "addGuests": {
-      "title": "Add guests",
+      "title": "Add guests · {eventName}",
       "peopleTab": "People",
       "byGroupTab": "By group",
       "addNPeople": "Add {count} people",
@@ -204,7 +205,7 @@
       "resultMessage": "{added} added, {alreadyPresent} already on the list"
     },
     "reciprocity": {
-      "title": "Reciprocity suggestions",
+      "title": "Reciprocity suggestions · {eventName}",
       "emptyTitle": "No one new to suggest right now.",
       "addAsGuestCta": "Add as guest"
     }

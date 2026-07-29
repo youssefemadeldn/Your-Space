@@ -104,6 +104,7 @@
       "createTitle": "مجموعة جديدة",
       "editTitle": "تعديل المجموعة",
       "nameLabel": "اسم المجموعة",
+      "nameArLabel": "اسم المجموعة (بالعربية)",
       "nameRequired": "أدخل اسم المجموعة",
       "createCta": "إنشاء المجموعة"
     },
@@ -180,7 +181,7 @@
       "reciprocitySuggestionsCta": "اقتراحات المجاملة"
     },
     "guests": {
-      "title": "الضيوف",
+      "title": "الضيوف · {eventName}",
       "statusAll": "الكل",
       "statusNotInvited": "غير مدعو",
       "statusInvited": "مدعو",
@@ -195,7 +196,7 @@
       "inviteMethodConfirm": "تأكيد"
     },
     "addGuests": {
-      "title": "إضافة ضيوف",
+      "title": "إضافة ضيوف · {eventName}",
       "peopleTab": "الأشخاص",
       "byGroupTab": "حسب المجموعة",
       "addNPeople": "إضافة {count} أشخاص",
@@ -204,7 +205,7 @@
       "resultMessage": "تمت إضافة {added}، و{alreadyPresent} موجودون بالفعل في القائمة"
     },
     "reciprocity": {
-      "title": "اقتراحات المجاملة",
+      "title": "اقتراحات المجاملة · {eventName}",
       "emptyTitle": "لا يوجد أحد جديد لاقتراحه الآن.",
       "addAsGuestCta": "إضافة كضيف"
     }

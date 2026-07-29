@@ -20,6 +20,7 @@ import 'event_guest_actions_sheet.dart';
 
 class EventGuestsBody extends StatelessWidget {
   final int eventId;
+  final String eventName;
   final List<EventGuest> guests;
   final List<Group> groups;
   final EventGuestStatus? selectedStatus;
@@ -28,6 +29,7 @@ class EventGuestsBody extends StatelessWidget {
   const EventGuestsBody({
     super.key,
     required this.eventId,
+    required this.eventName,
     required this.guests,
     required this.groups,
     required this.selectedStatus,
@@ -112,7 +114,10 @@ class EventGuestsBody extends StatelessWidget {
                     title: 'events.guests.emptyTitle'.tr(),
                     actionLabel: 'events.guests.emptyAction'.tr(),
                     onAction: () async {
-                      await context.pushNamed(AppRoutes.addGuests, extra: AddGuestsArgs(eventId: eventId));
+                      await context.pushNamed(
+                        AppRoutes.addGuests,
+                        extra: AddGuestsArgs(eventId: eventId, eventName: eventName),
+                      );
                       if (context.mounted) context.read<EventGuestsListCubit>().load(eventId);
                     },
                   )

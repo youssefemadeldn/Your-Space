@@ -28,7 +28,10 @@ class ReciprocitySuggestionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar(title: 'events.reciprocity.title'.tr(), onBack: () => context.pop()),
+      appBar: AppAppBar(
+        title: 'events.reciprocity.title'.tr(namedArgs: {'eventName': args.eventName}),
+        onBack: () => context.pop(),
+      ),
       body: SafeArea(
         child: BlocListener<AddGuestsActionCubit, AddGuestsActionState>(
           listener: (context, state) {

@@ -35,14 +35,17 @@ class EventDetailsBody extends StatelessWidget {
   }
 
   Future<void> _openAddGuests(BuildContext context) async {
-    await context.pushNamed(AppRoutes.addGuests, extra: AddGuestsArgs(eventId: event.id));
+    await context.pushNamed(
+      AppRoutes.addGuests,
+      extra: AddGuestsArgs(eventId: event.id, eventName: event.name),
+    );
     if (context.mounted) context.read<EventDetailsCubit>().loadDetails(event.id);
   }
 
   Future<void> _openReciprocitySuggestions(BuildContext context) async {
     await context.pushNamed(
       AppRoutes.reciprocitySuggestions,
-      extra: ReciprocitySuggestionsArgs(eventId: event.id),
+      extra: ReciprocitySuggestionsArgs(eventId: event.id, eventName: event.name),
     );
     if (context.mounted) context.read<EventDetailsCubit>().loadDetails(event.id);
   }

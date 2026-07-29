@@ -22,7 +22,10 @@ class EventGuestsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar(title: 'events.guests.title'.tr(), onBack: () => context.pop()),
+      appBar: AppAppBar(
+        title: 'events.guests.title'.tr(namedArgs: {'eventName': args.eventName}),
+        onBack: () => context.pop(),
+      ),
       body: SafeArea(
         child: BlocListener<EventGuestActionCubit, EventGuestActionState>(
           listener: (context, state) {
@@ -40,6 +43,7 @@ class EventGuestsScreen extends StatelessWidget {
               ) =>
                 EventGuestsBody(
                   eventId: args.eventId,
+                  eventName: args.eventName,
                   guests: guests,
                   groups: groups,
                   selectedStatus: selectedStatus,
