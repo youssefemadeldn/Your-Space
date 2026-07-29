@@ -31,7 +31,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      designSize: const Size(AppConstants.kDesignWidth, AppConstants.kDesignHeight),
+      designSize: const Size(
+        AppConstants.kDesignWidth,
+        AppConstants.kDesignHeight,
+      ),
       builder: (context, child) => MaterialApp.router(
         title: AppConstants.kAppName,
         debugShowCheckedModeBanner: false,

@@ -31,6 +31,10 @@ class AppRouter {
       initialLocation: AppRoutes.splash,
       routes: [
         GoRoute(
+          path: AppRoutes.splash,
+          redirect: (context, state) => AppRoutes.login,
+        ),
+        GoRoute(
           path: AppRoutes.login,
           name: AppRoutes.login,
           builder: (context, state) => BlocProvider(
@@ -97,8 +101,6 @@ class _UnknownScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Page not found')),
-    );
+    return const Scaffold(body: Center(child: Text('Page not found')));
   }
 }

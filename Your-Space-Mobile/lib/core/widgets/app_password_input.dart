@@ -53,6 +53,7 @@ class _AppPasswordInputState extends State<AppPasswordInput> {
       helperText: widget.helperText,
       enabled: widget.enabled,
       obscureText: _obscureText,
+      prefixIcon: Icons.lock_outline_rounded,
       keyboardType: TextInputType.visiblePassword,
       textInputAction: widget.textInputAction,
       onChanged: widget.onChanged,
