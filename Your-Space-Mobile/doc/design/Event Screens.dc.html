@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/shape.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/icons.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/styles.css">
+  <script src="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/_ds_bundle.js"></script>
+  <style>@keyframes ys-spin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="min-height:100vh;padding:36px 40px 72px;display:flex;flex-direction:column;gap:40px;align-items:flex-start;background:var(--bg-app)">
+
+  <div style="background:var(--surface);border-radius:16px;box-shadow:var(--shadow-soft);padding:20px 24px;max-width:900px;display:flex;flex-direction:column;gap:8px">
+    <span style="font:var(--text-title-lg);color:var(--text-primary)">Events, guests &amp; reciprocity — new screens</span>
+    <span style="font:var(--text-body-md);color:var(--text-secondary)">Built on the confirmed contract: EventProfileDto exposes Name / EventDate? / TotalGuestCount only (no status breakdown on the list). EventGuestProgressSummaryDto adds Not-invited / Invited / Skipped totals plus a per-group GroupGuestProgressDto (TotalPersonsInGroup / GuestsAddedCount / status counts) — including groups with zero guests added. EventGuest status transitions have no state-machine guard, so every action (mark invited, skip, revert, remove) is always available. BulkAddGuestsResultDto backs the add-guests confirmation. Reciprocity suggestions reuse the People list's PersonProfileDto shape.</span>
+    <span style="font:var(--text-body-md);color:var(--text-secondary)">Same Button, Input, Select, Switch, Chip, Badge, ListTile, Snackbar and logo lockup as the earlier batch — nothing restyled. The invite-method chip picker is the same one used on the Occasion History sheet, reused as-is for marking a guest invited.</span>
+    <span style="font:var(--text-body-sm);color:var(--text-hint)">Tweaks: language (English / العربية — mirrors every screen) · group filter as chips or dropdown. Event names flip with the language (Event carries NameAr, like Group); person names never do. Copy stays gender-neutral and passive ("the invite was sent", not "he/she was invited"); names, phone numbers and dates stay LTR-isolated inside Arabic layouts.</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">1 · Events list — data &amp; empty (mirrored)</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Events list · search matches Name, rows show date + guest count only</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.events }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 12px;background:var(--surface)">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ t.searchEvents }}" icon="search" value="" on-change="{{ noop }}" hint-size="100%,52px"></x-import>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,420px">
+              <sc-for list="{{ eventsList }}" as="ev" hint-placeholder-count="5">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ ev.name }}" subtitle="{{ ev.sub }}" icon="event" divider="{{ ev.divider }}" on-click="{{ noop }}" hint-size="100%,64px"></x-import>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="position:absolute;inset-inline-end:20px;bottom:96px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.IconButton" icon="add" variant="primary" size="{{ 56 }}" on-click="{{ noop }}" hint-size="56px,56px"></x-import>
+          </div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.BottomNav" items="{{ nav }}" active="{{ n3 }}" on-select="{{ noop }}" hint-size="100%,68px"></x-import>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">No events yet</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.events }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 8px 60px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.EmptyState" icon="event_busy" title="{{ t.eventsEmptyTitle }}" body="{{ t.eventsEmptyBody }}" hint-size="100%,230px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" icon="add" on-click="{{ noop }}" hint-size="170px,52px">{{ t.createEvent }}</x-import>
+          </div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.BottomNav" items="{{ nav }}" active="{{ n3 }}" on-select="{{ noop }}" hint-size="100%,68px"></x-import>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">2 · Create / edit event — one form, reused</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Create event · empty</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.newEvent }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventName }}" placeholder="{{ t.eventNamePh }}" icon="celebration" hint="0 / 200" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventNameAr }}" placeholder="{{ t.eventNameArPh }}" hint="0 / 200" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventDate }}" placeholder="{{ t.pickDate }}" icon="calendar_today" hint="{{ t.dateOptional }}" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.notes }}" placeholder="{{ t.notesEventPh }}" multiline="{{ true }}" hint="{{ t.hintNotes0 }}" on-change="{{ noop }}" hint-size="100%,120px"></x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.cancel }}</x-import></div>
+            <div style="flex:1.4"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.createEvent }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Edit event · pre-filled</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.editEvent }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventName }}" value="{{ t.editValName }}" icon="celebration" hint="9 / 200" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventNameAr }}" value="{{ t.editValNameAr }}" hint="10 / 200" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventDate }}" value="{{ t.editValDate }}" icon="calendar_today" hint="{{ t.dateOptional }}" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.notes }}" value="{{ t.editValNotes }}" multiline="{{ true }}" hint="{{ t.hintNotesFilled }}" on-change="{{ noop }}" hint-size="100%,120px"></x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.cancel }}</x-import></div>
+            <div style="flex:1.4"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.saveChanges }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Event form · saving</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.editEvent }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;opacity:.55;pointer-events:none">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventName }}" value="{{ t.editValName }}" icon="celebration" hint="9 / 200" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventNameAr }}" value="{{ t.editValNameAr }}" hint="10 / 200" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.eventDate }}" value="{{ t.editValDate }}" icon="calendar_today" hint="{{ t.dateOptional }}" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.notes }}" value="{{ t.editValNotes }}" multiline="{{ true }}" hint="{{ t.hintNotesFilled }}" on-change="{{ noop }}" hint-size="100%,120px"></x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" disabled="{{ true }}" hint-size="100%,52px">{{ t.cancel }}</x-import></div>
+            <div style="flex:1.4"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" hint-size="100%,52px">
+              <span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span>
+            </x-import></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">3 · Event details — progress dashboard</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">In progress · per-group breakdown below the summary</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.editValName }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="background:var(--surface);padding:0 16px 16px;display:flex;align-items:center;gap:6px;font:var(--text-body-sm);color:var(--text-secondary)"><span class="msr" style="font-size:16px">schedule</span><span dir="ltr">{{ t.editValDate }}</span></div>
+          <div style="flex:1;overflow-y:auto;padding:0 16px 16px;display:flex;flex-direction:column;gap:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 18 }}" hint-size="100%,150px">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.guestProgress }}</span>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span dir="ltr" style="font:var(--text-display-md);color:var(--brand-primary)">28</span>
+                  <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.totalGuests }}</span>
+                </div>
+                <div style="display:flex;height:10px;border-radius:6px;overflow:hidden">
+                  <div style="flex:8;background:var(--input-fill)"></div>
+                  <div style="flex:18;background:var(--color-success)"></div>
+                  <div style="flex:2;background:var(--text-hint)"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font:var(--text-body-sm);color:var(--text-secondary)">
+                  <span dir="ltr">8 {{ t.notInvitedLabel }}</span>
+                  <span dir="ltr">18 {{ t.invitedLabel }}</span>
+                  <span dir="ltr">2 {{ t.skippedLabel }}</span>
+                </div>
+              </div>
+            </x-import>
+            <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.byGroup }}</span>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,320px">
+              <sc-for list="{{ groupRows }}" as="g" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <span style="width:40px;height:40px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">group</span></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ g.name }}</span>
+                    <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ g.caption }}</span>
+                  </div>
+                </div>
+                <sc-if value="{{ g.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--divider);margin-inline-start:66px"></div></sc-if>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.manageGuests }}</x-import></div>
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" icon="person_add" on-click="{{ noop }}" hint-size="100%,52px">{{ t.addGuestsBtn }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Brand-new event · zero guests everywhere, still lists every group</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.newValName }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="background:var(--surface);padding:0 16px 16px;display:flex;align-items:center;gap:6px;font:var(--text-body-sm);color:var(--text-secondary)"><span class="msr" style="font-size:16px">schedule</span><span>{{ t.noDateSet }}</span></div>
+          <div style="flex:1;overflow-y:auto;padding:0 16px 16px;display:flex;flex-direction:column;gap:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 18 }}" hint-size="100%,120px">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.guestProgress }}</span>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span dir="ltr" style="font:var(--text-display-md);color:var(--text-hint)">0</span>
+                  <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.totalGuests }}</span>
+                </div>
+                <span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.noGuestsYetHint }}</span>
+              </div>
+            </x-import>
+            <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.byGroup }}</span>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,320px">
+              <sc-for list="{{ zeroGroupRows }}" as="g" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <span style="width:40px;height:40px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">group</span></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ g.name }}</span>
+                    <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ g.caption }}</span>
+                  </div>
+                </div>
+                <sc-if value="{{ g.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--divider);margin-inline-start:66px"></div></sc-if>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" disabled="{{ true }}" hint-size="100%,52px">{{ t.manageGuests }}</x-import></div>
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" icon="person_add" on-click="{{ noop }}" hint-size="100%,52px">{{ t.addGuestsBtn }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">4 · Event guests — filter, status, actions, empty</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Guests list · every action works from any current status</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.guestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 12px;background:var(--surface);display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" selected="{{ true }}" on-click="{{ noop }}" hint-size="70px,36px"><span style="white-space:nowrap">{{ t.chipAll }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="120px,36px"><span style="white-space:nowrap">{{ t.filterNotInvited }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="95px,36px"><span style="white-space:nowrap">{{ t.filterInvited }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="95px,36px"><span style="white-space:nowrap">{{ t.filterSkipped }}</span></x-import></div>
+            </div>
+            <sc-if value="{{ filterChips }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">
+                <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" selected="{{ true }}" on-click="{{ noop }}" hint-size="70px,36px"><span style="white-space:nowrap">{{ t.allGroups }}</span></x-import></div>
+                <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="110px,36px"><span style="white-space:nowrap">{{ t.g1 }}</span></x-import></div>
+                <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="110px,36px"><span style="white-space:nowrap">{{ t.g5 }}</span></x-import></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ filterDropdown }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" placeholder="{{ t.allGroups }}" options="{{ groupOptions }}" on-change="{{ noop }}" hint-size="100%,52px"></x-import>
+            </sc-if>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,420px">
+              <sc-for list="{{ guestRows }}" as="gu" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Avatar" name="{{ gu.name }}" size="{{ 40 }}" hint-size="40px,40px"></x-import>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <span dir="ltr" style="align-self:flex-start;font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ gu.name }}</span>
+                    <span style="align-self:flex-start;font:var(--text-body-sm);color:var(--text-secondary);background:var(--input-fill);border-radius:999px;padding:1px 10px">{{ gu.group }}</span>
+                  </div>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Badge" tone="{{ gu.tone }}" icon="{{ gu.icon }}" hint-size="auto,26px">{{ gu.label }}</x-import>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.IconButton" icon="more_vert" size="{{ 36 }}" on-click="{{ noop }}" hint-size="36px,36px"></x-import>
+                </div>
+                <sc-if value="{{ gu.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--divider);margin-inline-start:66px"></div></sc-if>
+              </sc-for>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Guest actions sheet · all four always available, no restrictions</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.guestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;background:var(--surface)"></div>
+          <div style="position:absolute;inset:0;background:rgba(11,11,11,.42);z-index:4"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-radius:28px 28px 0 0;box-shadow:var(--shadow-soft-lg);padding:12px 20px 26px;display:flex;flex-direction:column;gap:2px">
+            <span style="width:40px;height:4px;border-radius:2px;background:var(--divider);align-self:center;margin-bottom:14px"></span>
+            <span dir="ltr" style="font:var(--text-title-lg);color:var(--text-primary);margin-bottom:10px">Nada Zaki</span>
+            <div style="display:flex;align-items:center;gap:14px;padding:14px 4px"><span class="msr" style="font-size:22px;color:var(--text-secondary)">chat</span><span style="font:var(--text-title-md);color:var(--text-primary)">{{ t.actionMarkInvited }}</span></div>
+            <div style="height:1px;background:var(--divider)"></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:14px 4px"><span class="msr" style="font-size:22px;color:var(--text-secondary)">block</span><span style="font:var(--text-title-md);color:var(--text-primary)">{{ t.actionSkip }}</span></div>
+            <div style="height:1px;background:var(--divider)"></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:14px 4px"><span class="msr" style="font-size:22px;color:var(--text-secondary)">undo</span><span style="font:var(--text-title-md);color:var(--text-primary)">{{ t.actionRevert }}</span></div>
+            <div style="height:1px;background:var(--divider)"></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:14px 4px"><span class="msr" style="font-size:22px;color:var(--color-error)">delete</span><span style="font:var(--text-title-md);color:var(--color-error)">{{ t.actionRemove }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Invite-method picker · reused from the Occasion History sheet</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.guestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;background:var(--surface)"></div>
+          <div style="position:absolute;inset:0;background:rgba(11,11,11,.42);z-index:4"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-radius:28px 28px 0 0;box-shadow:var(--shadow-soft-lg);padding:12px 20px 26px;display:flex;flex-direction:column;gap:16px">
+            <span style="width:40px;height:4px;border-radius:2px;background:var(--divider);align-self:center"></span>
+            <span dir="ltr" style="font:var(--text-title-lg);color:var(--text-primary)">{{ t.inviteMethodTitle }} Nada?</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" selected="{{ true }}" icon="chat" on-click="{{ noop }}" hint-size="110px,36px"><span style="white-space:nowrap">{{ t.whatsapp }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" icon="call" on-click="{{ noop }}" hint-size="110px,36px"><span style="white-space:nowrap">{{ t.phoneCall }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" icon="handshake" on-click="{{ noop }}" hint-size="105px,36px"><span style="white-space:nowrap">{{ t.inPerson }}</span></x-import></div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.cancel }}</x-import></div>
+              <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.confirm }}</x-import></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">No guests added to this event yet</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.guestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 8px 40px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.EmptyState" icon="person_add" title="{{ t.guestsEmptyTitle }}" body="{{ t.guestsEmptyBody }}" hint-size="100%,230px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" icon="person_add" on-click="{{ noop }}" hint-size="170px,52px">{{ t.addGuestsBtn }}</x-import>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">5 · Add guests to event — two backend endpoints, one screen</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">People tab · searchable checklist, filterable by group</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addGuestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 0;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Tabs" tabs="{{ tabsPeopleGroup }}" active="{{ 0 }}" on-select="{{ noop }}" hint-size="100%,44px"></x-import></div>
+          <div style="padding:10px 16px 10px;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ t.searchPeople }}" icon="search" value="" on-change="{{ noop }}" hint-size="100%,52px"></x-import></div>
+          <div style="flex:1;overflow-y:auto;padding:0 16px 16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 10 }}" hint-size="100%,320px">
+              <sc-for list="{{ addPeopleRows }}" as="p" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 4px">
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Checkbox" checked="{{ p.checked }}" on-change="{{ noop }}" hint-size="24px,24px"></x-import>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Avatar" name="{{ p.name }}" size="{{ 36 }}" hint-size="36px,36px"></x-import>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                    <span dir="ltr" style="align-self:flex-start;font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ p.name }}</span>
+                    <span style="align-self:flex-start;font:var(--text-body-sm);color:var(--text-secondary)">{{ p.group }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06)">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" icon="person_add" on-click="{{ noop }}" hint-size="100%,52px">{{ t.addNPeople }}</x-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">By-group tab · one tap adds everyone in that group</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addGuestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 0;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Tabs" tabs="{{ tabsPeopleGroup }}" active="{{ 1 }}" on-select="{{ noop }}" hint-size="100%,44px"></x-import></div>
+          <div style="flex:1;overflow-y:auto;padding:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,420px">
+              <sc-for list="{{ addGroupRows }}" as="ag" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <span style="width:40px;height:40px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">group</span></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                    <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ ag.name }}</span>
+                    <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ ag.sub }}</span>
+                  </div>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="soft" size="sm" icon="add" on-click="{{ noop }}" hint-size="120px,40px">{{ t.addGroupCta }}</x-import>
+                </div>
+                <sc-if value="{{ ag.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--divider);margin-inline-start:66px"></div></sc-if>
+              </sc-for>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Adding · loading state</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addGuestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 0;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Tabs" tabs="{{ tabsPeopleGroup }}" active="{{ 0 }}" on-select="{{ noop }}" hint-size="100%,44px"></x-import></div>
+          <div style="padding:10px 16px 10px;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ t.searchPeople }}" icon="search" value="" on-change="{{ noop }}" hint-size="100%,52px"></x-import></div>
+          <div style="flex:1;overflow-y:auto;padding:0 16px 16px;opacity:.55;pointer-events:none">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 10 }}" hint-size="100%,320px">
+              <sc-for list="{{ addPeopleRows }}" as="p" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 4px">
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Checkbox" checked="{{ p.checked }}" hint-size="24px,24px"></x-import>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Avatar" name="{{ p.name }}" size="{{ 36 }}" hint-size="36px,36px"></x-import>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                    <span dir="ltr" style="align-self:flex-start;font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ p.name }}</span>
+                    <span style="align-self:flex-start;font:var(--text-body-sm);color:var(--text-secondary)">{{ p.group }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06)">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" hint-size="100%,52px">
+              <span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Result · matches BulkAddGuestsResultDto</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addGuestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 0;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Tabs" tabs="{{ tabsPeopleGroup }}" active="{{ 1 }}" on-select="{{ noop }}" hint-size="100%,44px"></x-import></div>
+          <div style="flex:1;overflow-y:auto;padding:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,240px">
+              <sc-for list="{{ addGroupRows }}" as="ag" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <span style="width:40px;height:40px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">group</span></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                    <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ ag.name }}</span>
+                    <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ ag.sub }}</span>
+                  </div>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="soft" size="sm" icon="add" on-click="{{ noop }}" hint-size="120px,40px">{{ t.addGroupCta }}</x-import>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+          <div style="position:absolute;left:16px;right:16px;bottom:24px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" message="{{ t.resultMsg }}" tone="success" hint-size="100%,56px"></x-import>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">6 · Reciprocity suggestions — within this event</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">People who invited you before and aren't guests of this event yet</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.suggestionsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 12px;background:var(--surface)">
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" selected="{{ true }}" on-click="{{ noop }}" hint-size="70px,36px"><span style="white-space:nowrap">{{ t.allGroups }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="110px,36px"><span style="white-space:nowrap">{{ t.g5 }}</span></x-import></div>
+              <div style="flex:0 0 auto;white-space:nowrap"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="110px,36px"><span style="white-space:nowrap">{{ t.g2 }}</span></x-import></div>
+            </div>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:0 16px 16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,340px">
+              <sc-for list="{{ suggestionRows }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Avatar" name="{{ s.name }}" size="{{ 40 }}" hint-size="40px,40px"></x-import>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <span dir="ltr" style="align-self:flex-start;font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ s.name }}</span>
+                    <span style="align-self:flex-start;font:var(--text-body-sm);color:var(--text-secondary);background:var(--input-fill);border-radius:999px;padding:1px 10px">{{ s.group }}</span>
+                  </div>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="soft" size="sm" icon="person_add" on-click="{{ noop }}" hint-size="130px,40px">{{ t.addAsGuest }}</x-import>
+                </div>
+                <sc-if value="{{ s.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--divider);margin-inline-start:66px"></div></sc-if>
+              </sc-for>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">No one new to suggest right now</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.suggestionsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 8px 40px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.EmptyState" icon="task_alt" title="{{ t.suggestionsEmptyTitle }}" body="{{ t.suggestionsEmptyBody }}" hint-size="100%,230px"></x-import>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:1150},
+&quot;language&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;English&quot;,&quot;العربية&quot;],&quot;default&quot;:&quot;English&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;},
+&quot;groupFilter&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Chips&quot;,&quot;Dropdown&quot;],&quot;default&quot;:&quot;Chips&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+class Component extends DCLogic {
+  renderVals(){
+    const ar = (this.props.language ?? 'English') === 'العربية';
+    const chips = (this.props.groupFilter ?? 'Chips') === 'Chips';
+    const t = ar ? {
+      home:'الرئيسية', groups:'المجموعات', people:'الأشخاص', events:'المناسبات',
+      g1:'العائلة المقرّبة', g2:'عائلة ماما', g3:'الجيران', g4:'أصدقاء الجامعة', g5:'العمل', g6:'كورة نهاية الأسبوع',
+      searchEvents:'ابحث في المناسبات',
+      eventsEmptyTitle:'لا توجد مناسبات بعد',
+      eventsEmptyBody:'خطّط لغداء، أو حفل زفاف، أو أي شيء تريد تتبّع دعواته — تبدأ مناسبتك الأولى من هنا.',
+      createEvent:'إنشاء مناسبة',
+      newEvent:'مناسبة جديدة', editEvent:'تعديل المناسبة',
+      eventName:'اسم المناسبة', eventNamePh:'مثال: غداء العيد',
+      eventNameAr:'اسم المناسبة (بالعربية)', eventNameArPh:'اختياري',
+      eventDate:'تاريخ المناسبة', pickDate:'اختر تاريخًا', dateOptional:'اختياري',
+      notes:'ملاحظات', notesEventPh:'أي شيء تريد تذكّره عن هذه المناسبة',
+      hintNotes0:'0 / 2000 · اختياري', hintNotesFilled:'52 / 2000 · اختياري',
+      cancel:'إلغاء', saveChanges:'حفظ التغييرات',
+      editValName:'غداء العيد', editValNameAr:'غداء العيد', editValDate:'14 مارس 2026',
+      editValNotes:'غداء عائلي بعد صلاة العيد — نحتاج كراسي إضافية.',
+      newValName:'حفل الانتقال للمنزل الجديد', noDateSet:'لا يوجد تاريخ محدد',
+      guestProgress:'تقدّم الضيوف', totalGuests:'إجمالي الضيوف',
+      notInvitedLabel:'غير مدعو', invitedLabel:'مُدعو', skippedLabel:'متجاوَز',
+      noGuestsYetHint:'لم تتم إضافة أي ضيف بعد.',
+      byGroup:'حسب المجموعة', manageGuests:'إدارة الضيوف', addGuestsBtn:'إضافة ضيوف',
+      guestsTitle:'الضيوف', chipAll:'الكل', allGroups:'كل المجموعات',
+      filterNotInvited:'غير مدعو', filterInvited:'مُدعو', filterSkipped:'متجاوَز',
+      guestsEmptyTitle:'لا يوجد ضيوف في هذه المناسبة بعد',
+      guestsEmptyBody:'أضف أشخاصًا من مجموعاتك، أو راجع اقتراحات المعاملة بالمثل، لتبدأ تتبّع الدعوات لهذه المناسبة.',
+      actionMarkInvited:'تمييز كمُدعو', actionSkip:'تخطي', actionRevert:'إرجاع لغير مدعو', actionRemove:'إزالة من المناسبة',
+      inviteMethodTitle:'كيف تمت دعوة', whatsapp:'واتساب', phoneCall:'اتصال هاتفي', inPerson:'شخصيًا', confirm:'تأكيد',
+      addGuestsTitle:'إضافة ضيوف', tabPeople:'أشخاص', tabByGroup:'حسب المجموعة',
+      searchPeople:'ابحث عن شخص', addNPeople:'إضافة 3 أشخاص', addGroupCta:'إضافة المجموعة',
+      resultMsg:'تمت إضافة 12، وكان 3 مضافين من قبل',
+      suggestionsTitle:'اقتراحات المعاملة بالمثل', addAsGuest:'إضافة كضيف',
+      suggestionsEmptyTitle:'لا يوجد أحد جديد لاقتراحه الآن',
+      suggestionsEmptyBody:'الجميع الذين تمت دعوتك من قبلهم موجودون بالفعل في قائمة ضيوف هذه المناسبة — عمل رائع.'
+    } : {
+      home:'Home', groups:'Groups', people:'People', events:'Events',
+      g1:'Close family', g2:"Mum's side", g3:'Neighbours', g4:'University friends', g5:'Work', g6:'Weekend football',
+      searchEvents:'Search events',
+      eventsEmptyTitle:'No events yet',
+      eventsEmptyBody:"Plan a lunch, a wedding, anything you want to track invites for — your first event starts here.",
+      createEvent:'Create event',
+      newEvent:'New event', editEvent:'Edit event',
+      eventName:'Event name', eventNamePh:'e.g. Eid lunch',
+      eventNameAr:'Event name (Arabic)', eventNameArPh:'Optional',
+      eventDate:'Event date', pickDate:'Pick a date', dateOptional:'Optional',
+      notes:'Notes', notesEventPh:'Anything worth remembering about this event',
+      hintNotes0:'0 / 2000 · Optional', hintNotesFilled:'52 / 2000 · Optional',
+      cancel:'Cancel', saveChanges:'Save changes',
+      editValName:'Eid lunch', editValNameAr:'غداء العيد', editValDate:'14 Mar 2026',
+      editValNotes:'Family lunch after Eid prayers — need extra chairs.',
+      newValName:'Housewarming', noDateSet:'No date set',
+      guestProgress:'Guest progress', totalGuests:'total guests',
+      notInvitedLabel:'not invited', invitedLabel:'invited', skippedLabel:'skipped',
+      noGuestsYetHint:'No guests added yet.',
+      byGroup:'By group', manageGuests:'Manage guests', addGuestsBtn:'Add guests',
+      guestsTitle:'Guests', chipAll:'All', allGroups:'All groups',
+      filterNotInvited:'Not invited', filterInvited:'Invited', filterSkipped:'Skipped',
+      guestsEmptyTitle:'No guests added to this event yet',
+      guestsEmptyBody:"Add people from your groups, or check reciprocity suggestions, to start tracking invites for this event.",
+      actionMarkInvited:'Mark invited', actionSkip:'Skip', actionRevert:'Revert to not invited', actionRemove:'Remove from event',
+      inviteMethodTitle:'How was the invite sent to', whatsapp:'WhatsApp', phoneCall:'Phone call', inPerson:'In person', confirm:'Confirm',
+      addGuestsTitle:'Add guests', tabPeople:'People', tabByGroup:'By group',
+      searchPeople:'Search people', addNPeople:'Add 3 people', addGroupCta:'Add group',
+      resultMsg:'12 added, 3 already on the list',
+      suggestionsTitle:'Reciprocity suggestions', addAsGuest:'Add as guest',
+      suggestionsEmptyTitle:'No one new to suggest right now',
+      suggestionsEmptyBody:"Everyone who's invited you before is already on this guest list — nice work."
+    };
+
+    const eventsList = ar ? [
+      {name:'غداء العيد', sub:'14 مارس 2026 · 12 ضيفًا', divider:true},
+      {name:'خطوبة سارة', sub:'2 مايو 2026 · 28 ضيفًا', divider:true},
+      {name:'لقاء نهاية الأسبوع', sub:'لا يوجد تاريخ محدد · 6 ضيوف', divider:true},
+      {name:'عيد ميلاد ماما', sub:'30 يونيو 2026 · 9 ضيوف', divider:true},
+      {name:'حفل الانتقال للمنزل الجديد', sub:'لا يوجد تاريخ محدد · لا يوجد ضيوف بعد', divider:false}
+    ] : [
+      {name:'Eid lunch', sub:'14 Mar 2026 · 12 guests', divider:true},
+      {name:"Sara's engagement", sub:'2 May 2026 · 28 guests', divider:true},
+      {name:'Weekend get-together', sub:'No date set · 6 guests', divider:true},
+      {name:"Mum's birthday", sub:'30 Jun 2026 · 9 guests', divider:true},
+      {name:'Housewarming', sub:'No date set · No guests yet', divider:false}
+    ];
+
+    const groupRows = [
+      {name:t.g1, caption: ar?'12 في المجموعة · تمت إضافة 10 — 2 غير مدعو، 7 مُدعو، 1 متجاوَز':'12 in group · 10 added — 2 not invited, 7 invited, 1 skipped', divider:true},
+      {name:t.g2, caption: ar?'8 في المجموعة · تمت إضافة الجميع — 8 مُدعو':'8 in group · all 8 added — 8 invited', divider:true},
+      {name:t.g3, caption: ar?'6 في المجموعة · تمت إضافة 4 — 3 غير مدعو، 1 مُدعو':'6 in group · 4 added — 3 not invited, 1 invited', divider:true},
+      {name:t.g4, caption: ar?'15 في المجموعة · تمت إضافة 5 — 2 غير مدعو، 2 مُدعو، 1 متجاوَز':'15 in group · 5 added — 2 not invited, 2 invited, 1 skipped', divider:true},
+      {name:t.g5, caption: ar?'20 في المجموعة · لم تتم إضافة أحد بعد':'20 in group · none added yet', divider:true},
+      {name:t.g6, caption: ar?'9 في المجموعة · تمت إضافة 1 — لم تتم الدعوة بعد':'9 in group · 1 added — not invited yet', divider:false}
+    ];
+    const zeroGroupRows = [
+      {name:t.g1, caption: ar?'12 في المجموعة · لم تتم إضافة أحد بعد':'12 in group · none added yet', divider:true},
+      {name:t.g2, caption: ar?'8 في المجموعة · لم تتم إضافة أحد بعد':'8 in group · none added yet', divider:true},
+      {name:t.g3, caption: ar?'6 في المجموعة · لم تتم إضافة أحد بعد':'6 in group · none added yet', divider:true},
+      {name:t.g4, caption: ar?'15 في المجموعة · لم تتم إضافة أحد بعد':'15 in group · none added yet', divider:true},
+      {name:t.g5, caption: ar?'20 في المجموعة · لم تتم إضافة أحد بعد':'20 in group · none added yet', divider:true},
+      {name:t.g6, caption: ar?'9 في المجموعة · لم تتم إضافة أحد بعد':'9 in group · none added yet', divider:false}
+    ];
+
+    const guestRows = [
+      {name:'Sara Hosny', group:t.g1, tone:'neutral', icon:'', label: ar?'غير مدعو':'Not invited', divider:true},
+      {name:'Omar Fathy', group:t.g5, tone:'success', icon:'chat', label: ar?'مُدعو · واتساب':'Invited · WhatsApp', divider:true},
+      {name:'Hala Mansour', group:t.g3, tone:'success', icon:'call', label: ar?'مُدعو · اتصال هاتفي':'Invited · Phone call', divider:true},
+      {name:'Karim Adel', group:t.g4, tone:'success', icon:'handshake', label: ar?'مُدعو · شخصيًا':'Invited · In person', divider:true},
+      {name:'Nada Zaki', group:t.g1, tone:'neutral', icon:'block', label: ar?'متجاوَز':'Skipped', divider:false}
+    ];
+
+    const suggestionRows = [
+      {name:'Youssef Nabil', group:t.g5, divider:true},
+      {name:'Mona Farouk', group:t.g2, divider:true},
+      {name:'Tarek Hamdy', group:t.g1, divider:true},
+      {name:'Dina Selim', group:t.g4, divider:false}
+    ];
+
+    const addPeopleRows = [
+      {name:'Layla Samir', group:t.g1, checked:true},
+      {name:'Ahmed Zaki', group:t.g5, checked:true},
+      {name:'Rania Kotb', group:t.g3, checked:false},
+      {name:'Bassem Nour', group:t.g4, checked:true},
+      {name:'Mariam Adly', group:t.g1, checked:false}
+    ];
+
+    const addGroupRows = [
+      {name:t.g1, sub: ar?'12 شخصًا':'12 people', divider:true},
+      {name:t.g2, sub: ar?'8 أشخاص':'8 people', divider:true},
+      {name:t.g3, sub: ar?'6 أشخاص':'6 people', divider:true},
+      {name:t.g4, sub: ar?'15 شخصًا':'15 people', divider:true},
+      {name:t.g5, sub: ar?'20 شخصًا':'20 people', divider:true},
+      {name:t.g6, sub: ar?'9 أشخاص':'9 people', divider:false}
+    ];
+
+    return {
+      t, dir: ar ? 'rtl' : 'ltr',
+      filterChips: chips, filterDropdown: !chips,
+      nav: [
+        {icon:'home', label:t.home},
+        {icon:'group', label:t.groups},
+        {icon:'person', label:t.people},
+        {icon:'event', label:t.events}
+      ],
+      n3:3,
+      groupOptions:[t.g1,t.g2,t.g3,t.g4,t.g5,t.g6],
+      tabsPeopleGroup:[t.tabPeople, t.tabByGroup],
+      eventsList, groupRows, zeroGroupRows, guestRows, suggestionRows, addPeopleRows, addGroupRows,
+      noop:()=>{}
+    };
+  }
+}
+
+</script>
+</body>
+</html>

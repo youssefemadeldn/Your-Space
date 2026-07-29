@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&family=Tajawal:wght@400;500;700&family=Inter:wght@600&display=swap');
+:root{
+/* Families */
+--font-display:'Cairo',sans-serif;--font-body:'Tajawal',sans-serif;--font-micro:'Inter',sans-serif;
+/* Weights */
+--fw-regular:400;/* @kind font */--fw-medium:500;/* @kind font */--fw-semibold:600;/* @kind font */--fw-bold:700;/* @kind font */--fw-extrabold:800;/* @kind font */
+/* Scale — Cairo for display/headline, Tajawal for title/body/label */
+--text-display-lg:800 34px/1.15 var(--font-display);--ls-display-lg:-0.5px;
+--text-display-md:700 28px/1.2 var(--font-display);
+--text-headline-lg:700 32px/1.2 var(--font-display);
+--text-headline-md:700 28px/1.2 var(--font-display);
+--text-headline-sm:700 24px/1.25 var(--font-display);
+--text-title-lg:700 22px/1.3 var(--font-body);
+--text-title-md:700 18px/1.4 var(--font-body);
+--text-body-lg:400 16px/1.7 var(--font-body);
+--text-body-md:400 14px/1.7 var(--font-body);
+--text-body-sm:400 12px/1.7 var(--font-body);
+--text-label-lg:500 14px/1.4 var(--font-body);
+--text-label-sm:600 11px/1.4 var(--font-micro);--ls-label-sm:0.14em;
+}
+body{font:var(--text-body-md);color:var(--text-primary);background:var(--bg-app);margin:0;-webkit-font-smoothing:antialiased}
+a{color:var(--brand-primary);text-decoration:none}a:hover{color:var(--brand-primary-dark)}

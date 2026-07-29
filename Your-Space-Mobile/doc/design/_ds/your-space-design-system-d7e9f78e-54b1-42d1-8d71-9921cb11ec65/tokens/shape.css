@@ -1,0 +1,10 @@
+:root{
+/* Radii */
+--radius-input:14px;--radius-button:24px;--radius-card:28px;--radius-sheet:28px;--radius-chip:999px;--radius-snackbar:14px;
+/* Shadows */
+--shadow-soft:0 4px 24px rgba(0,0,0,0.06);--shadow-soft-lg:0 12px 40px rgba(0,0,0,0.08);--shadow-brand:0 8px 28px rgba(177,30,46,0.22);--shadow-header:0 12px 40px rgba(0,0,0,0.45);
+/* Component metrics */
+--button-height:52px;--input-pad-x:16px;--input-pad-y:14px;--tap-min:44px;
+/* Spacing scale (inferred 4px base; source pads: 16h/14v) */
+--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-7:28px;--sp-8:32px;
+}

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/shape.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/tokens/icons.css">
+  <link rel="stylesheet" href="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/styles.css">
+  <script src="_ds/your-space-design-system-d7e9f78e-54b1-42d1-8d71-9921cb11ec65/_ds_bundle.js"></script>
+  <style>@keyframes ys-spin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="min-height:100vh;padding:36px 40px 56px;display:flex;flex-direction:column;gap:28px;align-items:flex-start">
+  <div style="background:var(--surface);border-radius:16px;box-shadow:var(--shadow-soft);padding:20px 24px;max-width:1100px;display:flex;flex-direction:column;gap:8px">
+    <span style="font:var(--text-title-lg);color:var(--text-primary)">Auth flow — 1 Login · 2 Register · 3 Confirm email · 4 Forgot · 5 Reset · 6 Change password (settings)</span>
+    <span style="font:var(--text-body-md);color:var(--text-secondary)">Fields and rules match the backend contract exactly: RegisterDto (FirstName, LastName, Email, PhoneNumber intl format, Password, ConfirmPassword), 6-digit OTP with 5 attempts (Otp.Invalid/LockedOut inline), anti-enumeration copy on forgot-password, Auth.Register.EmailExists inline under email, network failures → error Snackbar. Components reused from Login as approved; new here: the OTP input, built on the Input pattern.</span>
+    <span style="font:var(--text-body-sm);color:var(--text-hint)">Try it: log in with password "password123" (an email containing "unverified" routes to Confirm email) · OTP "123456" verifies · register with an email containing "exists" → email-taken error · Change password accepts current password "password123" · Tweaks: Arabic/RTL, simulate network error.</span>
+  </div>
+  <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">1 · Login — default</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <sc-if value="{{ isLoginForm }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;display:flex;flex-direction:column;padding:0 16px">
+            <div style="display:flex;justify-content:center;padding:72px 0 48px"><span dir="ltr" style="display:flex;align-items:center;gap:14px"><img src="assets/logo.svg" width="52" height="52" alt="Your Space mark"><span style="font:800 30px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></span></div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" placeholder="you@example.com" icon="mail" type="email" dir="ltr" value="{{ loginEmail }}" on-change="{{ loginSetEmail }}" hint-size="100%,84px"></x-import>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
+                <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.loginPw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                  <span class="msr" style="font-size:20px;color:{{ f.loginPw.iconColor }}">lock</span>
+                  <input type="{{ f.loginPw.type }}" placeholder="••••••••" value="{{ f.loginPw.v }}" data-k="loginPw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                  <button type="button" data-k="loginPw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.loginPw.eye }}</span></button>
+                </div>
+                <sc-if value="{{ loginHasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ loginErrText }}</span></sc-if>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Checkbox" checked="{{ remember }}" on-change="{{ toggleRemember }}" label="{{ t.remember }}" hint-size="140px,44px"></x-import>
+                <a href="#" onClick="{{ prevent }}" style="font:var(--text-label-lg)">{{ t.forgot }}</a>
+              </div>
+              <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ loginSubmit }}" hint-size="100%,52px">
+                  <sc-if value="{{ busyLogin }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></sc-if>
+                  <sc-if value="{{ notBusyLogin }}" hint-placeholder-val="{{ true }}">{{ t.logIn }}</sc-if>
+                </x-import>
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,40px"><span style="color:var(--text-secondary);font-weight:400">{{ t.noAccount }}</span> {{ t.signUp }}</x-import>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isLoginUnv }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 28px;text-align:center">
+            <span style="width:72px;height:72px;border-radius:50%;background:var(--brand-red-soft);display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:34px;color:var(--brand-primary)">mark_email_unread</span></span>
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.unvTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.unvBody }}</span>
+            <div style="border:1.5px dashed var(--divider);border-radius:14px;padding:12px 16px;font:var(--text-body-sm);color:var(--text-hint);max-width:300px" dir="ltr">→ Unverified accounts never see a generic error — they route to Confirm email (frame 3).</div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" on-click="{{ backLoginClick }}" hint-size="140px,40px">{{ t.backLogin }}</x-import>
+          </div>
+        </sc-if>
+        <sc-if value="{{ net.login }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ loginSubmit }}" hint-size="100%,52px"></x-import></div></sc-if>
+        <sc-if value="{{ done.login }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="dark" message="{{ t.loginDoneMsg }}" hint-size="100%,52px"></x-import></div></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">1b · Login — submitting</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px">
+          <div style="display:flex;justify-content:center;padding:72px 0 48px"><span dir="ltr" style="display:flex;align-items:center;gap:14px"><img src="assets/logo.svg" width="52" height="52" alt="Your Space mark"><span style="font:800 30px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></span></div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" icon="mail" type="email" dir="ltr" value="sara@example.com" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box">
+                <span class="msr" style="font-size:20px;color:var(--text-hint)">lock</span>
+                <input type="password" value="password123" onChange="{{ noopEvent }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:default;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint)">visibility</span></button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Checkbox" checked="{{ true }}" label="{{ t.remember }}" hint-size="140px,44px"></x-import>
+              <a href="#" onClick="{{ prevent }}" style="font:var(--text-label-lg)">{{ t.forgot }}</a>
+            </div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" hint-size="100%,52px"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,40px"><span style="color:var(--text-secondary);font-weight:400">{{ t.noAccount }}</span> {{ t.signUp }}</x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">2 · Register — default</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px;overflow-y:auto">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:28px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:10px 0 22px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.regTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.regBody }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.firstName }}" value="{{ reg.first }}" on-change="{{ regSetFirst }}" error="{{ err.regFirst }}" hint-size="100%,84px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.lastName }}" value="{{ reg.last }}" on-change="{{ regSetLast }}" error="{{ err.regLast }}" hint-size="100%,84px"></x-import>
+            </div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" placeholder="you@example.com" icon="mail" type="email" dir="ltr" value="{{ reg.email }}" on-change="{{ regSetEmail }}" error="{{ err.regEmail }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phone }}" placeholder="+201234567890" icon="call" type="tel" dir="ltr" value="{{ reg.phone }}" on-change="{{ regSetPhone }}" error="{{ err.regPhone }}" hint-size="100%,84px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.regPw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.regPw.iconColor }}">lock</span>
+                <input type="{{ f.regPw.type }}" placeholder="••••••••" value="{{ f.regPw.v }}" data-k="regPw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="regPw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.regPw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.regPw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.regPw.error }}</span></sc-if>
+              <sc-if value="{{ f.regPw.showHint }}" hint-placeholder-val="{{ true }}"><span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.pwRule }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.confirmPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.regCpw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.regCpw.iconColor }}">lock</span>
+                <input type="{{ f.regCpw.type }}" placeholder="••••••••" value="{{ f.regCpw.v }}" data-k="regCpw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="regCpw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.regCpw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.regCpw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.regCpw.error }}</span></sc-if>
+            </div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;padding-bottom:20px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ regSubmit }}" hint-size="100%,52px">
+                <sc-if value="{{ busyReg }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></sc-if>
+                <sc-if value="{{ notBusyReg }}" hint-placeholder-val="{{ true }}">{{ t.createAccount }}</sc-if>
+              </x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,40px"><span style="color:var(--text-secondary);font-weight:400">{{ t.haveAccount }}</span> {{ t.logIn }}</x-import>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ net.reg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ regSubmit }}" hint-size="100%,52px"></x-import></div></sc-if>
+        <sc-if value="{{ done.reg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="dark" message="{{ t.regDoneMsg }}" hint-size="100%,52px"></x-import></div></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">2b · Register — submitting</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px;overflow-y:auto">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:28px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:10px 0 22px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.regTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.regBody }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.firstName }}" value="Sara" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.lastName }}" value="Ahmed" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            </div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" icon="mail" type="email" dir="ltr" value="sara@example.com" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phone }}" icon="call" type="tel" dir="ltr" value="+201234567890" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box">
+                <span class="msr" style="font-size:20px;color:var(--text-hint)">lock</span>
+                <input type="password" value="Passw0rd!x" onChange="{{ noopEvent }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:default;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint)">visibility</span></button>
+              </div>
+              <span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.pwRule }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.confirmPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box">
+                <span class="msr" style="font-size:20px;color:var(--text-hint)">lock</span>
+                <input type="password" value="Passw0rd!x" onChange="{{ noopEvent }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:default;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint)">visibility</span></button>
+              </div>
+            </div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;padding-bottom:20px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" hint-size="100%,52px"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,40px"><span style="color:var(--text-secondary);font-weight:400">{{ t.haveAccount }}</span> {{ t.logIn }}</x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">3 · Confirm email (OTP)</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:48px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:14px 0 28px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.otpTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.otpBody }} <b style="color:var(--text-primary)" dir="ltr">sara@example.com</b></span>
+          </div>
+          <sc-if value="{{ otpFormVisible }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div dir="ltr" style="display:flex;justify-content:center;gap:10px">
+                <sc-for list="{{ otpCells }}" as="c" hint-placeholder-count="6">
+                  <input inputMode="numeric" autoComplete="one-time-code" value="{{ c.v }}" data-s="otp" data-i="{{ $index }}" onChange="{{ otpChange }}" onKeyDown="{{ otpKey }}" onFocus="{{ otpCellFocus }}" onBlur="{{ otpCellBlur }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:{{ c.border }};font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0;transition:border-color .15s">
+                </sc-for>
+              </div>
+              <sc-if value="{{ otpHasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error);text-align:center">{{ err.otp }}</span></sc-if>
+              <div style="display:flex;justify-content:center;min-height:24px">
+                <sc-if value="{{ canResend }}" hint-placeholder-val="{{ false }}"><a href="#" onClick="{{ resend }}" style="font:var(--text-label-lg)">{{ t.resend }}</a></sc-if>
+                <sc-if value="{{ waitingResend }}" hint-placeholder-val="{{ true }}"><span style="font:var(--text-label-lg);color:var(--text-hint)">{{ resendLabel }}</span></sc-if>
+              </div>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ verify }}" hint-size="100%,52px">{{ t.verify }}</x-import>
+            </div>
+          </sc-if>
+          <sc-if value="{{ done.otp }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 12px;text-align:center">
+              <span style="width:72px;height:72px;border-radius:50%;background:var(--tint-success);display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:34px;color:var(--color-success)">check</span></span>
+              <span style="font:var(--text-title-md);color:var(--text-primary)">{{ t.otpDoneTitle }}</span>
+              <div style="border:1.5px dashed var(--divider);border-radius:14px;padding:12px 16px;font:var(--text-body-sm);color:var(--text-hint);max-width:300px" dir="ltr">→ Routes to Home (verified accounts) — outside this flow.</div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ net.otp }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ verify }}" hint-size="100%,52px"></x-import></div></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">4 · Forgot password</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:48px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:14px 0 28px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.fpTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.fpBody }}</span>
+          </div>
+          <sc-if value="{{ fpFormVisible }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" placeholder="you@example.com" icon="mail" type="email" dir="ltr" value="{{ fpEmail }}" on-change="{{ fpSetEmail }}" error="{{ err.fpEmail }}" hint-size="100%,84px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ fpSubmit }}" hint-size="100%,52px">{{ t.sendReset }}</x-import>
+            </div>
+          </sc-if>
+          <sc-if value="{{ done.fp }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 12px;text-align:center">
+              <span style="width:72px;height:72px;border-radius:50%;background:var(--brand-red-soft);display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:34px;color:var(--brand-primary)">mark_email_read</span></span>
+              <span style="font:var(--text-body-md);color:var(--text-secondary);max-width:300px">{{ t.fpSent }}</span>
+              <div style="border:1.5px dashed var(--divider);border-radius:14px;padding:12px 16px;font:var(--text-body-sm);color:var(--text-hint);max-width:300px" dir="ltr">→ Continues to Reset password (next frame). Copy stays neutral — the API returns 200 whether or not the email exists (anti-enumeration).</div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ net.fp }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ fpSubmit }}" hint-size="100%,52px"></x-import></div></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">5 · Reset password — default</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:36px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:12px 0 24px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.rpTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.rpBody }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div dir="ltr" style="display:flex;justify-content:center;gap:10px">
+              <sc-for list="{{ rpCells }}" as="c" hint-placeholder-count="6">
+                <input inputMode="numeric" autoComplete="one-time-code" value="{{ c.v }}" data-s="rp" data-i="{{ $index }}" onChange="{{ otpChange }}" onKeyDown="{{ otpKey }}" onFocus="{{ otpCellFocus }}" onBlur="{{ otpCellBlur }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:{{ c.border }};font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0;transition:border-color .15s">
+              </sc-for>
+            </div>
+            <sc-if value="{{ rpHasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error);text-align:center">{{ err.rp }}</span></sc-if>
+            <div style="display:flex;justify-content:center;min-height:24px">
+              <sc-if value="{{ rpCanResend }}" hint-placeholder-val="{{ false }}"><a href="#" onClick="{{ resendRp }}" style="font:var(--text-label-lg)">{{ t.resend }}</a></sc-if>
+              <sc-if value="{{ rpWaitingResend }}" hint-placeholder-val="{{ true }}"><span style="font:var(--text-label-lg);color:var(--text-hint)">{{ rpResendLabel }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.newPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.rpPw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.rpPw.iconColor }}">lock</span>
+                <input type="{{ f.rpPw.type }}" placeholder="••••••••" value="{{ f.rpPw.v }}" data-k="rpPw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="rpPw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.rpPw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.rpPw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.rpPw.error }}</span></sc-if>
+              <sc-if value="{{ f.rpPw.showHint }}" hint-placeholder-val="{{ true }}"><span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.pwRule }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.confirmNewPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.rpCpw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.rpCpw.iconColor }}">lock</span>
+                <input type="{{ f.rpCpw.type }}" placeholder="••••••••" value="{{ f.rpCpw.v }}" data-k="rpCpw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="rpCpw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.rpCpw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.rpCpw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.rpCpw.error }}</span></sc-if>
+            </div>
+            <div style="margin-top:8px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ rpSubmit }}" hint-size="100%,52px">
+                <sc-if value="{{ busyRp }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></sc-if>
+                <sc-if value="{{ notBusyRp }}" hint-placeholder-val="{{ true }}">{{ t.resetPw }}</sc-if>
+              </x-import>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ net.rp }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ rpSubmit }}" hint-size="100%,52px"></x-import></div></sc-if>
+        <sc-if value="{{ done.rp }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="dark" message="{{ t.rpDoneMsg }}" hint-size="100%,52px"></x-import></div></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">5b · Reset password — submitting</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:36px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:12px 0 24px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.rpTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.rpBody }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div dir="ltr" style="display:flex;justify-content:center;gap:10px">
+              <input inputMode="numeric" value="4" onChange="{{ noopEvent }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0">
+              <input inputMode="numeric" value="8" onChange="{{ noopEvent }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0">
+              <input inputMode="numeric" value="2" onChange="{{ noopEvent }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0">
+              <input inputMode="numeric" value="9" onChange="{{ noopEvent }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0">
+              <input inputMode="numeric" value="0" onChange="{{ noopEvent }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0">
+              <input inputMode="numeric" value="7" onChange="{{ noopEvent }}" style="width:46px;height:56px;text-align:center;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;font:700 22px/1 var(--font-body);color:var(--text-primary);outline:none;box-sizing:border-box;padding:0">
+            </div>
+            <div style="display:flex;justify-content:center;min-height:24px"><span style="font:var(--text-label-lg);color:var(--text-hint)">{{ t.resendIn }} 0:24</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.newPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box">
+                <span class="msr" style="font-size:20px;color:var(--text-hint)">lock</span>
+                <input type="password" value="Passw0rd!x" onChange="{{ noopEvent }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:default;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint)">visibility</span></button>
+              </div>
+              <span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.pwRule }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.confirmNewPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box">
+                <span class="msr" style="font-size:20px;color:var(--text-hint)">lock</span>
+                <input type="password" value="Passw0rd!x" onChange="{{ noopEvent }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:default;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint)">visibility</span></button>
+              </div>
+            </div>
+            <div style="margin-top:8px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" hint-size="100%,52px"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">6 · Change password — authenticated (settings)</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="padding-top:4px"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.cpTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:12px 16px 0">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.currentPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.cpCur.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.cpCur.iconColor }}">lock</span>
+                <input type="{{ f.cpCur.type }}" placeholder="••••••••" value="{{ f.cpCur.v }}" data-k="cpCur" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="cpCur" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.cpCur.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.cpCur.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.cpCur.error }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.newPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.cpPw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.cpPw.iconColor }}">lock</span>
+                <input type="{{ f.cpPw.type }}" placeholder="••••••••" value="{{ f.cpPw.v }}" data-k="cpPw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="cpPw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.cpPw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.cpPw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.cpPw.error }}</span></sc-if>
+              <sc-if value="{{ f.cpPw.showHint }}" hint-placeholder-val="{{ true }}"><span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.pwRule }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.confirmNewPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.cpCpw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.cpCpw.iconColor }}">lock</span>
+                <input type="{{ f.cpCpw.type }}" placeholder="••••••••" value="{{ f.cpCpw.v }}" data-k="cpCpw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="cpCpw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.cpCpw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.cpCpw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.cpCpw.error }}</span></sc-if>
+            </div>
+            <div style="margin-top:8px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ cpSubmit }}" hint-size="100%,52px">{{ t.updatePw }}</x-import>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ net.cp }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ cpSubmit }}" hint-size="100%,52px"></x-import></div></sc-if>
+        <sc-if value="{{ done.cp }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="dark" message="{{ t.cpDoneMsg }}" hint-size="100%,52px"></x-import></div></sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:1060},
+&quot;language&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;English&quot;,&quot;Arabic&quot;],&quot;default&quot;:&quot;English&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},
+&quot;simulateNetworkError&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+class Component extends DCLogic {
+  state = {
+    reg:{first:'',last:'',email:'',phone:''}, fpEmail:'',
+    login:{email:''}, remember:false, loginView:'form',
+    pw:{loginPw:'',regPw:'',regCpw:'',rpPw:'',rpCpw:'',cpCur:'',cpPw:'',cpCpw:''},
+    show:{}, err:{}, focus:null,
+    otpD:['','','','','',''], rpD:['','','','','',''],
+    otpAttempts:5, otpResend:30, rpResend:30,
+    busy:{reg:false,rp:false,login:false}, net:{}, done:{}
+  };
+  componentDidMount(){ this._iv=setInterval(()=>{ if(this.state.otpResend>0||this.state.rpResend>0) this.setState(s=>({otpResend:Math.max(s.otpResend-1,0),rpResend:Math.max(s.rpResend-1,0)})); },1000); }
+  componentWillUnmount(){ clearInterval(this._iv); clearTimeout(this._t1); clearTimeout(this._t2); clearTimeout(this._t3); clearTimeout(this._t4); clearTimeout(this._t5); }
+  strings(){
+    const ar=(this.props.language??'English')==='Arabic';
+    return ar?{
+      firstName:'الاسم الأول',lastName:'اسم العائلة',email:'البريد الإلكتروني',phone:'رقم الهاتف',
+      password:'كلمة المرور',confirmPassword:'تأكيد كلمة المرور',newPassword:'كلمة المرور الجديدة',confirmNewPassword:'تأكيد كلمة المرور الجديدة',currentPassword:'كلمة المرور الحالية',
+      pwRule:'٨ أحرف على الأقل، وتشمل حرفًا كبيرًا وصغيرًا ورقمًا ورمزًا',
+      regTitle:'أنشئ حسابك',regBody:'خطط مناسباتك وتابع أهلك وأصحابك في مكان واحد',createAccount:'إنشاء حساب',haveAccount:'لديك حساب بالفعل؟',logIn:'تسجيل الدخول',
+      otpTitle:'أكّد بريدك الإلكتروني',otpBody:'أدخل الرمز المكوّن من ٦ أرقام الذي أرسلناه إلى',verify:'تأكيد',resend:'إعادة إرسال الرمز',resendIn:'إعادة الإرسال بعد',otpDoneTitle:'تم تأكيد بريدك',
+      fpTitle:'نسيت كلمة المرور؟',fpBody:'أدخل بريدك الإلكتروني وسنرسل لك رمز إعادة التعيين',sendReset:'إرسال رمز إعادة التعيين',fpSent:'إذا كان هذا البريد مسجلاً لدينا، فرمز إعادة التعيين في طريقه إليك. تفقد بريدك.',
+      rpTitle:'أعد تعيين كلمة المرور',rpBody:'أدخل الرمز الذي أرسلناه واختر كلمة مرور جديدة',resetPw:'إعادة تعيين كلمة المرور',
+      cpTitle:'تغيير كلمة المرور',updatePw:'تحديث كلمة المرور',
+      reqFirst:'أدخل اسمك الأول',reqLast:'أدخل اسم العائلة',badEmail:'أدخل بريدًا إلكترونيًا صحيحًا',badPhone:'أدخل رقم هاتف صحيحًا، مثل ‎+201234567890',pwMismatch:'كلمتا المرور غير متطابقتين',emailExists:'يوجد حساب بهذا البريد الإلكتروني بالفعل',
+      otpIncomplete:'أدخل الرمز المكوّن من ٦ أرقام',otpWrong:'رمز غير صحيح — تبقى {n} محاولات',otpLocked:'محاولات كثيرة. اطلب رمزًا جديدًا.',otpBad:'الرمز غير صحيح أو منتهي الصلاحية',curWrong:'كلمة المرور الحالية غير صحيحة',
+      netMsg:'حدث خطأ ما. تحقق من اتصالك وحاول مرة أخرى.',retry:'إعادة المحاولة',
+      regDoneMsg:'تم إنشاء حسابك! التالي: تأكيد بريدك الإلكتروني.',rpDoneMsg:'تمت إعادة تعيين كلمة المرور — سجّل الدخول بكلمتك الجديدة.',cpDoneMsg:'تم تحديث كلمة المرور.',
+      remember:'تذكرني',forgot:'نسيت كلمة المرور؟',noAccount:'ليس لديك حساب؟',signUp:'أنشئ حسابًا',
+      loginError:'البريد الإلكتروني أو كلمة المرور غير صحيحة',loginDoneMsg:'أهلاً بعودتك! هنا تُفتح الشاشة الرئيسية.',
+      unvTitle:'أكّد بريدك الإلكتروني',unvBody:'حسابك لم يتم تأكيده بعد.',backLogin:'العودة لتسجيل الدخول'
+    }:{
+      firstName:'First name',lastName:'Last name',email:'Email',phone:'Phone number',
+      password:'Password',confirmPassword:'Confirm password',newPassword:'New password',confirmNewPassword:'Confirm new password',currentPassword:'Current password',
+      pwRule:'At least 8 characters, with an uppercase and lowercase letter, a number and a symbol',
+      regTitle:'Create your account',regBody:'Plan events and keep up with your people',createAccount:'Create account',haveAccount:'Already have an account?',logIn:'Log in',
+      otpTitle:'Confirm your email',otpBody:'Enter the 6-digit code we sent to',verify:'Verify',resend:'Resend code',resendIn:'Resend code in',otpDoneTitle:'Email confirmed',
+      fpTitle:'Forgot your password?',fpBody:"Enter your email and we'll send you a reset code",sendReset:'Send reset code',fpSent:"If that email is registered, a reset code is on its way. Check your inbox.",
+      rpTitle:'Reset your password',rpBody:'Enter the code we sent and choose a new password',resetPw:'Reset password',
+      cpTitle:'Change password',updatePw:'Update password',
+      reqFirst:'Enter your first name',reqLast:'Enter your last name',badEmail:'Enter a valid email',badPhone:'Enter a valid phone number, e.g. +201234567890',pwMismatch:"Passwords don't match",emailExists:'An account with this email already exists',
+      otpIncomplete:'Enter the 6-digit code',otpWrong:'Incorrect code — {n} attempts left',otpLocked:'Too many attempts. Request a new code.',otpBad:'Incorrect or expired code',curWrong:'Your current password is incorrect',
+      netMsg:'Something went wrong. Check your connection and try again.',retry:'Retry',
+      regDoneMsg:'Account created! Next: confirm your email.',rpDoneMsg:'Password reset — log in with your new password.',cpDoneMsg:'Password updated.',
+      remember:'Remember me',forgot:'Forgot password?',noAccount:"Don't have an account?",signUp:'Sign up',
+      loginError:'Incorrect email or password',loginDoneMsg:'Welcome back! This is where Home would load.',
+      unvTitle:'Confirm your email',unvBody:"Your account isn't verified yet.",backLogin:'Back to log in'
+    };
+  }
+  strong(p){ return p.length>=8&&/[A-Z]/.test(p)&&/[a-z]/.test(p)&&/\d/.test(p)&&/[^A-Za-z0-9]/.test(p); }
+  setErrs(e){ this.setState(s=>({err:{...s.err,...e}})); }
+  flashNet(k){ this.setState(s=>({net:{...s.net,[k]:true}})); this._t2=setTimeout(()=>this.setState(s=>({net:{...s.net,[k]:false}})),5000); }
+  flashDone(k){ this.setState(s=>({done:{...s.done,[k]:true}})); this._t3=setTimeout(()=>this.setState(s=>({done:{...s.done,[k]:false}})),4000); }
+  loginSubmit(){
+    if(this.state.busy.login) return;
+    this.setState(s=>({busy:{...s.busy,login:true},err:{...s.err,login:null}}));
+    this._t5=setTimeout(()=>{
+      this.setState(s=>({busy:{...s.busy,login:false}}));
+      if(this.props.simulateNetworkError){ this.flashNet('login'); return; }
+      const em=this.state.login.email.toLowerCase().trim();
+      if(em.includes('unverified')){ this.setState({loginView:'unverified'}); return; }
+      if(em&&this.state.pw.loginPw==='password123'){ this.flashDone('login'); return; }
+      this.setErrs({login:this.strings().loginError});
+    },1400);
+  }
+  resendRp(e){ e&&e.preventDefault(); this.setState(s=>({rpResend:30,rpD:['','','','','',''],err:{...s.err,rp:null}})); }
+  regSubmit(){
+    if(this.state.busy.reg) return;
+    const T=this.strings(),{reg,pw}=this.state,e={};
+    e.regFirst=reg.first.trim()?null:T.reqFirst;
+    e.regLast=reg.last.trim()?null:T.reqLast;
+    e.regEmail=/^\S+@\S+\.\S+$/.test(reg.email.trim())?null:T.badEmail;
+    e.regPhone=/^\+?[1-9]\d{7,14}$/.test(reg.phone.trim())?null:T.badPhone;
+    e.regPw=this.strong(pw.regPw)?null:T.pwRule;
+    e.regCpw=(pw.regCpw&&pw.regCpw===pw.regPw)?null:T.pwMismatch;
+    this.setErrs(e);
+    if(Object.values(e).some(Boolean)) return;
+    this.setState(s=>({busy:{...s.busy,reg:true}}));
+    this._t1=setTimeout(()=>{
+      this.setState(s=>({busy:{...s.busy,reg:false}}));
+      if(this.props.simulateNetworkError){ this.flashNet('reg'); return; }
+      if(reg.email.toLowerCase().includes('exists')){ this.setErrs({regEmail:T.emailExists}); return; }
+      this.flashDone('reg');
+    },1400);
+  }
+  verify(){
+    const T=this.strings(),code=this.state.otpD.join('');
+    if(code.length<6){ this.setErrs({otp:T.otpIncomplete}); return; }
+    if(this.props.simulateNetworkError){ this.flashNet('otp'); return; }
+    if(this.state.otpAttempts<=0){ this.setErrs({otp:T.otpLocked}); return; }
+    if(code==='123456'){ this.setState(s=>({done:{...s.done,otp:true}})); return; }
+    const left=this.state.otpAttempts-1;
+    this.setState(s=>({otpAttempts:left,err:{...s.err,otp:left>0?T.otpWrong.replace('{n}',left):T.otpLocked}}));
+  }
+  resend(e){
+    e&&e.preventDefault();
+    this.setState(s=>({otpResend:30,otpAttempts:5,otpD:['','','','','',''],err:{...s.err,otp:null}}));
+  }
+  fpSubmit(){
+    const T=this.strings();
+    if(!/^\S+@\S+\.\S+$/.test(this.state.fpEmail.trim())){ this.setErrs({fpEmail:T.badEmail}); return; }
+    if(this.props.simulateNetworkError){ this.flashNet('fp'); return; }
+    this.setState(s=>({done:{...s.done,fp:true}}));
+  }
+  rpSubmit(){
+    if(this.state.busy.rp) return;
+    const T=this.strings(),{pw}=this.state,code=this.state.rpD.join(''),e={};
+    e.rp=code.length<6?T.otpIncomplete:null;
+    e.rpPw=this.strong(pw.rpPw)?null:T.pwRule;
+    e.rpCpw=(pw.rpCpw&&pw.rpCpw===pw.rpPw)?null:T.pwMismatch;
+    this.setErrs(e);
+    if(Object.values(e).some(Boolean)) return;
+    this.setState(s=>({busy:{...s.busy,rp:true}}));
+    this._t4=setTimeout(()=>{
+      this.setState(s=>({busy:{...s.busy,rp:false}}));
+      if(this.props.simulateNetworkError){ this.flashNet('rp'); return; }
+      if(code!=='123456'){ this.setErrs({rp:T.otpBad}); return; }
+      this.flashDone('rp');
+    },1400);
+  }
+  cpSubmit(){
+    const T=this.strings(),{pw}=this.state,e={};
+    e.cpCur=pw.cpCur?null:T.curWrong;
+    e.cpPw=this.strong(pw.cpPw)?null:T.pwRule;
+    e.cpCpw=(pw.cpCpw&&pw.cpCpw===pw.cpPw)?null:T.pwMismatch;
+    this.setErrs(e);
+    if(Object.values(e).some(Boolean)) return;
+    if(this.props.simulateNetworkError){ this.flashNet('cp'); return; }
+    if(pw.cpCur!=='password123'){ this.setErrs({cpCur:T.curWrong}); return; }
+    this.setState(s=>({pw:{...s.pw,cpCur:'',cpPw:'',cpCpw:''}}));
+    this.flashDone('cp');
+  }
+  mkField(k,hasHint){
+    const s=this.state,err=s.err[k];
+    return {
+      v:s.pw[k], type:s.show[k]?'text':'password', eye:s.show[k]?'visibility_off':'visibility',
+      border:err?'1.5px solid var(--color-error)':(s.focus===k?'1.5px solid var(--brand-primary)':'1.5px solid transparent'),
+      iconColor:s.focus===k?'var(--brand-primary)':'var(--text-hint)',
+      error:err||'', hasError:!!err, showHint:!!hasHint&&!err
+    };
+  }
+  mkCells(digits,errKey,sec){
+    const s=this.state;
+    return digits.map((v,i)=>({v,border:s.err[errKey]?'1.5px solid var(--color-error)':(s.focus===sec+i?'1.5px solid var(--brand-primary)':'1.5px solid transparent')}));
+  }
+  renderVals(){
+    const s=this.state,T=this.strings();
+    const ar=(this.props.language??'English')==='Arabic';
+    const sec=n=>String(n).padStart(2,'0');
+    const F={loginPw:this.mkField('loginPw',false),regPw:this.mkField('regPw',true),regCpw:this.mkField('regCpw',false),rpPw:this.mkField('rpPw',true),rpCpw:this.mkField('rpCpw',false),cpCur:this.mkField('cpCur',false),cpPw:this.mkField('cpPw',true),cpCpw:this.mkField('cpCpw',false)};
+    if(s.err.login){ F.loginPw.border='1.5px solid var(--color-error)'; }
+    return {
+      t:T, dir:ar?'rtl':'ltr',
+      reg:s.reg, fpEmail:s.fpEmail, err:s.err, net:s.net, done:s.done,
+      busyReg:s.busy.reg, notBusyReg:!s.busy.reg, busyRp:s.busy.rp, notBusyRp:!s.busy.rp,
+      otpFormVisible:!s.done.otp, fpFormVisible:!s.done.fp,
+      otpHasError:!!s.err.otp, rpHasError:!!s.err.rp,
+      otpCells:this.mkCells(s.otpD,'otp','otp'), rpCells:this.mkCells(s.rpD,'rp','rp'),
+      canResend:s.otpResend<=0, waitingResend:s.otpResend>0,
+      resendLabel:T.resendIn+' 0:'+sec(Math.max(s.otpResend,0)),
+      f:F,
+      loginEmail:s.login.email, remember:s.remember,
+      busyLogin:s.busy.login, notBusyLogin:!s.busy.login,
+      loginHasError:!!s.err.login, loginErrText:s.err.login||'',
+      isLoginForm:s.loginView==='form', isLoginUnv:s.loginView==='unverified',
+      rpCanResend:s.rpResend<=0, rpWaitingResend:s.rpResend>0,
+      rpResendLabel:T.resendIn+' 0:'+sec(Math.max(s.rpResend,0)),
+      loginSetEmail:v=>this.setState(st=>({login:{email:v},err:{...st.err,login:null}})),
+      toggleRemember:v=>this.setState({remember:v}),
+      loginSubmit:()=>this.loginSubmit(), resendRp:e=>this.resendRp(e),
+      backLoginClick:()=>this.setState({loginView:'form'}),
+      prevent:e=>e.preventDefault(), noopEvent:()=>{},
+      regSetFirst:v=>this.setState(st=>({reg:{...st.reg,first:v},err:{...st.err,regFirst:null}})),
+      regSetLast:v=>this.setState(st=>({reg:{...st.reg,last:v},err:{...st.err,regLast:null}})),
+      regSetEmail:v=>this.setState(st=>({reg:{...st.reg,email:v},err:{...st.err,regEmail:null}})),
+      regSetPhone:v=>this.setState(st=>({reg:{...st.reg,phone:v},err:{...st.err,regPhone:null}})),
+      fpSetEmail:v=>this.setState(st=>({fpEmail:v,err:{...st.err,fpEmail:null}})),
+      pwChange:e=>{const k=e.currentTarget.dataset.k,v=e.currentTarget.value;this.setState(st=>({pw:{...st.pw,[k]:v},err:{...st.err,[k]:null,...(k==='loginPw'?{login:null}:{})}}));},
+      pwFocus:e=>this.setState({focus:e.currentTarget.dataset.k}),
+      pwBlur:()=>this.setState({focus:null}),
+      pwToggle:e=>{const k=e.currentTarget.dataset.k;this.setState(st=>({show:{...st.show,[k]:!st.show[k]}}));},
+      otpChange:e=>{
+        const el=e.currentTarget,secN=el.dataset.s,i=+el.dataset.i;
+        const dk=secN==='otp'?'otpD':'rpD',ek=secN==='otp'?'otp':'rp';
+        const raw=el.value.replace(/\D/g,'');
+        this.setState(st=>{const d=[...st[dk]];if(raw.length<=1){d[i]=raw;}else{for(let j=0;j<raw.length&&i+j<6;j++)d[i+j]=raw[j];}return {[dk]:d,err:{...st.err,[ek]:null}};});
+        if(raw){const parent=el.parentElement,next=Math.min(i+Math.max(raw.length,1),5);if(parent&&parent.children[next])parent.children[next].focus();}
+      },
+      otpKey:e=>{
+        const el=e.currentTarget,i=+el.dataset.i;
+        if(e.key==='Backspace'&&!el.value&&i>0){const p=el.parentElement;if(p&&p.children[i-1])p.children[i-1].focus();}
+      },
+      otpCellFocus:e=>this.setState({focus:e.currentTarget.dataset.s+e.currentTarget.dataset.i}),
+      otpCellBlur:()=>this.setState({focus:null}),
+      regSubmit:()=>this.regSubmit(), verify:()=>this.verify(), resend:e=>this.resend(e),
+      fpSubmit:()=>this.fpSubmit(), rpSubmit:()=>this.rpSubmit(), cpSubmit:()=>this.cpSubmit(),
+      noop:()=>{}
+    };
+  }
+}
+</script>
+</body>
+</html>
