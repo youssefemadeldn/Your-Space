@@ -50,7 +50,6 @@ dependencies:
   intl: ^0.20.2
   easy_localization: ^3.0.8
   url_launcher: ^6.3.2
-  flutter_launcher_icons: ^0.14.4
   shared_preferences: ^2.5.5
   go_router: ^17.3.0
   google_fonts: ^8.2.0
@@ -73,6 +72,7 @@ dev_dependencies:
   # `expectLater(cubit.stream, emitsInOrder([...]))`, which asserts the same
   # state sequences without bloc_test's sugar.
   mocktail: ^1.0.5
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -88,6 +88,7 @@ flutter:
   assets:
     - assets/translations/
     - assets/images/
+    - assets/icons/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -119,3 +120,17 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path_android: "assets/icons/icon_ios_1024.png"
+  image_path_ios: "assets/icons/icon_ios_1024.png"
+  min_sdk_android: 21
+
+  adaptive_icon_background: "assets/icons/icon_android_background_1024.png"
+  adaptive_icon_foreground: "assets/icons/icon_android_foreground_1024.png"
+  adaptive_icon_foreground_inset: 0
+
+  remove_alpha_ios: true
+  background_color_ios: "#ffffff"
