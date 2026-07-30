@@ -1,22 +1,32 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_cubit.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_state.dart';
 
+class MockGroupRepository extends Mock implements GroupRepository {}
+
 void main() {
-  late MockDataStore store;
+  late MockGroupRepository repository;
   late GroupActionCubit cubit;
 
   setUp(() {
-    store = MockDataStore()..simulatedLatency = Duration.zero;
-    cubit = GroupActionCubit(store);
+    repository = MockGroupRepository();
+    cubit = GroupActionCubit(repository);
   });
 
   tearDown(() => cubit.close());
 
-  test('createGroup emits [Submitting, Success] and adds it to the store', () async {
+  test('createGroup emits [Submitting, Success] with the created group', () async {
+    when(() => repository.createGroup(name: any(named: 'name'), nameAr: any(named: 'nameAr')))
+        .thenAnswer((_) async => const Right(Group(id: 5, name: 'Book club')));
+
     final expectation = expectLater(
       cubit.stream,
       emitsInOrder([
@@ -27,12 +37,14 @@ void main() {
 
     unawaited(cubit.createGroup(name: 'Book club'));
     await expectation;
-
-    expect(store.groups().map((g) => g.name), contains('Book club'));
   });
 
   test('updateGroup emits [Submitting, Success] with the renamed group', () async {
-    final family = store.groups().firstWhere((g) => g.name == 'Family');
+    when(() => repository.updateGroup(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          nameAr: any(named: 'nameAr'),
+        )).thenAnswer((_) async => const Right(Group(id: 1, name: 'The Family')));
 
     final expectation = expectLater(
       cubit.stream,
@@ -42,7 +54,20 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.updateGroup(id: family.id, name: 'The Family'));
+    unawaited(cubit.updateGroup(id: 1, name: 'The Family'));
+    await expectation;
+  });
+
+  test('createGroup emits [Submitting, Error] on failure', () async {
+    when(() => repository.createGroup(name: any(named: 'name'), nameAr: any(named: 'nameAr')))
+        .thenAnswer((_) async => const Left(ServerFailure(statusCode: 422, message: 'Name is required')));
+
+    final expectation = expectLater(
+      cubit.stream,
+      emitsInOrder([const GroupActionSubmitting(), isA<GroupActionError>()]),
+    );
+
+    unawaited(cubit.createGroup(name: ''));
     await expectation;
   });
 }

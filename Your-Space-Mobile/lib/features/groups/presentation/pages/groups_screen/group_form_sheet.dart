@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:your_space_mobile/core/helpers/bottom_sheet_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/group.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
 

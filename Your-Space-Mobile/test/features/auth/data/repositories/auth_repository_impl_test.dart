@@ -66,7 +66,7 @@ void main() {
       roles: ['User'],
     );
 
-    test('persists both tokens and returns the entity on success', () async {
+    test('persists both tokens and the remember-me flag, returns the entity on success', () async {
       final authResponse = AuthResponse(
         accessToken: 'access-token',
         accessTokenExpiresAt: DateTime(2030),
@@ -76,31 +76,52 @@ void main() {
       when(() => remote.login(any())).thenAnswer((_) async => Right(authResponse));
       when(() => secureStorage.saveToken(any())).thenAnswer((_) async {});
       when(() => secureStorage.saveRefreshToken(any())).thenAnswer((_) async {});
+      when(() => secureStorage.saveRememberMe(any())).thenAnswer((_) async {});
 
-      final result = await repository.login(email: 'a@a.com', password: 'password123');
+      final result = await repository.login(email: 'a@a.com', password: 'password123', rememberMe: true);
 
       expect(result.isRight(), isTrue);
-      verify(() => secureStorage.saveToken('access-token')).called(1);
-      verify(() => secureStorage.saveRefreshToken('refresh-token')).called(1);
+      verifyInOrder([
+        () => secureStorage.saveToken('access-token'),
+        () => secureStorage.saveRefreshToken('refresh-token'),
+        () => secureStorage.saveRememberMe(true),
+      ]);
+    });
+
+    test('persists rememberMe as false when the box is unchecked', () async {
+      final authResponse = AuthResponse(
+        accessToken: 'access-token',
+        accessTokenExpiresAt: DateTime(2030),
+        refreshToken: 'refresh-token',
+        user: userProfileResponse,
+      );
+      when(() => remote.login(any())).thenAnswer((_) async => Right(authResponse));
+      when(() => secureStorage.saveToken(any())).thenAnswer((_) async {});
+      when(() => secureStorage.saveRefreshToken(any())).thenAnswer((_) async {});
+      when(() => secureStorage.saveRememberMe(any())).thenAnswer((_) async {});
+
+      await repository.login(email: 'a@a.com', password: 'password123', rememberMe: false);
+
+      verify(() => secureStorage.saveRememberMe(false)).called(1);
     });
 
     test('never touches storage on failure', () async {
       const failure = UnauthorizedFailure(errorCode: 'Auth.InvalidCredentials');
       when(() => remote.login(any())).thenAnswer((_) async => const Left(failure));
 
-      final result = await repository.login(email: 'a@a.com', password: 'wrong');
+      final result = await repository.login(email: 'a@a.com', password: 'wrong', rememberMe: true);
 
       expect(result, const Left(failure));
       verifyNever(() => secureStorage.saveToken(any()));
       verifyNever(() => secureStorage.saveRefreshToken(any()));
+      verifyNever(() => secureStorage.saveRememberMe(any()));
     });
   });
 
   group('changePassword', () {
-    test('deletes both tokens on success', () async {
+    test('clears the session on success', () async {
       when(() => remote.changePassword(any())).thenAnswer((_) async => const Right(unit));
-      when(() => secureStorage.deleteToken()).thenAnswer((_) async {});
-      when(() => secureStorage.deleteRefreshToken()).thenAnswer((_) async {});
+      when(() => secureStorage.clearSession()).thenAnswer((_) async {});
 
       final result = await repository.changePassword(
         currentPassword: 'old-password',
@@ -109,8 +130,7 @@ void main() {
       );
 
       expect(result.isRight(), isTrue);
-      verify(() => secureStorage.deleteToken()).called(1);
-      verify(() => secureStorage.deleteRefreshToken()).called(1);
+      verify(() => secureStorage.clearSession()).called(1);
     });
 
     test('never touches storage on failure', () async {
@@ -124,8 +144,7 @@ void main() {
       );
 
       expect(result, const Left(failure));
-      verifyNever(() => secureStorage.deleteToken());
-      verifyNever(() => secureStorage.deleteRefreshToken());
+      verifyNever(() => secureStorage.clearSession());
     });
   });
 }

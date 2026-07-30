@@ -99,10 +99,14 @@ class _EventFormScreenState extends State<EventFormScreen> {
             if (state is EventFormSuccess) {
               getIt<SnackBarHelper>().showSuccess('events.savedMessage'.tr());
               context.pop();
+            } else if (state is EventFormError) {
+              getIt<SnackBarHelper>().showError(state.message);
             }
           },
           builder: (context, state) {
-            if (state is EventFormInitial) return const AppLoadingIndicator();
+            if (state is EventFormInitial || state is EventFormLoading) {
+              return const AppLoadingIndicator();
+            }
             if (state is EventFormReady) _seedFromReady(state);
             final submitting = state is EventFormSubmitting;
 

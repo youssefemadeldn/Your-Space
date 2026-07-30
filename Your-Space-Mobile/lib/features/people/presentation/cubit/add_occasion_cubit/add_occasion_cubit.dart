@@ -1,16 +1,17 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/invite_method.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
+import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 
 import 'add_occasion_state.dart';
 
 @injectable
 class AddOccasionCubit extends Cubit<AddOccasionState> {
-  final MockDataStore _store;
+  final PersonRepository _personRepository;
 
-  AddOccasionCubit(this._store) : super(const AddOccasionInitial());
+  AddOccasionCubit(this._personRepository) : super(const AddOccasionInitial());
 
   Future<void> submit({
     required int personId,
@@ -21,8 +22,7 @@ class AddOccasionCubit extends Cubit<AddOccasionState> {
     String? notes,
   }) async {
     emit(const AddOccasionSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    final entry = _store.addOccasionHistory(
+    final result = await _personRepository.addOccasionHistory(
       personId: personId,
       invitedMe: invitedMe,
       inviteMethod: inviteMethod,
@@ -30,6 +30,9 @@ class AddOccasionCubit extends Cubit<AddOccasionState> {
       occasionDate: occasionDate,
       notes: notes,
     );
-    emit(AddOccasionSuccess(entry));
+    result.fold(
+      (failure) => emit(AddOccasionError(core.failureToMessage(failure))),
+      (entry) => emit(AddOccasionSuccess(entry)),
+    );
   }
 }

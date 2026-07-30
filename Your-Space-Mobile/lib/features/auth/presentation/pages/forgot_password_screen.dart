@@ -81,7 +81,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AppLogoHeader(compact: true),
+                AppLogoHeader(compact: true, logoSize: 44.w),
                 Text(
                   'auth.forgotPassword.title'.tr(),
                   textAlign: TextAlign.center,

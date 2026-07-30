@@ -45,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     context.read<LoginCubit>().login(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          rememberMe: _rememberMe,
         );
   }
 
@@ -84,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AppLogoHeader(),
+                AppLogoHeader(logoSize: 52.w),
                 AppInput(
                   label: 'auth.email'.tr(),
                   hintText: 'you@example.com',

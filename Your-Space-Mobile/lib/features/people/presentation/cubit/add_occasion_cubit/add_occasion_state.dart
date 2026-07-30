@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/person_occasion_history_entry.dart';
+import 'package:your_space_mobile/features/people/domain/entities/person_occasion_history_entry.dart';
 
 sealed class AddOccasionState extends Equatable {
   const AddOccasionState();

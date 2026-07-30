@@ -1,8 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 
+import '../failure_messages.dart';
 import 'event_form_state.dart';
 
 /// Single cubit for both load+submit — mirrors `PersonFormCubit`/
@@ -10,13 +11,21 @@ import 'event_form_state.dart';
 /// simultaneous list.
 @injectable
 class EventFormCubit extends Cubit<EventFormState> {
-  final MockDataStore _store;
+  final EventRepository _eventRepository;
 
-  EventFormCubit(this._store) : super(const EventFormInitial());
+  EventFormCubit(this._eventRepository) : super(const EventFormInitial());
 
-  void initialize(int? eventId) {
-    final event = eventId == null ? null : _store.eventById(eventId);
-    emit(EventFormReady(event: event));
+  Future<void> initialize(int? eventId) async {
+    if (eventId == null) {
+      emit(const EventFormReady());
+      return;
+    }
+    emit(const EventFormLoading());
+    final result = await _eventRepository.getEventById(eventId);
+    result.fold(
+      (failure) => emit(EventFormError(failureToMessage(failure))),
+      (event) => emit(EventFormReady(event: event)),
+    );
   }
 
   Future<void> submit({
@@ -27,10 +36,18 @@ class EventFormCubit extends Cubit<EventFormState> {
     String? notes,
   }) async {
     emit(const EventFormSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    final event = eventId == null
-        ? _store.createEvent(name: name, nameAr: nameAr, eventDate: eventDate, notes: notes)
-        : _store.updateEvent(id: eventId, name: name, nameAr: nameAr, eventDate: eventDate, notes: notes);
-    emit(EventFormSuccess(event));
+    final result = eventId == null
+        ? await _eventRepository.createEvent(name: name, nameAr: nameAr, eventDate: eventDate, notes: notes)
+        : await _eventRepository.updateEvent(
+            id: eventId,
+            name: name,
+            nameAr: nameAr,
+            eventDate: eventDate,
+            notes: notes,
+          );
+    result.fold(
+      (failure) => emit(EventFormError(failureToMessage(failure))),
+      (event) => emit(EventFormSuccess(event)),
+    );
   }
 }

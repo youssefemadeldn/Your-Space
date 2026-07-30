@@ -114,8 +114,7 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<void> _logout() async {
-    await _secureStorage.deleteToken();
-    await _secureStorage.deleteRefreshToken();
+    await _secureStorage.clearSession();
     // `.go` (path-based), not `.goNamed` — safe even before a `/login`
     // GoRoute exists, since an unmatched path falls through to
     // AppRouter's errorBuilder instead of throwing.

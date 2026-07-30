@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart';
@@ -43,6 +44,7 @@ import 'package:your_space_mobile/features/people/presentation/pages/person_deta
 import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
 
 import 'app_routes.dart';
+import 'session_redirect.dart';
 import 'args/add_guests_args.dart';
 import 'args/confirm_email_args.dart';
 import 'args/event_details_args.dart';
@@ -65,7 +67,7 @@ class AppRouter {
       routes: [
         GoRoute(
           path: AppRoutes.splash,
-          redirect: (context, state) => AppRoutes.login,
+          redirect: (context, state) => resolveSplashRedirect(getIt<SecureStorageHelper>()),
         ),
         GoRoute(
           path: AppRoutes.login,

@@ -3,23 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:your_space_mobile/core/mock/entities/group.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_cubit.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list_cubit/groups_list_cubit.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list_cubit/groups_list_state.dart';
 import 'package:your_space_mobile/features/groups/presentation/pages/groups_screen/groups_screen.dart';
 
+class MockGroupRepository extends Mock implements GroupRepository {}
+
 /// `Cubit.emit` is `@protected` and this project has no `bloc_test` dependency
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestGroupsListCubit extends GroupsListCubit {
-  _TestGroupsListCubit(super.store);
+  _TestGroupsListCubit(super.groupRepository);
   void pushState(GroupsListState state) => emit(state);
 }
 
@@ -39,13 +42,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final store = MockDataStore()..simulatedLatency = Duration.zero;
-    final listCubit = _TestGroupsListCubit(store);
-    final actionCubit = GroupActionCubit(store);
+    final groupRepository = MockGroupRepository();
+    final listCubit = _TestGroupsListCubit(groupRepository);
+    final actionCubit = GroupActionCubit(groupRepository);
     addTearDown(listCubit.close);
     addTearDown(actionCubit.close);
 
-    listCubit.pushState(const GroupsListSuccess([]));
+    listCubit.pushState(const GroupsListSuccess([], pageIndex: 1, hasNextPage: false));
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -79,11 +82,11 @@ void main() {
     expect(find.text('No groups yet'), findsOneWidget);
 
     // Success, non-empty → group rows.
-    final groups = [
-      Group(id: 1, name: 'Family', createdAt: DateTime(2026, 1, 1)),
-      Group(id: 2, name: 'Close friends', createdAt: DateTime(2026, 1, 1)),
+    const groups = [
+      Group(id: 1, name: 'Family'),
+      Group(id: 2, name: 'Close friends'),
     ];
-    listCubit.pushState(GroupsListSuccess(groups));
+    listCubit.pushState(const GroupsListSuccess(groups, pageIndex: 1, hasNextPage: false));
     await tester.pumpAndSettle();
     expect(find.text('Family'), findsOneWidget);
     expect(find.text('Close friends'), findsOneWidget);

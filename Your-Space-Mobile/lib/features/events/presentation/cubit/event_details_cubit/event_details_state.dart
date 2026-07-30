@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/event.dart';
-import 'package:your_space_mobile/core/mock/entities/event_guest_progress_summary.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event_guest_progress_summary.dart';
 
 sealed class EventDetailsState extends Equatable {
   const EventDetailsState();

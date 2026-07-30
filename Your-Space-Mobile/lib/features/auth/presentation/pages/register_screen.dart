@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const AppLogoHeader(compact: true),
+                AppLogoHeader(compact: true, logoSize: 44.w),
                 Text(
                   'auth.register.title'.tr(),
                   textAlign: TextAlign.center,

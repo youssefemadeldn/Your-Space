@@ -32,7 +32,11 @@ void main() {
   tearDown(() => cubit.close());
 
   test('emits [Loading, Success] on successful login', () async {
-    when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
+    when(() => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          rememberMe: any(named: 'rememberMe'),
+        ))
         .thenAnswer((_) async => const Right(user));
 
     final expectation = expectLater(
@@ -40,12 +44,28 @@ void main() {
       emitsInOrder([const LoginLoading(), const LoginSuccess(user)]),
     );
 
-    unawaited(cubit.login(email: 'a@a.com', password: 'password123'));
+    unawaited(cubit.login(email: 'a@a.com', password: 'password123', rememberMe: true));
     await expectation;
   });
 
+  test('forwards rememberMe unchanged to the repository', () async {
+    when(() => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          rememberMe: any(named: 'rememberMe'),
+        )).thenAnswer((_) async => const Right(user));
+
+    await cubit.login(email: 'a@a.com', password: 'password123', rememberMe: true);
+
+    verify(() => repository.login(email: 'a@a.com', password: 'password123', rememberMe: true)).called(1);
+  });
+
   test('emits an Error with errorCode Auth.EmailNotConfirmed unmodified', () async {
-    when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
+    when(() => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          rememberMe: any(named: 'rememberMe'),
+        ))
         .thenAnswer((_) async => const Left(
               ServerFailure(statusCode: 403, message: 'Email not confirmed', errorCode: 'Auth.EmailNotConfirmed'),
             ));
@@ -58,12 +78,16 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.login(email: 'unverified@a.com', password: 'password123'));
+    unawaited(cubit.login(email: 'unverified@a.com', password: 'password123', rememberMe: true));
     await expectation;
   });
 
   test('emits an Error with errorCode Auth.InvalidCredentials', () async {
-    when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
+    when(() => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          rememberMe: any(named: 'rememberMe'),
+        ))
         .thenAnswer((_) async => const Left(UnauthorizedFailure(errorCode: 'Auth.InvalidCredentials')));
 
     final expectation = expectLater(
@@ -76,12 +100,16 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.login(email: 'a@a.com', password: 'wrong'));
+    unawaited(cubit.login(email: 'a@a.com', password: 'wrong', rememberMe: true));
     await expectation;
   });
 
   test('emits an Error with the backend message for Auth.AccountLocked', () async {
-    when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
+    when(() => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          rememberMe: any(named: 'rememberMe'),
+        ))
         .thenAnswer((_) async => const Left(
               ServerFailure(statusCode: 423, message: 'Account locked', errorCode: 'Auth.AccountLocked'),
             ));
@@ -96,12 +124,16 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.login(email: 'locked@a.com', password: 'password123'));
+    unawaited(cubit.login(email: 'locked@a.com', password: 'password123', rememberMe: true));
     await expectation;
   });
 
   test('emits an Error with isNetworkError true on NetworkFailure', () async {
-    when(() => repository.login(email: any(named: 'email'), password: any(named: 'password')))
+    when(() => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          rememberMe: any(named: 'rememberMe'),
+        ))
         .thenAnswer((_) async => const Left(NetworkFailure()));
 
     final expectation = expectLater(
@@ -112,7 +144,7 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.login(email: 'a@a.com', password: 'password123'));
+    unawaited(cubit.login(email: 'a@a.com', password: 'password123', rememberMe: true));
     await expectation;
   });
 }

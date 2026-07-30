@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/group.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
 
 sealed class GroupActionState extends Equatable {
   const GroupActionState();

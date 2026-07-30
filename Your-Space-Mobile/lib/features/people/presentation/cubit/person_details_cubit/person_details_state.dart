@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/person.dart';
-import 'package:your_space_mobile/core/mock/entities/person_occasion_history_entry.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/features/people/domain/entities/person_occasion_history_entry.dart';
 
 sealed class PersonDetailsState extends Equatable {
   const PersonDetailsState();

@@ -1,71 +1,114 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:your_space_mobile/core/mock/entities/event_guest_status.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/event_guests_list_cubit/event_guests_list_cubit.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/event_guests_list_cubit/event_guests_list_state.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
+
+class MockEventGuestRepository extends Mock implements EventGuestRepository {}
+
+class MockGroupRepository extends Mock implements GroupRepository {}
 
 void main() {
-  late MockDataStore store;
+  late MockEventGuestRepository eventGuestRepository;
+  late MockGroupRepository groupRepository;
   late EventGuestsListCubit cubit;
 
+  const guest1 = EventGuest(
+    id: 1,
+    eventId: 1,
+    personId: 1,
+    personName: 'Sara Adel',
+    groupId: 1,
+    groupName: 'Family',
+    status: EventGuestStatus.notInvited,
+  );
+  const guest2 = EventGuest(
+    id: 2,
+    eventId: 1,
+    personId: 2,
+    personName: 'Omar Khaled',
+    groupId: 2,
+    groupName: 'Close friends',
+    status: EventGuestStatus.invited,
+  );
+
   setUp(() {
-    store = MockDataStore()..simulatedLatency = Duration.zero;
-    cubit = EventGuestsListCubit(store);
+    eventGuestRepository = MockEventGuestRepository();
+    groupRepository = MockGroupRepository();
+    cubit = EventGuestsListCubit(eventGuestRepository, groupRepository);
+
+    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50))
+        .thenAnswer((_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 0)));
   });
 
   tearDown(() => cubit.close());
 
   test('emits [Loading, Success] with all guests for the event', () async {
-    final event = store.events().first;
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async =>
+          const Right(PaginatedResult(items: [guest1, guest2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+    );
 
     final expectation = expectLater(
       cubit.stream,
       emitsInOrder([
         const EventGuestsListLoading(),
-        isA<EventGuestsListSuccess>()
-            .having((s) => s.guests.length, 'guests.length', store.eventGuests(event.id).length),
+        isA<EventGuestsListSuccess>().having((s) => s.guests.length, 'guests.length', 2),
       ]),
     );
 
-    unawaited(cubit.load(event.id));
+    unawaited(cubit.load(1));
     await expectation;
   });
 
   test('filterByStatus narrows the list and tracks selectedStatus', () async {
-    final event = store.events().first;
-    await cubit.load(event.id);
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async =>
+          const Right(PaginatedResult(items: [guest1, guest2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+    );
+    await cubit.load(1);
 
-    final expectation = expectLater(
-      cubit.stream,
-      emits(
-        isA<EventGuestsListSuccess>()
-            .having((s) => s.selectedStatus, 'selectedStatus', EventGuestStatus.invited)
-            .having((s) => s.guests.every((g) => g.status == EventGuestStatus.invited), 'all invited', true),
-      ),
+    when(() => eventGuestRepository.getEventGuests(
+          1,
+          groupId: null,
+          status: EventGuestStatus.invited,
+          pageIndex: 1,
+          pageSize: 20,
+        )).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest2], pageIndex: 1, totalPages: 1, totalItems: 1)),
     );
 
-    cubit.filterByStatus(EventGuestStatus.invited);
-    await expectation;
+    await cubit.filterByStatus(EventGuestStatus.invited);
+
+    final state = cubit.state as EventGuestsListSuccess;
+    expect(state.selectedStatus, EventGuestStatus.invited);
+    expect(state.guests, [guest2]);
   });
 
-  test('reloadAfterAction re-queries without emitting a Loading state', () async {
-    final event = store.events().first;
-    await cubit.load(event.id);
+  test('reloadAfterAction re-queries page 1 without emitting a Loading state', () async {
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest1], pageIndex: 1, totalPages: 1, totalItems: 1)),
+    );
+    await cubit.load(1);
 
-    // Cubit.emit() skips re-emitting an Equatable-equal state, so the store
-    // must actually change first — otherwise reloadAfterAction's recomputed
-    // state is identical to the current one and nothing would be emitted at
-    // all (not even a Loading state, which is itself part of what this test
-    // wants to prove, but requires a real change to observe).
-    final guest = store.eventGuests(event.id).firstWhere((g) => g.status == EventGuestStatus.notInvited);
-    store.markSkipped(guest.id);
+    when(() => eventGuestRepository.getEventGuests(1, groupId: null, status: null, pageIndex: 1, pageSize: 20))
+        .thenAnswer(
+      (_) async =>
+          const Right(PaginatedResult(items: [guest1, guest2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+    );
 
     // emits() matches exactly the next single emission — if reloadAfterAction
     // emitted Loading first, this would fail on that mismatch.
     final expectation = expectLater(cubit.stream, emits(isA<EventGuestsListSuccess>()));
-    cubit.reloadAfterAction();
+    unawaited(cubit.reloadAfterAction());
     await expectation;
   });
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:your_space_mobile/core/helpers/bottom_sheet_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/invite_method.dart';
+import 'package:your_space_mobile/core/entities/invite_method.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/core/widgets/invite_method_chip_group.dart';
 

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/bulk_add_guests_result.dart';
+import 'package:your_space_mobile/features/events/domain/entities/bulk_add_guests_result.dart';
 
 sealed class AddGuestsActionState extends Equatable {
   const AddGuestsActionState();

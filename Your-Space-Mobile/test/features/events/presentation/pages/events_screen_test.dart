@@ -3,22 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:your_space_mobile/core/mock/entities/event.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/events_list_cubit/events_list_cubit.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/events_list_cubit/events_list_state.dart';
 import 'package:your_space_mobile/features/events/presentation/pages/events_screen.dart';
+
+class MockEventRepository extends Mock implements EventRepository {}
 
 /// `Cubit.emit` is `@protected` and this project has no `bloc_test` dependency
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestEventsListCubit extends EventsListCubit {
-  _TestEventsListCubit(super.store);
+  _TestEventsListCubit(super.eventRepository);
   void pushState(EventsListState state) => emit(state);
 }
 
@@ -38,11 +41,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final store = MockDataStore()..simulatedLatency = Duration.zero;
-    final cubit = _TestEventsListCubit(store);
+    final cubit = _TestEventsListCubit(MockEventRepository());
     addTearDown(cubit.close);
 
-    cubit.pushState(const EventsListSuccess([]));
+    cubit.pushState(const EventsListSuccess([], pageIndex: 1, hasNextPage: false));
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -70,10 +72,10 @@ void main() {
     expect(find.text('No events yet'), findsOneWidget);
 
     // Success, non-empty → event rows.
-    final events = [
-      Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5, createdAt: DateTime(2026, 1, 1)),
+    const events = [
+      Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5),
     ];
-    cubit.pushState(EventsListSuccess(events));
+    cubit.pushState(const EventsListSuccess(events, pageIndex: 1, hasNextPage: false));
     await tester.pumpAndSettle();
     expect(find.text("Sara's Birthday"), findsOneWidget);
 

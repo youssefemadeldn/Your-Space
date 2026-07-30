@@ -1,8 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/invite_method.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 
 import 'event_guest_action_state.dart';
 
@@ -12,35 +13,44 @@ import 'event_guest_action_state.dart';
 /// guest's current status.
 @injectable
 class EventGuestActionCubit extends Cubit<EventGuestActionState> {
-  final MockDataStore _store;
+  final EventGuestRepository _eventGuestRepository;
 
-  EventGuestActionCubit(this._store) : super(const EventGuestActionInitial());
+  EventGuestActionCubit(this._eventGuestRepository) : super(const EventGuestActionInitial());
 
-  Future<void> markInvited(int guestId, {required InviteMethod inviteMethod}) async {
+  Future<void> markInvited(int eventId, int guestId, {required InviteMethod inviteMethod}) async {
     emit(const EventGuestActionSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    _store.markInvited(guestId, inviteMethod: inviteMethod);
-    emit(const EventGuestActionSuccess());
+    final result =
+        await _eventGuestRepository.markInvited(eventId, guestId, inviteMethod: inviteMethod);
+    result.fold(
+      (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
+      (_) => emit(const EventGuestActionSuccess()),
+    );
   }
 
-  Future<void> markSkipped(int guestId) async {
+  Future<void> markSkipped(int eventId, int guestId) async {
     emit(const EventGuestActionSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    _store.markSkipped(guestId);
-    emit(const EventGuestActionSuccess());
+    final result = await _eventGuestRepository.markSkipped(eventId, guestId);
+    result.fold(
+      (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
+      (_) => emit(const EventGuestActionSuccess()),
+    );
   }
 
-  Future<void> revert(int guestId) async {
+  Future<void> revert(int eventId, int guestId) async {
     emit(const EventGuestActionSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    _store.revertGuest(guestId);
-    emit(const EventGuestActionSuccess());
+    final result = await _eventGuestRepository.revertGuest(eventId, guestId);
+    result.fold(
+      (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
+      (_) => emit(const EventGuestActionSuccess()),
+    );
   }
 
-  Future<void> remove(int guestId) async {
+  Future<void> remove(int eventId, int guestId) async {
     emit(const EventGuestActionSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    _store.removeGuest(guestId);
-    emit(const EventGuestActionSuccess());
+    final result = await _eventGuestRepository.removeGuest(eventId, guestId);
+    result.fold(
+      (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
+      (_) => emit(const EventGuestActionSuccess()),
+    );
   }
 }

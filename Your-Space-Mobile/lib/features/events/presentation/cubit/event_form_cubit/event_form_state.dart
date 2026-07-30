@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/event.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event.dart';
 
 sealed class EventFormState extends Equatable {
   const EventFormState();
@@ -10,6 +10,10 @@ sealed class EventFormState extends Equatable {
 
 final class EventFormInitial extends EventFormState {
   const EventFormInitial();
+}
+
+final class EventFormLoading extends EventFormState {
+  const EventFormLoading();
 }
 
 /// [event] is null in create mode, populated in edit mode for pre-fill.

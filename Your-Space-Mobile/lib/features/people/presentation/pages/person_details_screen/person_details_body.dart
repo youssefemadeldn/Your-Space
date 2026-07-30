@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:your_space_mobile/core/helpers/date_formatter_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/invite_method.dart';
-import 'package:your_space_mobile/core/mock/entities/person.dart';
-import 'package:your_space_mobile/core/mock/entities/person_occasion_history_entry.dart';
+import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/features/people/domain/entities/person_occasion_history_entry.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_avatar.dart';

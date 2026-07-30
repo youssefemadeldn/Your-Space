@@ -1,25 +1,32 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 
+import '../failure_messages.dart';
 import 'event_details_state.dart';
 
 @injectable
 class EventDetailsCubit extends Cubit<EventDetailsState> {
-  final MockDataStore _store;
+  final EventRepository _eventRepository;
+  final EventGuestRepository _eventGuestRepository;
 
-  EventDetailsCubit(this._store) : super(const EventDetailsInitial());
+  EventDetailsCubit(this._eventRepository, this._eventGuestRepository)
+      : super(const EventDetailsInitial());
 
   Future<void> loadDetails(int eventId) async {
     emit(const EventDetailsLoading());
-    await Future.delayed(_store.simulatedLatency);
-    final event = _store.eventById(eventId);
-    if (event == null) {
-      emit(EventDetailsError('events.details.notFound'.tr()));
-      return;
-    }
-    emit(EventDetailsSuccess(event: event, progress: _store.eventProgress(eventId)));
+    final eventResult = await _eventRepository.getEventById(eventId);
+    await eventResult.fold(
+      (failure) async => emit(EventDetailsError(failureToMessage(failure))),
+      (event) async {
+        final progressResult = await _eventGuestRepository.getProgress(eventId);
+        progressResult.fold(
+          (failure) => emit(EventDetailsError(failureToMessage(failure))),
+          (progress) => emit(EventDetailsSuccess(event: event, progress: progress)),
+        );
+      },
+    );
   }
 }

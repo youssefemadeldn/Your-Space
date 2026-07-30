@@ -45,6 +45,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, UserProfile>> login({
     required String email,
     required String password,
+    required bool rememberMe,
   }) async {
     final result = await _remote.login(LoginRequest(email: email, password: password));
     return result.fold(
@@ -52,6 +53,7 @@ class AuthRepositoryImpl implements AuthRepository {
       (response) async {
         await _secureStorage.saveToken(response.accessToken);
         await _secureStorage.saveRefreshToken(response.refreshToken);
+        await _secureStorage.saveRememberMe(rememberMe);
         return Right(response.toEntity());
       },
     );
@@ -100,8 +102,7 @@ class AuthRepositoryImpl implements AuthRepository {
     return result.fold(
       (failure) async => Left(failure),
       (_) async {
-        await _secureStorage.deleteToken();
-        await _secureStorage.deleteRefreshToken();
+        await _secureStorage.clearSession();
         return const Right(unit);
       },
     );

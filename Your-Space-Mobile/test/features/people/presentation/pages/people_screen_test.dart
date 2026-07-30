@@ -3,23 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:your_space_mobile/core/mock/entities/group.dart';
-import 'package:your_space_mobile/core/mock/entities/person.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
+import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_state.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/people_screen.dart';
+
+class MockPersonRepository extends Mock implements PersonRepository {}
+
+class MockGroupRepository extends Mock implements GroupRepository {}
 
 /// `Cubit.emit` is `@protected` and this project has no `bloc_test` dependency
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestPeopleListCubit extends PeopleListCubit {
-  _TestPeopleListCubit(super.store);
+  _TestPeopleListCubit(super.personRepository, super.groupRepository);
   void pushState(PeopleListState state) => emit(state);
 }
 
@@ -39,11 +45,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final store = MockDataStore()..simulatedLatency = Duration.zero;
-    final cubit = _TestPeopleListCubit(store);
+    final cubit = _TestPeopleListCubit(MockPersonRepository(), MockGroupRepository());
     addTearDown(cubit.close);
 
-    cubit.pushState(const PeopleListSuccess(people: [], groups: []));
+    cubit.pushState(const PeopleListSuccess(people: [], groups: [], pageIndex: 1, hasNextPage: false));
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -71,17 +76,11 @@ void main() {
     expect(find.text('Nobody in this group yet'), findsOneWidget);
 
     // Success, non-empty → person rows.
-    final group = Group(id: 1, name: 'Family', createdAt: DateTime(2026, 1, 1));
-    final people = [
-      Person(
-        id: 1,
-        name: 'Sara Adel',
-        groupId: group.id,
-        groupName: group.name,
-        createdAt: DateTime(2026, 1, 1),
-      ),
+    const group = Group(id: 1, name: 'Family');
+    const people = [
+      Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family'),
     ];
-    cubit.pushState(PeopleListSuccess(people: people, groups: [group]));
+    cubit.pushState(const PeopleListSuccess(people: people, groups: [group], pageIndex: 1, hasNextPage: false));
     await tester.pumpAndSettle();
     expect(find.text('Sara Adel'), findsOneWidget);
 

@@ -1,37 +1,80 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
+import 'package:your_space_mobile/features/people/domain/entities/person_details.dart';
+import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_state.dart';
 
+class MockPersonRepository extends Mock implements PersonRepository {}
+
+class MockGroupRepository extends Mock implements GroupRepository {}
+
 void main() {
-  late MockDataStore store;
+  late MockPersonRepository personRepository;
+  late MockGroupRepository groupRepository;
   late PersonFormCubit cubit;
 
+  const family = Group(id: 1, name: 'Family');
+  const existingPerson =
+      Person(id: 7, name: 'Sara Adel', groupId: 1, groupName: 'Family', hasReciprocityHistory: false);
+
   setUp(() {
-    store = MockDataStore()..simulatedLatency = Duration.zero;
-    cubit = PersonFormCubit(store);
+    personRepository = MockPersonRepository();
+    groupRepository = MockGroupRepository();
+    cubit = PersonFormCubit(personRepository, groupRepository);
+
+    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50))
+        .thenAnswer((_) async => const Right(PaginatedResult(items: [family], pageIndex: 1, totalPages: 1, totalItems: 1)));
   });
 
   tearDown(() => cubit.close());
 
-  test('initialize(null) emits Ready with person null (create mode)', () {
-    cubit.initialize(null);
-    final state = cubit.state as PersonFormReady;
-    expect(state.person, isNull);
-    expect(state.availableGroups, isNotEmpty);
+  test('initialize(null) emits [Loading, Ready] with person null (create mode)', () async {
+    final expectation = expectLater(
+      cubit.stream,
+      emitsInOrder([
+        const PersonFormLoading(),
+        isA<PersonFormReady>()
+            .having((s) => s.person, 'person', isNull)
+            .having((s) => s.availableGroups, 'availableGroups', isNotEmpty),
+      ]),
+    );
+
+    unawaited(cubit.initialize(null));
+    await expectation;
   });
 
-  test('initialize(id) emits Ready pre-filled with that person (edit mode)', () {
-    final person = store.people().first;
-    cubit.initialize(person.id);
-    final state = cubit.state as PersonFormReady;
-    expect(state.person?.id, person.id);
+  test('initialize(id) emits [Loading, Ready] pre-filled with that person (edit mode)', () async {
+    when(() => personRepository.getPersonById(7)).thenAnswer(
+      (_) async => Right(PersonDetails(person: existingPerson, occasionHistory: const [])),
+    );
+
+    final expectation = expectLater(
+      cubit.stream,
+      emitsInOrder([
+        const PersonFormLoading(),
+        isA<PersonFormReady>().having((s) => s.person?.id, 'person.id', 7),
+      ]),
+    );
+
+    unawaited(cubit.initialize(7));
+    await expectation;
   });
 
   test('submit with no personId creates a new person', () async {
-    final group = store.groups().first;
+    when(() => personRepository.createPerson(
+          name: any(named: 'name'),
+          phoneNumber: any(named: 'phoneNumber'),
+          groupId: any(named: 'groupId'),
+        )).thenAnswer((_) async => const Right(Person(id: 10, name: 'New Person', groupId: 1, groupName: 'Family')));
 
     final expectation = expectLater(
       cubit.stream,
@@ -41,14 +84,17 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.submit(name: 'New Person', groupId: group.id));
+    unawaited(cubit.submit(name: 'New Person', groupId: 1));
     await expectation;
-
-    expect(store.people().map((p) => p.name), contains('New Person'));
   });
 
   test('submit with a personId updates the existing person', () async {
-    final person = store.people().first;
+    when(() => personRepository.updatePerson(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          phoneNumber: any(named: 'phoneNumber'),
+          groupId: any(named: 'groupId'),
+        )).thenAnswer((_) async => const Right(Person(id: 7, name: 'Renamed', groupId: 1, groupName: 'Family')));
 
     final expectation = expectLater(
       cubit.stream,
@@ -58,7 +104,7 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.submit(personId: person.id, name: 'Renamed', groupId: person.groupId));
+    unawaited(cubit.submit(personId: 7, name: 'Renamed', groupId: 1));
     await expectation;
   });
 }

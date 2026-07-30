@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:your_space_mobile/core/di/injection_container.dart';
 import 'package:your_space_mobile/core/helpers/regex_helper.dart';
 import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/group.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/person_form_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
@@ -104,10 +104,14 @@ class _PersonFormScreenState extends State<PersonFormScreen> {
             if (state is PersonFormSuccess) {
               getIt<SnackBarHelper>().showSuccess('people.form.savedMessage'.tr());
               context.pop();
+            } else if (state is PersonFormError) {
+              getIt<SnackBarHelper>().showError(state.message);
             }
           },
           builder: (context, state) {
-            if (state is PersonFormInitial) return const AppLoadingIndicator();
+            if (state is PersonFormInitial || state is PersonFormLoading) {
+              return const AppLoadingIndicator();
+            }
             if (state is PersonFormReady) _seedFromReady(state);
 
             final submitting = state is PersonFormSubmitting;

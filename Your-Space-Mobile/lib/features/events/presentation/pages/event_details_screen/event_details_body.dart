@@ -5,9 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/helpers/date_formatter_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/event.dart';
-import 'package:your_space_mobile/core/mock/entities/event_guest_progress_summary.dart';
-import 'package:your_space_mobile/core/mock/entities/group_guest_progress.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event_guest_progress_summary.dart';
+import 'package:your_space_mobile/features/events/domain/entities/group_guest_progress.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/add_guests_args.dart';
 import 'package:your_space_mobile/core/router/args/event_guests_args.dart';

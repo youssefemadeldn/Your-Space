@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:your_space_mobile/core/mock/entities/invite_method.dart';
+import 'package:your_space_mobile/core/entities/invite_method.dart';
 import 'package:your_space_mobile/core/widgets/invite_method_chip_group.dart';
 
 import 'test_harness.dart';

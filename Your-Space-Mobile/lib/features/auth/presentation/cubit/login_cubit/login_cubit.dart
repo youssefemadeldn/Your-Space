@@ -12,9 +12,13 @@ class LoginCubit extends Cubit<LoginState> {
 
   LoginCubit(this._repository) : super(const LoginInitial());
 
-  Future<void> login({required String email, required String password}) async {
+  Future<void> login({
+    required String email,
+    required String password,
+    required bool rememberMe,
+  }) async {
     emit(const LoginLoading());
-    final result = await _repository.login(email: email, password: password);
+    final result = await _repository.login(email: email, password: password, rememberMe: rememberMe);
     result.fold(
       (failure) => emit(LoginError(
         failureToMessage(failure),

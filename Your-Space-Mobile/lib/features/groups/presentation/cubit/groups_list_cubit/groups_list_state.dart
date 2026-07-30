@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:your_space_mobile/core/mock/entities/group.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
 
 sealed class GroupsListState extends Equatable {
   const GroupsListState();
@@ -18,9 +18,35 @@ final class GroupsListLoading extends GroupsListState {
 
 final class GroupsListSuccess extends GroupsListState {
   final List<Group> groups;
-  const GroupsListSuccess(this.groups);
+  final String? search;
+  final int pageIndex;
+  final bool hasNextPage;
+  final bool isLoadingMore;
+
+  const GroupsListSuccess(
+    this.groups, {
+    this.search,
+    required this.pageIndex,
+    required this.hasNextPage,
+    this.isLoadingMore = false,
+  });
+
+  GroupsListSuccess copyWith({
+    List<Group>? groups,
+    int? pageIndex,
+    bool? hasNextPage,
+    bool? isLoadingMore,
+  }) =>
+      GroupsListSuccess(
+        groups ?? this.groups,
+        search: search,
+        pageIndex: pageIndex ?? this.pageIndex,
+        hasNextPage: hasNextPage ?? this.hasNextPage,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      );
+
   @override
-  List<Object?> get props => [groups];
+  List<Object?> get props => [groups, search, pageIndex, hasNextPage, isLoadingMore];
 }
 
 final class GroupsListError extends GroupsListState {

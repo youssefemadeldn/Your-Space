@@ -19,16 +19,16 @@ class AddGuestsByGroupTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.groups.isEmpty) {
+    if (state.groupProgress.isEmpty) {
       return EmptyStateWidget(icon: Icons.groups_rounded, title: 'groups.list.emptyTitle'.tr());
     }
 
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
-      itemCount: state.groups.length,
+      itemCount: state.groupProgress.length,
       itemBuilder: (context, index) {
-        final group = state.groups[index];
-        final count = state.availableCountForGroup(group.id);
+        final progress = state.groupProgress[index];
+        final count = state.availableCountForGroup(progress.groupId);
         return Padding(
           padding: EdgeInsets.symmetric(vertical: 6.h),
           child: AppCard(
@@ -38,7 +38,7 @@ class AddGuestsByGroupTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(group.name, style: Theme.of(context).textTheme.titleMedium),
+                      Text(progress.groupName, style: Theme.of(context).textTheme.titleMedium),
                       Text(
                         'events.addGuests.groupPeopleCount'.tr(namedArgs: {'count': '$count'}),
                         style: Theme.of(context).textTheme.bodySmall,
@@ -56,7 +56,7 @@ class AddGuestsByGroupTab extends StatelessWidget {
                         ? null
                         : () => context
                             .read<AddGuestsActionCubit>()
-                            .addGroup(eventId: eventId, groupId: group.id),
+                            .addGroup(eventId: eventId, groupId: progress.groupId),
                   ),
                 ),
               ],

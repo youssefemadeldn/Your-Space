@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:your_space_mobile/core/mock/entities/group.dart';
-import 'package:your_space_mobile/core/mock/entities/person.dart';
+import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
 import 'package:your_space_mobile/core/router/args/reciprocity_suggestions_args.dart';
 import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
@@ -37,16 +39,26 @@ class ReciprocitySuggestionsScreen extends StatelessWidget {
           listener: (context, state) {
             if (state is AddGuestsActionSuccess) {
               context.read<ReciprocitySuggestionsCubit>().refresh();
+            } else if (state is AddGuestsActionError) {
+              getIt<SnackBarHelper>().showError(state.message);
             }
           },
           child: BlocBuilder<ReciprocitySuggestionsCubit, ReciprocitySuggestionsState>(
             builder: (context, state) => switch (state) {
-              ReciprocitySuggestionsSuccess(:final suggestions, :final groups, :final selectedGroupId) =>
+              ReciprocitySuggestionsSuccess(
+                :final suggestions,
+                :final groups,
+                :final selectedGroupId,
+                :final hasNextPage,
+                :final isLoadingMore,
+              ) =>
                 _ReciprocitySuggestionsBody(
                   eventId: args.eventId,
                   suggestions: suggestions,
                   groups: groups,
                   selectedGroupId: selectedGroupId,
+                  hasNextPage: hasNextPage,
+                  isLoadingMore: isLoadingMore,
                 ),
               ReciprocitySuggestionsError(:final message) => ErrorStateWidget(
                   message: message,
@@ -61,18 +73,49 @@ class ReciprocitySuggestionsScreen extends StatelessWidget {
   }
 }
 
-class _ReciprocitySuggestionsBody extends StatelessWidget {
+class _ReciprocitySuggestionsBody extends StatefulWidget {
   final int eventId;
   final List<Person> suggestions;
   final List<Group> groups;
   final int? selectedGroupId;
+  final bool hasNextPage;
+  final bool isLoadingMore;
 
   const _ReciprocitySuggestionsBody({
     required this.eventId,
     required this.suggestions,
     required this.groups,
     required this.selectedGroupId,
+    required this.hasNextPage,
+    required this.isLoadingMore,
   });
+
+  @override
+  State<_ReciprocitySuggestionsBody> createState() => _ReciprocitySuggestionsBodyState();
+}
+
+class _ReciprocitySuggestionsBodyState extends State<_ReciprocitySuggestionsBody> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!widget.hasNextPage || widget.isLoadingMore) return;
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
+      context.read<ReciprocitySuggestionsCubit>().loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,16 +133,16 @@ class _ReciprocitySuggestionsBody extends StatelessWidget {
                   padding: EdgeInsetsDirectional.only(end: 8.w),
                   child: AppChip(
                     label: 'people.list.allChip'.tr(),
-                    selected: selectedGroupId == null,
+                    selected: widget.selectedGroupId == null,
                     onTap: () => context.read<ReciprocitySuggestionsCubit>().filterByGroup(null),
                   ),
                 ),
-                for (final group in groups)
+                for (final group in widget.groups)
                   Padding(
                     padding: EdgeInsetsDirectional.only(end: 8.w),
                     child: AppChip(
                       label: group.name,
-                      selected: selectedGroupId == group.id,
+                      selected: widget.selectedGroupId == group.id,
                       onTap: () => context.read<ReciprocitySuggestionsCubit>().filterByGroup(group.id),
                     ),
                   ),
@@ -108,15 +151,22 @@ class _ReciprocitySuggestionsBody extends StatelessWidget {
           ),
           SizedBox(height: 8.h),
           Expanded(
-            child: suggestions.isEmpty
+            child: widget.suggestions.isEmpty
                 ? EmptyStateWidget(
                     icon: Icons.favorite_border_rounded,
                     title: 'events.reciprocity.emptyTitle'.tr(),
                   )
                 : ListView.builder(
-                    itemCount: suggestions.length,
+                    controller: _scrollController,
+                    itemCount: widget.suggestions.length + (widget.isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
-                      final person = suggestions[index];
+                      if (index >= widget.suggestions.length) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          child: const AppLoadingIndicator(),
+                        );
+                      }
+                      final person = widget.suggestions[index];
                       return AppProfileRow(
                         name: person.name,
                         groupName: person.groupName,
@@ -127,7 +177,7 @@ class _ReciprocitySuggestionsBody extends StatelessWidget {
                             size: AppButtonSize.sm,
                             loading: state is AddGuestsActionSubmitting,
                             onPressed: () => context.read<AddGuestsActionCubit>().addPersons(
-                                  eventId: eventId,
+                                  eventId: widget.eventId,
                                   personIds: [person.id],
                                 ),
                           ),

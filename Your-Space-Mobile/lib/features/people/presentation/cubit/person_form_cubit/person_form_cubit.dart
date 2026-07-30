@@ -1,21 +1,38 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
+import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 
+import '../failure_messages.dart';
 import 'person_form_state.dart';
 
 /// Single cubit for both load+submit — mirrors `ResetPasswordCubit`'s
 /// precedent for a full-navigation form with no simultaneous list.
 @injectable
 class PersonFormCubit extends Cubit<PersonFormState> {
-  final MockDataStore _store;
+  final PersonRepository _personRepository;
+  final GroupRepository _groupRepository;
 
-  PersonFormCubit(this._store) : super(const PersonFormInitial());
+  PersonFormCubit(this._personRepository, this._groupRepository) : super(const PersonFormInitial());
 
-  void initialize(int? personId) {
-    final person = personId == null ? null : _store.personById(personId);
-    emit(PersonFormReady(person: person, availableGroups: _store.groups()));
+  Future<void> initialize(int? personId) async {
+    emit(const PersonFormLoading());
+    final groupsResult = await _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
+    await groupsResult.fold(
+      (failure) async => emit(PersonFormError(failureToMessage(failure))),
+      (page) async {
+        if (personId == null) {
+          emit(PersonFormReady(availableGroups: page.items));
+          return;
+        }
+        final personResult = await _personRepository.getPersonById(personId);
+        personResult.fold(
+          (failure) => emit(PersonFormError(failureToMessage(failure))),
+          (details) => emit(PersonFormReady(person: details.person, availableGroups: page.items)),
+        );
+      },
+    );
   }
 
   Future<void> submit({
@@ -25,10 +42,17 @@ class PersonFormCubit extends Cubit<PersonFormState> {
     required int groupId,
   }) async {
     emit(const PersonFormSubmitting());
-    await Future.delayed(_store.simulatedLatency);
-    final person = personId == null
-        ? _store.createPerson(name: name, phoneNumber: phoneNumber, groupId: groupId)
-        : _store.updatePerson(id: personId, name: name, phoneNumber: phoneNumber, groupId: groupId);
-    emit(PersonFormSuccess(person));
+    final result = personId == null
+        ? await _personRepository.createPerson(name: name, phoneNumber: phoneNumber, groupId: groupId)
+        : await _personRepository.updatePerson(
+            id: personId,
+            name: name,
+            phoneNumber: phoneNumber,
+            groupId: groupId,
+          );
+    result.fold(
+      (failure) => emit(PersonFormError(failureToMessage(failure))),
+      (person) => emit(PersonFormSuccess(person)),
+    );
   }
 }

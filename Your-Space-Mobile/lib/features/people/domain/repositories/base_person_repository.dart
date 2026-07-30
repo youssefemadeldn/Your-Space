@@ -1,0 +1,42 @@
+import 'package:dartz/dartz.dart';
+
+import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
+
+import '../entities/person_details.dart';
+import '../entities/person_occasion_history_entry.dart';
+
+abstract class PersonRepository {
+  Future<Either<Failure, PaginatedResult<Person>>> getPersons({
+    int? groupId,
+    String? search,
+    required int pageIndex,
+    required int pageSize,
+  });
+
+  Future<Either<Failure, PersonDetails>> getPersonById(int id);
+
+  Future<Either<Failure, Person>> createPerson({
+    required String name,
+    String? phoneNumber,
+    required int groupId,
+  });
+
+  Future<Either<Failure, Person>> updatePerson({
+    required int id,
+    required String name,
+    String? phoneNumber,
+    required int groupId,
+  });
+
+  Future<Either<Failure, PersonOccasionHistoryEntry>> addOccasionHistory({
+    required int personId,
+    required bool invitedMe,
+    InviteMethod? inviteMethod,
+    String? occasionName,
+    DateTime? occasionDate,
+    String? notes,
+  });
+}

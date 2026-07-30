@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:your_space_mobile/core/mock/entities/group.dart';
-import 'package:your_space_mobile/core/mock/entities/person.dart';
+import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/person_details_args.dart';
 import 'package:your_space_mobile/core/router/args/person_form_args.dart';
@@ -33,10 +33,19 @@ class PeopleScreen extends StatelessWidget {
       body: SafeArea(
         child: BlocBuilder<PeopleListCubit, PeopleListState>(
           builder: (context, state) => switch (state) {
-            PeopleListSuccess(:final people, :final groups, :final selectedGroupId) => _PeopleListBody(
+            PeopleListSuccess(
+              :final people,
+              :final groups,
+              :final selectedGroupId,
+              :final hasNextPage,
+              :final isLoadingMore,
+            ) =>
+              _PeopleListBody(
                 people: people,
                 groups: groups,
                 selectedGroupId: selectedGroupId,
+                hasNextPage: hasNextPage,
+                isLoadingMore: isLoadingMore,
               ),
             PeopleListError(:final message) => ErrorStateWidget(
                 message: message,
@@ -55,12 +64,47 @@ class PeopleScreen extends StatelessWidget {
   }
 }
 
-class _PeopleListBody extends StatelessWidget {
+class _PeopleListBody extends StatefulWidget {
   final List<Person> people;
   final List<Group> groups;
   final int? selectedGroupId;
+  final bool hasNextPage;
+  final bool isLoadingMore;
 
-  const _PeopleListBody({required this.people, required this.groups, required this.selectedGroupId});
+  const _PeopleListBody({
+    required this.people,
+    required this.groups,
+    required this.selectedGroupId,
+    required this.hasNextPage,
+    required this.isLoadingMore,
+  });
+
+  @override
+  State<_PeopleListBody> createState() => _PeopleListBodyState();
+}
+
+class _PeopleListBodyState extends State<_PeopleListBody> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!widget.hasNextPage || widget.isLoadingMore) return;
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
+      context.read<PeopleListCubit>().loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,16 +128,16 @@ class _PeopleListBody extends StatelessWidget {
                   padding: EdgeInsetsDirectional.only(end: 8.w),
                   child: AppChip(
                     label: 'people.list.allChip'.tr(),
-                    selected: selectedGroupId == null,
+                    selected: widget.selectedGroupId == null,
                     onTap: () => context.read<PeopleListCubit>().filterByGroup(null),
                   ),
                 ),
-                for (final group in groups)
+                for (final group in widget.groups)
                   Padding(
                     padding: EdgeInsetsDirectional.only(end: 8.w),
                     child: AppChip(
                       label: group.name,
-                      selected: selectedGroupId == group.id,
+                      selected: widget.selectedGroupId == group.id,
                       onTap: () => context.read<PeopleListCubit>().filterByGroup(group.id),
                     ),
                   ),
@@ -102,7 +146,7 @@ class _PeopleListBody extends StatelessWidget {
           ),
           SizedBox(height: 8.h),
           Expanded(
-            child: people.isEmpty
+            child: widget.people.isEmpty
                 ? EmptyStateWidget(
                     icon: Icons.people_alt_rounded,
                     title: 'people.list.emptyTitle'.tr(),
@@ -111,9 +155,16 @@ class _PeopleListBody extends StatelessWidget {
                         context.pushNamed(AppRoutes.personForm, extra: const PersonFormArgs()),
                   )
                 : ListView.builder(
-                    itemCount: people.length,
+                    controller: _scrollController,
+                    itemCount: widget.people.length + (widget.isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
-                      final person = people[index];
+                      if (index >= widget.people.length) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          child: const AppLoadingIndicator(),
+                        );
+                      }
+                      final person = widget.people[index];
                       return AppProfileRow(
                         name: person.name,
                         groupName: person.groupName,

@@ -28,4 +28,20 @@ void main() {
     final align = tester.widget<Align>(find.byType(Align));
     expect(align.alignment, AlignmentDirectional.centerStart);
   });
+
+  testWidgets('renders at the 52px override used on the Login screen', (tester) async {
+    await pumpTestHarness(tester, const AppLogoHeader(logoSize: 52));
+
+    final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+    expect(svg.width, 52);
+    expect(svg.height, 52);
+  });
+
+  testWidgets('renders at the 44px override used on Register/Confirm/Forgot/Reset', (tester) async {
+    await pumpTestHarness(tester, const AppLogoHeader(compact: true, logoSize: 44));
+
+    final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+    expect(svg.width, 44);
+    expect(svg.height, 44);
+  });
 }

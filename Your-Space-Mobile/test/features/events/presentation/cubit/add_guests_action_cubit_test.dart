@@ -1,24 +1,31 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:your_space_mobile/features/events/domain/entities/bulk_add_guests_result.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_action_cubit/add_guests_action_cubit.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_action_cubit/add_guests_action_state.dart';
 
+class MockEventGuestRepository extends Mock implements EventGuestRepository {}
+
 void main() {
-  late MockDataStore store;
+  late MockEventGuestRepository repository;
   late AddGuestsActionCubit cubit;
 
   setUp(() {
-    store = MockDataStore()..simulatedLatency = Duration.zero;
-    cubit = AddGuestsActionCubit(store);
+    repository = MockEventGuestRepository();
+    cubit = AddGuestsActionCubit(repository);
   });
 
   tearDown(() => cubit.close());
 
   test('addPersons emits [Submitting, Success] with the bulk-add result', () async {
-    final event = store.createEvent(name: 'Fresh Event');
-    final personIds = store.people().take(2).map((p) => p.id).toList();
+    when(() => repository.addPersonsToEvent(eventId: 1, personIds: [1, 2])).thenAnswer(
+      (_) async => const Right(BulkAddGuestsResult(requestedCount: 2, addedCount: 2, alreadyPresentCount: 0)),
+    );
 
     final expectation = expectLater(
       cubit.stream,
@@ -28,28 +35,24 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.addPersons(eventId: event.id, personIds: personIds));
+    unawaited(cubit.addPersons(eventId: 1, personIds: [1, 2]));
     await expectation;
   });
 
   test('addGroup emits [Submitting, Success] adding the whole group', () async {
-    final event = store.createEvent(name: 'Fresh Event 2');
-    final group = store.groups().first;
-    final peopleInGroup = store.people(groupId: group.id);
+    when(() => repository.addGroupToEvent(eventId: 1, groupId: 3)).thenAnswer(
+      (_) async => const Right(BulkAddGuestsResult(requestedCount: 4, addedCount: 4, alreadyPresentCount: 0)),
+    );
 
     final expectation = expectLater(
       cubit.stream,
       emitsInOrder([
         const AddGuestsActionSubmitting(),
-        isA<AddGuestsActionSuccess>().having(
-          (s) => s.result.addedCount,
-          'addedCount',
-          peopleInGroup.length,
-        ),
+        isA<AddGuestsActionSuccess>().having((s) => s.result.addedCount, 'addedCount', 4),
       ]),
     );
 
-    unawaited(cubit.addGroup(eventId: event.id, groupId: group.id));
+    unawaited(cubit.addGroup(eventId: 1, groupId: 3));
     await expectation;
   });
 }

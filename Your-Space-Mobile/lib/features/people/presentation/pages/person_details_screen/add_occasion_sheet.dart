@@ -5,7 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:your_space_mobile/core/helpers/bottom_sheet_helper.dart';
 import 'package:your_space_mobile/core/helpers/date_formatter_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/invite_method.dart';
+import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
@@ -86,7 +88,11 @@ class _AddOccasionSheetState extends State<AddOccasionSheet> {
       padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 20.h),
       child: BlocConsumer<AddOccasionCubit, AddOccasionState>(
         listener: (context, state) {
-          if (state is AddOccasionSuccess) Navigator.of(context).pop();
+          if (state is AddOccasionSuccess) {
+            Navigator.of(context).pop();
+          } else if (state is AddOccasionError) {
+            getIt<SnackBarHelper>().showError(state.message);
+          }
         },
         builder: (context, state) {
           final submitting = state is AddOccasionSubmitting;

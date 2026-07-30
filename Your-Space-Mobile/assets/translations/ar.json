@@ -8,6 +8,9 @@
     "save": "حفظ",
     "saveChanges": "حفظ التغييرات",
     "create": "إنشاء",
+    "logout": "تسجيل الخروج",
+    "logoutConfirmTitle": "تسجيل الخروج؟",
+    "logoutConfirmMessage": "ستحتاج لتسجيل الدخول مرة أخرى في المرة القادمة.",
     "inviteMethod": {
       "whatsApp": "واتساب",
       "phoneCall": "مكالمة هاتفية",

@@ -3,22 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:your_space_mobile/core/mock/mock_data_store.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
+import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_cubit.dart';
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_state.dart';
 import 'package:your_space_mobile/features/home/presentation/pages/home_screen.dart';
+import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
+
+class MockGroupRepository extends Mock implements GroupRepository {}
+
+class MockPersonRepository extends Mock implements PersonRepository {}
+
+class MockEventRepository extends Mock implements EventRepository {}
 
 /// `Cubit.emit` is `@protected` and this project has no `bloc_test` dependency
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround, letting the test render a
-/// state directly instead of depending on the mock store's real async timing.
+/// state directly instead of depending on repository call timing.
 class _TestHomeStatsCubit extends HomeStatsCubit {
-  _TestHomeStatsCubit(super.store);
+  _TestHomeStatsCubit(super.groupRepository, super.personRepository, super.eventRepository);
   void pushState(HomeStatsState state) => emit(state);
 }
 
@@ -40,8 +49,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final store = MockDataStore()..simulatedLatency = Duration.zero;
-    final cubit = _TestHomeStatsCubit(store);
+    final cubit = _TestHomeStatsCubit(MockGroupRepository(), MockPersonRepository(), MockEventRepository());
     addTearDown(cubit.close);
 
     cubit.pushState(const HomeStatsSuccess(groupsCount: 0, peopleCount: 0, eventsCount: 0));
@@ -67,6 +75,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    // App bar exposes a logout action so a persisted session always has an exit.
+    expect(find.widgetWithIcon(IconButton, Icons.logout_rounded), findsOneWidget);
 
     // Success, groupsCount == 0 → empty state.
     expect(find.text('Start with one group'), findsOneWidget);

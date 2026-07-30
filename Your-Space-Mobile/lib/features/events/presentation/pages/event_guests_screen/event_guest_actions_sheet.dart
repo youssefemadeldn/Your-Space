@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:your_space_mobile/core/helpers/bottom_sheet_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/event_guest.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 
@@ -48,7 +48,9 @@ class EventGuestActionsSheet extends StatelessWidget {
               Navigator.of(context).pop();
               final method =
                   await EventGuestInviteMethodSheet.open(context, personName: guest.personName);
-              if (method != null) actionCubit.markInvited(guest.id, inviteMethod: method);
+              if (method != null) {
+                actionCubit.markInvited(guest.eventId, guest.id, inviteMethod: method);
+              }
             },
           ),
           ListTile(
@@ -56,7 +58,7 @@ class EventGuestActionsSheet extends StatelessWidget {
             title: Text('events.guests.actionSkip'.tr()),
             onTap: () {
               Navigator.of(context).pop();
-              actionCubit.markSkipped(guest.id);
+              actionCubit.markSkipped(guest.eventId, guest.id);
             },
           ),
           ListTile(
@@ -64,7 +66,7 @@ class EventGuestActionsSheet extends StatelessWidget {
             title: Text('events.guests.actionRevert'.tr()),
             onTap: () {
               Navigator.of(context).pop();
-              actionCubit.revert(guest.id);
+              actionCubit.revert(guest.eventId, guest.id);
             },
           ),
           ListTile(
@@ -72,7 +74,7 @@ class EventGuestActionsSheet extends StatelessWidget {
             title: Text('events.guests.actionRemove'.tr(), style: const TextStyle(color: AppColors.error)),
             onTap: () {
               Navigator.of(context).pop();
-              actionCubit.remove(guest.id);
+              actionCubit.remove(guest.eventId, guest.id);
             },
           ),
         ],

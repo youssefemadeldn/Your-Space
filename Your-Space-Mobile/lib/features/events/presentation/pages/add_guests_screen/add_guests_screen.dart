@@ -52,6 +52,8 @@ class _AddGuestsScreenState extends State<AddGuestsScreen> {
               );
               setState(() => _selectedPersonIds.clear());
               context.read<AddGuestsListCubit>().load(widget.args.eventId);
+            } else if (state is AddGuestsActionError) {
+              getIt<SnackBarHelper>().showError(state.message);
             }
           },
           child: BlocBuilder<AddGuestsListCubit, AddGuestsListState>(

@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/helpers/date_formatter_helper.dart';
-import 'package:your_space_mobile/core/mock/entities/event.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/event_details_args.dart';
 import 'package:your_space_mobile/core/router/args/event_form_args.dart';
@@ -18,6 +17,7 @@ import 'package:your_space_mobile/core/widgets/app_list_tile.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/empty_state_widget.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/events/domain/entities/event.dart';
 
 import '../cubit/events_list_cubit/events_list_cubit.dart';
 import '../cubit/events_list_cubit/events_list_state.dart';
@@ -32,7 +32,8 @@ class EventsScreen extends StatelessWidget {
       body: SafeArea(
         child: BlocBuilder<EventsListCubit, EventsListState>(
           builder: (context, state) => switch (state) {
-            EventsListSuccess(:final events) => _EventsListBody(events: events),
+            EventsListSuccess(:final events, :final hasNextPage, :final isLoadingMore) =>
+              _EventsListBody(events: events, hasNextPage: hasNextPage, isLoadingMore: isLoadingMore),
             EventsListError(:final message) => ErrorStateWidget(
                 message: message,
                 onRetry: () => context.read<EventsListCubit>().load(),
@@ -50,10 +51,43 @@ class EventsScreen extends StatelessWidget {
   }
 }
 
-class _EventsListBody extends StatelessWidget {
+class _EventsListBody extends StatefulWidget {
   final List<Event> events;
+  final bool hasNextPage;
+  final bool isLoadingMore;
 
-  const _EventsListBody({required this.events});
+  const _EventsListBody({
+    required this.events,
+    required this.hasNextPage,
+    required this.isLoadingMore,
+  });
+
+  @override
+  State<_EventsListBody> createState() => _EventsListBodyState();
+}
+
+class _EventsListBodyState extends State<_EventsListBody> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!widget.hasNextPage || widget.isLoadingMore) return;
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
+      context.read<EventsListCubit>().loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   String _subtitle(Event event) {
     final date = DateFormatterHelper.formatDate(event.eventDate);
@@ -76,7 +110,7 @@ class _EventsListBody extends StatelessWidget {
           ),
           SizedBox(height: 16.h),
           Expanded(
-            child: events.isEmpty
+            child: widget.events.isEmpty
                 ? EmptyStateWidget(
                     icon: Icons.event_rounded,
                     title: 'events.list.emptyTitle'.tr(),
@@ -84,26 +118,32 @@ class _EventsListBody extends StatelessWidget {
                     onAction: () =>
                         context.pushNamed(AppRoutes.eventForm, extra: const EventFormArgs()),
                   )
-                : SingleChildScrollView(
-                    child: AppCard(
-                      padding: EdgeInsets.symmetric(vertical: 4.h),
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < events.length; i++)
-                            AppListTile(
-                              icon: Icons.event_rounded,
-                              title: events[i].name,
-                              subtitle: _subtitle(events[i]),
-                              trailing:
-                                  const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
-                              divider: i != events.length - 1,
-                              onTap: () => context.pushNamed(
-                                AppRoutes.eventDetails,
-                                extra: EventDetailsArgs(eventId: events[i].id, eventName: events[i].name),
-                              ),
-                            ),
-                        ],
-                      ),
+                : AppCard(
+                    padding: EdgeInsets.symmetric(vertical: 4.h),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: widget.events.length + (widget.isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= widget.events.length) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            child: const AppLoadingIndicator(),
+                          );
+                        }
+                        final event = widget.events[index];
+                        return AppListTile(
+                          icon: Icons.event_rounded,
+                          title: event.name,
+                          subtitle: _subtitle(event),
+                          trailing:
+                              const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                          divider: index != widget.events.length - 1,
+                          onTap: () => context.pushNamed(
+                            AppRoutes.eventDetails,
+                            extra: EventDetailsArgs(eventId: event.id, eventName: event.name),
+                          ),
+                        );
+                      },
                     ),
                   ),
           ),

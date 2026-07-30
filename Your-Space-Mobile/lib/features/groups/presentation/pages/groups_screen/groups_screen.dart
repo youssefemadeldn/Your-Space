@@ -30,11 +30,14 @@ class GroupsScreen extends StatelessWidget {
               Navigator.of(context).pop();
               context.read<GroupsListCubit>().load();
               getIt<SnackBarHelper>().showSuccess('groups.savedMessage'.tr());
+            } else if (state is GroupActionError) {
+              getIt<SnackBarHelper>().showError(state.message);
             }
           },
           child: BlocBuilder<GroupsListCubit, GroupsListState>(
             builder: (context, state) => switch (state) {
-              GroupsListSuccess(:final groups) => GroupsListBody(groups: groups),
+              GroupsListSuccess(:final groups, :final hasNextPage, :final isLoadingMore) =>
+                GroupsListBody(groups: groups, hasNextPage: hasNextPage, isLoadingMore: isLoadingMore),
               GroupsListError(:final message) => ErrorStateWidget(
                   message: message,
                   onRetry: () => context.read<GroupsListCubit>().load(),

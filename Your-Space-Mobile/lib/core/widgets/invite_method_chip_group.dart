@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../mock/entities/invite_method.dart';
+import '../entities/invite_method.dart';
 import 'app_chip.dart';
 
 /// The exact chip-picker reused, unbuilt, between People's Add-Occasion sheet

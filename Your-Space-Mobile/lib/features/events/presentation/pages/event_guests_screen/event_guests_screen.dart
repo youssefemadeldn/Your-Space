@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
 import 'package:your_space_mobile/core/router/args/event_guests_args.dart';
 import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
@@ -31,6 +33,8 @@ class EventGuestsScreen extends StatelessWidget {
           listener: (context, state) {
             if (state is EventGuestActionSuccess) {
               context.read<EventGuestsListCubit>().reloadAfterAction();
+            } else if (state is EventGuestActionError) {
+              getIt<SnackBarHelper>().showError(state.message);
             }
           },
           child: BlocBuilder<EventGuestsListCubit, EventGuestsListState>(
@@ -39,7 +43,9 @@ class EventGuestsScreen extends StatelessWidget {
                 :final guests,
                 :final groups,
                 :final selectedStatus,
-                :final selectedGroupId
+                :final selectedGroupId,
+                :final hasNextPage,
+                :final isLoadingMore,
               ) =>
                 EventGuestsBody(
                   eventId: args.eventId,
@@ -48,6 +54,8 @@ class EventGuestsScreen extends StatelessWidget {
                   groups: groups,
                   selectedStatus: selectedStatus,
                   selectedGroupId: selectedGroupId,
+                  hasNextPage: hasNextPage,
+                  isLoadingMore: isLoadingMore,
                 ),
               EventGuestsListError(:final message) => ErrorStateWidget(
                   message: message,

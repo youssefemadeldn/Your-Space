@@ -4,7 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/helpers/dialog_helper.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
+import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
@@ -25,7 +28,14 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar(title: 'home.title'.tr()),
+      appBar: AppAppBar(
+        title: 'home.title'.tr(),
+        trailing: IconButton(
+          icon: const Icon(Icons.logout_rounded),
+          tooltip: 'common.logout'.tr(),
+          onPressed: () => _confirmLogout(context),
+        ),
+      ),
       body: SafeArea(
         child: BlocBuilder<HomeStatsCubit, HomeStatsState>(
           builder: (context, state) => switch (state) {
@@ -42,6 +52,20 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
+}
+
+void _confirmLogout(BuildContext context) {
+  getIt<DialogHelper>().showConfirmDialog(
+    title: 'common.logoutConfirmTitle'.tr(),
+    message: 'common.logoutConfirmMessage'.tr(),
+    confirmText: 'common.logout'.tr(),
+    cancelText: 'common.cancel'.tr(),
+    onConfirm: () async {
+      await getIt<SecureStorageHelper>().clearSession();
+      if (!context.mounted) return;
+      context.go(AppRoutes.login);
+    },
+  );
 }
 
 class _HomeContent extends StatelessWidget {
