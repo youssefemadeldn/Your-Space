@@ -10,68 +10,24 @@ import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/person_details_args.dart';
 import 'package:your_space_mobile/core/router/args/person_form_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
-import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
 import 'package:your_space_mobile/core/widgets/app_badge.dart';
-import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
 import 'package:your_space_mobile/core/widgets/app_chip.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/app_profile_row.dart';
 import 'package:your_space_mobile/core/widgets/empty_state_widget.dart';
-import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
 
-import '../cubit/people_list_cubit/people_list_cubit.dart';
-import '../cubit/people_list_cubit/people_list_state.dart';
+import '../../cubit/people_list_cubit/people_list_cubit.dart';
 
-class PeopleScreen extends StatelessWidget {
-  const PeopleScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppAppBar(title: 'people.list.title'.tr()),
-      body: SafeArea(
-        child: BlocBuilder<PeopleListCubit, PeopleListState>(
-          builder: (context, state) => switch (state) {
-            PeopleListSuccess(
-              :final people,
-              :final groups,
-              :final selectedGroupId,
-              :final hasNextPage,
-              :final isLoadingMore,
-            ) =>
-              _PeopleListBody(
-                people: people,
-                groups: groups,
-                selectedGroupId: selectedGroupId,
-                hasNextPage: hasNextPage,
-                isLoadingMore: isLoadingMore,
-              ),
-            PeopleListError(:final message) => ErrorStateWidget(
-                message: message,
-                onRetry: () => context.read<PeopleListCubit>().load(),
-              ),
-            _ => const AppLoadingIndicator(),
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed(AppRoutes.personForm, extra: const PersonFormArgs()),
-        child: const Icon(Icons.person_add_rounded),
-      ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
-    );
-  }
-}
-
-class _PeopleListBody extends StatefulWidget {
+class PeopleListBody extends StatefulWidget {
   final List<Person> people;
   final List<Group> groups;
   final int? selectedGroupId;
   final bool hasNextPage;
   final bool isLoadingMore;
 
-  const _PeopleListBody({
+  const PeopleListBody({
+    super.key,
     required this.people,
     required this.groups,
     required this.selectedGroupId,
@@ -80,10 +36,10 @@ class _PeopleListBody extends StatefulWidget {
   });
 
   @override
-  State<_PeopleListBody> createState() => _PeopleListBodyState();
+  State<PeopleListBody> createState() => _PeopleListBodyState();
 }
 
-class _PeopleListBodyState extends State<_PeopleListBody> {
+class _PeopleListBodyState extends State<PeopleListBody> {
   final _scrollController = ScrollController();
 
   @override

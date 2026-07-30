@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_progress_summary.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
@@ -122,5 +123,56 @@ void main() {
 
     final state = cubit.state as AddGuestsListSuccess;
     expect(state.availablePeople, [person2]);
+    expect(state.pageIndex, 2);
+    expect(state.hasNextPage, isFalse);
+  });
+
+  test('loadMore is a no-op when hasNextPage is already false', () async {
+    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 1, totalPages: 1, totalItems: 1)),
+    );
+    await cubit.load(1);
+
+    await cubit.loadMore();
+
+    verifyNever(() => personRepository.getPersons(pageIndex: 2, pageSize: any(named: 'pageSize')));
+  });
+
+  test('loadMore ignores a second concurrent call while the first is in flight', () async {
+    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 2, totalItems: 3)),
+    );
+    await cubit.load(1);
+
+    final completer = Completer<Either<Failure, PaginatedResult<Person>>>();
+    when(() => personRepository.getPersons(pageIndex: 2, pageSize: 20)).thenAnswer((_) => completer.future);
+
+    final first = cubit.loadMore();
+    final second = cubit.loadMore();
+    completer.complete(
+      const Right(PaginatedResult(items: [person2], pageIndex: 2, totalPages: 2, totalItems: 3)),
+    );
+    await first;
+    await second;
+
+    verify(() => personRepository.getPersons(pageIndex: 2, pageSize: 20)).called(1);
+  });
+
+  test('loadMore preserves existing items and resets isLoadingMore on failure', () async {
+    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 1, totalPages: 2, totalItems: 3)),
+    );
+    await cubit.load(1);
+
+    when(() => personRepository.getPersons(pageIndex: 2, pageSize: 20))
+        .thenAnswer((_) async => const Left(NetworkFailure()));
+
+    await cubit.loadMore();
+
+    final state = cubit.state as AddGuestsListSuccess;
+    expect(state.availablePeople, [person2]);
+    expect(state.pageIndex, 1);
+    expect(state.hasNextPage, isTrue);
+    expect(state.isLoadingMore, isFalse);
   });
 }

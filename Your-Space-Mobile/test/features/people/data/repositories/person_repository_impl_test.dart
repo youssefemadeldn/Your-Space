@@ -32,13 +32,14 @@ void main() {
 
   test('getPersonById maps embedded occasion history alongside the person', () async {
     when(() => remote.getPersonById(1)).thenAnswer(
-      (_) async => const Right(PersonDetailsResponse(
+      (_) async => Right(PersonDetailsResponse(
         id: 1,
         name: 'Sara Adel',
         groupId: 1,
         groupName: 'Family',
         hasReciprocityHistory: false,
-        occasionHistory: [],
+        occasionHistory: const [],
+        createdAt: DateTime(2026),
       )),
     );
 

@@ -11,6 +11,8 @@ public class EventProfile : Profile
     {
         // Guest counts have no source on Event itself — EventService fetches them via a separate
         // EventGuest query and sets them on the mapped instance afterward.
+        // NameAr is picked up automatically on both maps below via AutoMapper's default
+        // same-name/same-type member matching — no explicit .ForMember needed.
         CreateMap<Event, EventDetailsDto>()
             .ForMember(d => d.Name, o => o.MapFrom(s => LocalizedTextResolver.Resolve(s.Name, s.NameAr)))
             .ForMember(d => d.TotalGuestCount, o => o.Ignore())

@@ -5,15 +5,18 @@ import 'package:injectable/injectable.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 import '../constants/api_constants.dart';
+import '../helpers/locale_helper.dart';
 import '../storage/secure_storage_helper.dart';
 import 'interceptors/auth_interceptor.dart';
+import 'interceptors/locale_interceptor.dart';
 
 @lazySingleton
 class DioFactory {
   final SecureStorageHelper _secureStorage;
   final GoRouter _router;
+  final LocaleHelper _localeHelper;
 
-  DioFactory(this._secureStorage, this._router);
+  DioFactory(this._secureStorage, this._router, this._localeHelper);
 
   Dio create() {
     final dio = Dio(
@@ -30,6 +33,7 @@ class DioFactory {
     if (kDebugMode) {
       dio.interceptors.add(PrettyDioLogger(requestHeader: true, requestBody: true));
     }
+    dio.interceptors.add(LocaleInterceptor(_localeHelper));
     dio.interceptors.add(AuthInterceptor(_secureStorage, _router));
 
     return dio;

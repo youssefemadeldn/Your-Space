@@ -48,6 +48,28 @@ void main() {
     await expectation;
   });
 
+  test('revert emits [Submitting, Success]', () async {
+    when(() => repository.revertGuest(1, 2)).thenAnswer(
+      (_) async => const Right(EventGuest(
+        id: 2,
+        eventId: 1,
+        personId: 2,
+        personName: 'Omar Khaled',
+        groupId: 1,
+        groupName: 'Family',
+        status: EventGuestStatus.notInvited,
+      )),
+    );
+
+    final expectation = expectLater(
+      cubit.stream,
+      emitsInOrder([const EventGuestActionSubmitting(), const EventGuestActionSuccess()]),
+    );
+
+    unawaited(cubit.revert(1, 2));
+    await expectation;
+  });
+
   test('remove emits [Submitting, Success]', () async {
     when(() => repository.removeGuest(1, 2)).thenAnswer((_) async => const Right(unit));
 

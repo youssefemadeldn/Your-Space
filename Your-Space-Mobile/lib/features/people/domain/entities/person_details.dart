@@ -12,9 +12,10 @@ import 'person_occasion_history_entry.dart';
 class PersonDetails extends Equatable {
   final Person person;
   final List<PersonOccasionHistoryEntry> occasionHistory;
+  final DateTime createdAt;
 
-  const PersonDetails({required this.person, required this.occasionHistory});
+  const PersonDetails({required this.person, required this.occasionHistory, required this.createdAt});
 
   @override
-  List<Object?> get props => [person, occasionHistory];
+  List<Object?> get props => [person, occasionHistory, createdAt];
 }

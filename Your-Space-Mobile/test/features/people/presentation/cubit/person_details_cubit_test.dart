@@ -32,6 +32,7 @@ void main() {
       occasionHistory: [
         PersonOccasionHistoryEntry(id: 1, personId: 1, invitedMe: true, createdAt: DateTime(2026)),
       ],
+      createdAt: DateTime(2026),
     );
     when(() => repository.getPersonById(1)).thenAnswer((_) async => Right(details));
 

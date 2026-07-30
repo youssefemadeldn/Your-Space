@@ -39,7 +39,7 @@ import 'package:your_space_mobile/features/people/presentation/cubit/add_occasio
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_details_cubit/person_details_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart';
-import 'package:your_space_mobile/features/people/presentation/pages/people_screen.dart';
+import 'package:your_space_mobile/features/people/presentation/pages/people_screen/people_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_details_screen/person_details_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
 

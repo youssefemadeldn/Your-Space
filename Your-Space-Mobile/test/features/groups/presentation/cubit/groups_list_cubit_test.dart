@@ -139,4 +139,24 @@ void main() {
 
     verify(() => repository.getGroups(search: null, pageIndex: 2, pageSize: 20)).called(1);
   });
+
+  test('loadMore preserves existing items and resets isLoadingMore on failure', () async {
+    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [group1], pageIndex: 1, totalPages: 2, totalItems: 2)),
+    );
+    await cubit.load();
+
+    when(() => repository.getGroups(search: null, pageIndex: 2, pageSize: 20))
+        .thenAnswer((_) async => const Left(NetworkFailure()));
+
+    await cubit.loadMore();
+
+    final state = cubit.state as GroupsListSuccess;
+    expect(state.groups, [group1]);
+    expect(state.pageIndex, 1);
+    expect(state.hasNextPage, isTrue);
+    expect(state.isLoadingMore, isFalse);
+    expect(state.loadMoreErrorMessage, isNotNull);
+    expect(state.loadMoreErrorId, 1);
+  });
 }

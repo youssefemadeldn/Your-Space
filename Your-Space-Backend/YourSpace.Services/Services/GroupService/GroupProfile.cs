@@ -14,5 +14,8 @@ public class GroupProfile : Profile
 
         CreateMap<Group, GroupProfileDto>()
             .ForMember(d => d.Name, o => o.MapFrom(s => LocalizedTextResolver.Resolve(s.Name, s.NameAr)));
+
+        // Both maps above pick up NameAr automatically via AutoMapper's default
+        // same-name/same-type member matching — no explicit .ForMember needed.
     }
 }

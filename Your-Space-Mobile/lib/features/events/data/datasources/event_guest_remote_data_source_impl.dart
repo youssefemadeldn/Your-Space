@@ -32,7 +32,7 @@ class EventGuestRemoteDataSourceImpl {
       _api.get<PaginatedResponse<EventGuestResponse>>(
         path: _guestsPath(eventId),
         queryParameters: {
-          if (groupId != null) 'groupId': groupId,
+          'groupId': ?groupId,
           if (status != null) 'status': status.toWire(),
           'pageIndex': pageIndex,
           'pageSize': pageSize,
@@ -64,7 +64,7 @@ class EventGuestRemoteDataSourceImpl {
       _api.get<PaginatedResponse<ReciprocityPersonResponse>>(
         path: '${_guestsPath(eventId)}/reciprocity-suggestions',
         queryParameters: {
-          if (groupId != null) 'groupId': groupId,
+          'groupId': ?groupId,
           'pageIndex': pageIndex,
           'pageSize': pageSize,
         },

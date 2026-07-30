@@ -11,6 +11,7 @@ class PersonDetailsResponse {
   final String groupName;
   final bool hasReciprocityHistory;
   final List<PersonOccasionHistoryResponse> occasionHistory;
+  final DateTime createdAt;
 
   const PersonDetailsResponse({
     required this.id,
@@ -20,6 +21,7 @@ class PersonDetailsResponse {
     required this.groupName,
     required this.hasReciprocityHistory,
     required this.occasionHistory,
+    required this.createdAt,
   });
 
   factory PersonDetailsResponse.fromJson(Map<String, dynamic> json) => PersonDetailsResponse(
@@ -32,6 +34,7 @@ class PersonDetailsResponse {
         occasionHistory: (json['occasionHistory'] as List<dynamic>? ?? const [])
             .map((e) => PersonOccasionHistoryResponse.fromJson(e as Map<String, dynamic>))
             .toList(),
+        createdAt: DateTime.parse(json['createdAt'] as String),
       );
 
   PersonDetails toEntity() => PersonDetails(
@@ -44,5 +47,6 @@ class PersonDetailsResponse {
           hasReciprocityHistory: hasReciprocityHistory,
         ),
         occasionHistory: occasionHistory.map((e) => e.toEntity()).toList(),
+        createdAt: createdAt,
       );
 }

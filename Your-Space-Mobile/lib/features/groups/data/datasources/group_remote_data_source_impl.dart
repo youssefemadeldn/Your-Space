@@ -24,7 +24,7 @@ class GroupRemoteDataSourceImpl {
       _api.get<PaginatedResponse<GroupResponse>>(
         path: ApiConstants.groups,
         queryParameters: {
-          if (search != null) 'search': search,
+          'search': ?search,
           'pageIndex': pageIndex,
           'pageSize': pageSize,
         },

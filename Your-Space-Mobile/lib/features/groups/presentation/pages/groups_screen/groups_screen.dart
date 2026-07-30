@@ -24,16 +24,36 @@ class GroupsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppAppBar(title: 'groups.list.title'.tr()),
       body: SafeArea(
-        child: BlocListener<GroupActionCubit, GroupActionState>(
-          listener: (context, state) {
-            if (state is GroupActionSuccess) {
-              Navigator.of(context).pop();
-              context.read<GroupsListCubit>().load();
-              getIt<SnackBarHelper>().showSuccess('groups.savedMessage'.tr());
-            } else if (state is GroupActionError) {
-              getIt<SnackBarHelper>().showError(state.message);
-            }
-          },
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<GroupActionCubit, GroupActionState>(
+              listener: (context, state) {
+                if (state is GroupActionSuccess) {
+                  Navigator.of(context).pop();
+                  context.read<GroupsListCubit>().load();
+                  getIt<SnackBarHelper>().showSuccess('groups.savedMessage'.tr());
+                } else if (state is GroupActionError) {
+                  getIt<SnackBarHelper>().showError(state.message);
+                }
+              },
+            ),
+            BlocListener<GroupsListCubit, GroupsListState>(
+              listenWhen: (previous, current) {
+                if (current is! GroupsListSuccess) return false;
+                final previousErrorId = previous is GroupsListSuccess ? previous.loadMoreErrorId : 0;
+                return current.loadMoreErrorId != previousErrorId;
+              },
+              listener: (context, state) {
+                final message = (state as GroupsListSuccess).loadMoreErrorMessage;
+                if (message == null) return;
+                getIt<SnackBarHelper>().showError(
+                  message,
+                  actionLabel: 'common.retry'.tr(),
+                  onAction: () => context.read<GroupsListCubit>().loadMore(),
+                );
+              },
+            ),
+          ],
           child: BlocBuilder<GroupsListCubit, GroupsListState>(
             builder: (context, state) => switch (state) {
               GroupsListSuccess(:final groups, :final hasNextPage, :final isLoadingMore) =>

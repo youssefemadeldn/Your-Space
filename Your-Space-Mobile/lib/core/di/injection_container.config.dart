@@ -19,6 +19,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:shared_preferences/shared_preferences.dart' as _i460;
 import 'package:your_space_mobile/core/di/register_module.dart' as _i876;
 import 'package:your_space_mobile/core/helpers/dialog_helper.dart' as _i733;
+import 'package:your_space_mobile/core/helpers/locale_helper.dart' as _i559;
 import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart' as _i967;
 import 'package:your_space_mobile/core/network/api_manager.dart' as _i531;
 import 'package:your_space_mobile/core/network/connectivity_helper.dart' as _i0;
@@ -123,6 +124,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.singleton<_i583.GoRouter>(
       () => registerModule.router(gh<_i718.GlobalKey<_i718.NavigatorState>>()),
     );
+    gh.lazySingleton<_i559.LocaleHelper>(
+      () => _i559.LocaleHelper(gh<_i460.SharedPreferences>()),
+    );
     gh.lazySingleton<_i733.DialogHelper>(
       () => _i733.DialogHelper(gh<_i409.GlobalKey<_i409.NavigatorState>>()),
     );
@@ -133,6 +137,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i927.DioFactory(
         gh<_i134.SecureStorageHelper>(),
         gh<_i583.GoRouter>(),
+        gh<_i559.LocaleHelper>(),
       ),
     );
     gh.singleton<_i361.Dio>(() => registerModule.dio(gh<_i927.DioFactory>()));

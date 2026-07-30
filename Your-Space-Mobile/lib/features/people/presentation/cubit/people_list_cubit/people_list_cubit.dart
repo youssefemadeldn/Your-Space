@@ -94,7 +94,11 @@ class PeopleListCubit extends Cubit<PeopleListState> {
       pageSize: _pageSize,
     );
     result.fold(
-      (failure) => emit(current.copyWith(isLoadingMore: false)),
+      (failure) => emit(current.copyWith(
+        isLoadingMore: false,
+        loadMoreErrorMessage: core.failureToMessage(failure),
+        loadMoreErrorId: current.loadMoreErrorId + 1,
+      )),
       (page) => emit(current.copyWith(
         people: [...current.people, ...page.items],
         pageIndex: page.pageIndex,

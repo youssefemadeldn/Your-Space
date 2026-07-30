@@ -24,7 +24,7 @@ class EventRemoteDataSourceImpl {
       _api.get<PaginatedResponse<EventResponse>>(
         path: ApiConstants.events,
         queryParameters: {
-          if (search != null) 'search': search,
+          'search': ?search,
           'pageIndex': pageIndex,
           'pageSize': pageSize,
         },

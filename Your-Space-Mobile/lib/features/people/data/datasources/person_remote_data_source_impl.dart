@@ -28,8 +28,8 @@ class PersonRemoteDataSourceImpl {
       _api.get<PaginatedResponse<PersonResponse>>(
         path: ApiConstants.persons,
         queryParameters: {
-          if (groupId != null) 'groupId': groupId,
-          if (search != null) 'search': search,
+          'groupId': ?groupId,
+          'search': ?search,
           'pageIndex': pageIndex,
           'pageSize': pageSize,
         },

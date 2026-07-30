@@ -77,12 +77,18 @@ class _EventFormScreenState extends State<EventFormScreen> {
       setState(() => _nameError = 'events.form.nameRequired'.tr());
       return;
     }
+    final nameAr = _nameArController.text.trim();
+    final notes = _notesController.text.trim();
     context.read<EventFormCubit>().submit(
           eventId: widget.args.eventId,
           name: name,
-          nameAr: _nameArController.text.trim().isEmpty ? null : _nameArController.text.trim(),
+          // Editing: always send the current value, even empty — the fields are
+          // correctly prefilled from the backend, so emptying one means "clear
+          // it", not "unknown, leave unchanged". Creating: omit when empty,
+          // since there's nothing to clear yet.
+          nameAr: _isEditing ? nameAr : (nameAr.isEmpty ? null : nameAr),
           eventDate: _eventDate,
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          notes: _isEditing ? notes : (notes.isEmpty ? null : notes),
         );
   }
 

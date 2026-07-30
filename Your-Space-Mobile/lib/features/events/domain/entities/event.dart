@@ -1,8 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// [nameAr] is always null when hydrated from the backend — neither
-/// `EventProfileDto` nor `EventDetailsDto` ever return it (only accepted on
-/// create/update), the same accepted gap as `core/entities/group.dart`.
 class Event extends Equatable {
   final int id;
   final String name;

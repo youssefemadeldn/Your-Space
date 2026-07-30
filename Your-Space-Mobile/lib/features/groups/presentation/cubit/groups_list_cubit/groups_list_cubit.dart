@@ -58,7 +58,11 @@ class GroupsListCubit extends Cubit<GroupsListState> {
       pageSize: _pageSize,
     );
     result.fold(
-      (failure) => emit(current.copyWith(isLoadingMore: false)),
+      (failure) => emit(current.copyWith(
+        isLoadingMore: false,
+        loadMoreErrorMessage: core.failureToMessage(failure),
+        loadMoreErrorId: current.loadMoreErrorId + 1,
+      )),
       (page) => emit(current.copyWith(
         groups: [...current.groups, ...page.items],
         pageIndex: page.pageIndex,

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
@@ -110,5 +111,81 @@ void main() {
     final expectation = expectLater(cubit.stream, emits(isA<EventGuestsListSuccess>()));
     unawaited(cubit.reloadAfterAction());
     await expectation;
+  });
+
+  test('loadMore appends the next page and advances pageIndex', () async {
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest1], pageIndex: 1, totalPages: 2, totalItems: 2)),
+    );
+    await cubit.load(1);
+
+    when(() => eventGuestRepository.getEventGuests(1, groupId: null, status: null, pageIndex: 2, pageSize: 20))
+        .thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest2], pageIndex: 2, totalPages: 2, totalItems: 2)),
+    );
+
+    await cubit.loadMore();
+
+    final state = cubit.state as EventGuestsListSuccess;
+    expect(state.guests, [guest1, guest2]);
+    expect(state.pageIndex, 2);
+    expect(state.hasNextPage, isFalse);
+  });
+
+  test('loadMore is a no-op when hasNextPage is already false', () async {
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest1], pageIndex: 1, totalPages: 1, totalItems: 1)),
+    );
+    await cubit.load(1);
+
+    await cubit.loadMore();
+
+    verifyNever(() => eventGuestRepository.getEventGuests(
+          1,
+          groupId: any(named: 'groupId'),
+          status: any(named: 'status'),
+          pageIndex: 2,
+          pageSize: any(named: 'pageSize'),
+        ));
+  });
+
+  test('loadMore ignores a second concurrent call while the first is in flight', () async {
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest1], pageIndex: 1, totalPages: 2, totalItems: 2)),
+    );
+    await cubit.load(1);
+
+    final completer = Completer<Either<Failure, PaginatedResult<EventGuest>>>();
+    when(() => eventGuestRepository.getEventGuests(1, groupId: null, status: null, pageIndex: 2, pageSize: 20))
+        .thenAnswer((_) => completer.future);
+
+    final first = cubit.loadMore();
+    final second = cubit.loadMore();
+    completer.complete(
+      const Right(PaginatedResult(items: [guest2], pageIndex: 2, totalPages: 2, totalItems: 2)),
+    );
+    await first;
+    await second;
+
+    verify(() => eventGuestRepository.getEventGuests(1, groupId: null, status: null, pageIndex: 2, pageSize: 20))
+        .called(1);
+  });
+
+  test('loadMore preserves existing items and resets isLoadingMore on failure', () async {
+    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 20)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [guest1], pageIndex: 1, totalPages: 2, totalItems: 2)),
+    );
+    await cubit.load(1);
+
+    when(() => eventGuestRepository.getEventGuests(1, groupId: null, status: null, pageIndex: 2, pageSize: 20))
+        .thenAnswer((_) async => const Left(NetworkFailure()));
+
+    await cubit.loadMore();
+
+    final state = cubit.state as EventGuestsListSuccess;
+    expect(state.guests, [guest1]);
+    expect(state.pageIndex, 1);
+    expect(state.hasNextPage, isTrue);
+    expect(state.isLoadingMore, isFalse);
   });
 }

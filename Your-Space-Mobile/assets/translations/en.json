@@ -8,6 +8,7 @@
     "save": "Save",
     "saveChanges": "Save changes",
     "create": "Create",
+    "edit": "Edit",
     "logout": "Log out",
     "logoutConfirmTitle": "Log out?",
     "logoutConfirmMessage": "You'll need to log in again next time.",

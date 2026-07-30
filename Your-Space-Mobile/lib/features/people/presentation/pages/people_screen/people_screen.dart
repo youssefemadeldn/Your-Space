@@ -1,0 +1,74 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
+import 'package:your_space_mobile/core/router/app_routes.dart';
+import 'package:your_space_mobile/core/router/args/person_form_args.dart';
+import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
+import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
+import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
+import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+
+import '../../cubit/people_list_cubit/people_list_cubit.dart';
+import '../../cubit/people_list_cubit/people_list_state.dart';
+import 'people_list_body.dart';
+
+class PeopleScreen extends StatelessWidget {
+  const PeopleScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppAppBar(title: 'people.list.title'.tr()),
+      body: SafeArea(
+        child: BlocListener<PeopleListCubit, PeopleListState>(
+          listenWhen: (previous, current) {
+            if (current is! PeopleListSuccess) return false;
+            final previousErrorId = previous is PeopleListSuccess ? previous.loadMoreErrorId : 0;
+            return current.loadMoreErrorId != previousErrorId;
+          },
+          listener: (context, state) {
+            final message = (state as PeopleListSuccess).loadMoreErrorMessage;
+            if (message == null) return;
+            getIt<SnackBarHelper>().showError(
+              message,
+              actionLabel: 'common.retry'.tr(),
+              onAction: () => context.read<PeopleListCubit>().loadMore(),
+            );
+          },
+          child: BlocBuilder<PeopleListCubit, PeopleListState>(
+            builder: (context, state) => switch (state) {
+              PeopleListSuccess(
+                :final people,
+                :final groups,
+                :final selectedGroupId,
+                :final hasNextPage,
+                :final isLoadingMore,
+              ) =>
+                PeopleListBody(
+                  people: people,
+                  groups: groups,
+                  selectedGroupId: selectedGroupId,
+                  hasNextPage: hasNextPage,
+                  isLoadingMore: isLoadingMore,
+                ),
+              PeopleListError(:final message) => ErrorStateWidget(
+                  message: message,
+                  onRetry: () => context.read<PeopleListCubit>().load(),
+                ),
+              _ => const AppLoadingIndicator(),
+            },
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.pushNamed(AppRoutes.personForm, extra: const PersonFormArgs()),
+        child: const Icon(Icons.person_add_rounded),
+      ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+    );
+  }
+}

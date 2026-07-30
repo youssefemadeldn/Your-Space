@@ -54,7 +54,10 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
     final nameAr = _nameArController.text.trim();
     final cubit = context.read<GroupActionCubit>();
     if (_isEditing) {
-      cubit.updateGroup(id: widget.group!.id, name: name, nameAr: nameAr.isEmpty ? null : nameAr);
+      // Always send the current value on update, even empty — the field is
+      // correctly prefilled from the backend, so an emptied field means
+      // "clear it", not "unknown, leave unchanged".
+      cubit.updateGroup(id: widget.group!.id, name: name, nameAr: nameAr);
     } else {
       cubit.createGroup(name: name, nameAr: nameAr.isEmpty ? null : nameAr);
     }

@@ -54,7 +54,8 @@ void main() {
 
   test('initialize(id) emits [Loading, Ready] pre-filled with that person (edit mode)', () async {
     when(() => personRepository.getPersonById(7)).thenAnswer(
-      (_) async => Right(PersonDetails(person: existingPerson, occasionHistory: const [])),
+      (_) async =>
+          Right(PersonDetails(person: existingPerson, occasionHistory: const [], createdAt: DateTime(2026))),
     );
 
     final expectation = expectLater(

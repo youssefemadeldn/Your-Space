@@ -15,7 +15,7 @@ import 'package:your_space_mobile/features/groups/domain/repositories/base_group
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_state.dart';
-import 'package:your_space_mobile/features/people/presentation/pages/people_screen.dart';
+import 'package:your_space_mobile/features/people/presentation/pages/people_screen/people_screen.dart';
 
 class MockPersonRepository extends Mock implements PersonRepository {}
 
