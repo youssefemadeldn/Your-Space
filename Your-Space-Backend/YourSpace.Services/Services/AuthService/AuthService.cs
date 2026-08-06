@@ -405,6 +405,29 @@ public class AuthService(
         return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user));
     }
 
+    public async Task<ServiceResult<UserProfileDto>> UpdateProfileAsync(string userId, UpdateProfileDto dto)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return ServiceResult<UserProfileDto>.NotFound("User not found.", ErrorCodes.UserNotFound);
+        }
+
+        user.FirstName = dto.FirstName;
+        user.LastName = dto.LastName;
+        user.PhoneNumber = dto.PhoneNumber;
+
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            logger.LogWarning("Profile update failed for user {UserId}: {Errors}", user.Id, string.Join(", ", result.Errors.Select(e => e.Code)));
+            return ServiceResult<UserProfileDto>.ValidationError(MapIdentityErrors(result.Errors), "Profile update failed.");
+        }
+
+        logger.LogInformation("Profile updated for user {UserId}", user.Id);
+        return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user), "Profile updated successfully.");
+    }
+
     private async Task<AuthResponseDto> IssueTokensAsync(AppUser user, IList<string> roles, string? ipAddress)
     {
         var (accessToken, accessExpiresAt) = tokenService.GenerateAccessToken(user, roles);

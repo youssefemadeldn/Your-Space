@@ -7,6 +7,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
+import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
@@ -22,17 +24,31 @@ class MockPersonRepository extends Mock implements PersonRepository {}
 
 class MockEventRepository extends Mock implements EventRepository {}
 
+class MockGetCurrentUserProfileUseCase extends Mock implements GetCurrentUserProfileUseCase {}
+
+const _profile = UserProfile(
+  id: 'user-1',
+  email: 'jane@example.com',
+  firstName: 'Jane',
+  lastName: 'Doe',
+  gender: Gender.female,
+  roles: ['User'],
+);
+
 void main() {
   late MockGroupRepository groupRepository;
   late MockPersonRepository personRepository;
   late MockEventRepository eventRepository;
+  late MockGetCurrentUserProfileUseCase getCurrentUserProfile;
   late HomeStatsCubit cubit;
 
   setUp(() {
     groupRepository = MockGroupRepository();
     personRepository = MockPersonRepository();
     eventRepository = MockEventRepository();
-    cubit = HomeStatsCubit(groupRepository, personRepository, eventRepository);
+    getCurrentUserProfile = MockGetCurrentUserProfileUseCase();
+    when(() => getCurrentUserProfile()).thenAnswer((_) async => const Right(_profile));
+    cubit = HomeStatsCubit(groupRepository, personRepository, eventRepository, getCurrentUserProfile);
   });
 
   tearDown(() => cubit.close());
@@ -63,8 +79,30 @@ void main() {
         isA<HomeStatsSuccess>()
             .having((s) => s.groupsCount, 'groupsCount', 4)
             .having((s) => s.peopleCount, 'peopleCount', 10)
-            .having((s) => s.eventsCount, 'eventsCount', 2),
+            .having((s) => s.eventsCount, 'eventsCount', 2)
+            .having((s) => s.firstName, 'firstName', 'Jane'),
       ]),
+    );
+
+    unawaited(cubit.load());
+    await expectation;
+  });
+
+  test('emits an Error when the profile fetch fails, even if all three counts succeed', () async {
+    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 1)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
+    );
+    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
+    );
+    when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
+    );
+    when(() => getCurrentUserProfile()).thenAnswer((_) async => const Left(NetworkFailure()));
+
+    final expectation = expectLater(
+      cubit.stream,
+      emitsInOrder([const HomeStatsLoading(), isA<HomeStatsError>()]),
     );
 
     unawaited(cubit.load());

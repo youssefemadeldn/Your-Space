@@ -24,6 +24,8 @@ import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart' as _i967;
 import 'package:your_space_mobile/core/network/api_manager.dart' as _i531;
 import 'package:your_space_mobile/core/network/connectivity_helper.dart' as _i0;
 import 'package:your_space_mobile/core/network/dio_factory.dart' as _i927;
+import 'package:your_space_mobile/core/storage/app_preferences_helper.dart'
+    as _i782;
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart'
     as _i134;
 import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_data_source_impl.dart'
@@ -32,6 +34,8 @@ import 'package:your_space_mobile/features/auth/data/repositories/auth_repositor
     as _i722;
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart'
     as _i680;
+import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart'
+    as _i84;
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart'
     as _i1019;
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart'
@@ -98,6 +102,8 @@ import 'package:your_space_mobile/features/people/presentation/cubit/person_deta
     as _i930;
 import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart'
     as _i228;
+import 'package:your_space_mobile/features/settings/presentation/cubit/profile_form_cubit/profile_form_cubit.dart'
+    as _i291;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -120,6 +126,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i0.ConnectivityHelper>(() => _i0.ConnectivityHelper());
     gh.lazySingleton<_i134.SecureStorageHelper>(
       () => _i134.SecureStorageHelper(gh<_i558.FlutterSecureStorage>()),
+    );
+    gh.lazySingleton<_i782.AppPreferencesHelper>(
+      () => _i782.AppPreferencesHelper(gh<_i460.SharedPreferences>()),
     );
     gh.singleton<_i583.GoRouter>(
       () => registerModule.router(gh<_i718.GlobalKey<_i718.NavigatorState>>()),
@@ -195,13 +204,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i890.EventsListCubit>(
       () => _i890.EventsListCubit(gh<_i219.EventRepository>()),
     );
-    gh.factory<_i136.HomeStatsCubit>(
-      () => _i136.HomeStatsCubit(
-        gh<_i994.GroupRepository>(),
-        gh<_i571.PersonRepository>(),
-        gh<_i219.EventRepository>(),
-      ),
-    );
     gh.factory<_i512.PeopleListCubit>(
       () => _i512.PeopleListCubit(
         gh<_i571.PersonRepository>(),
@@ -260,6 +262,23 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i391.EventDetailsCubit(
         gh<_i219.EventRepository>(),
         gh<_i235.EventGuestRepository>(),
+      ),
+    );
+    gh.factory<_i84.GetCurrentUserProfileUseCase>(
+      () => _i84.GetCurrentUserProfileUseCase(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i291.ProfileFormCubit>(
+      () => _i291.ProfileFormCubit(
+        gh<_i84.GetCurrentUserProfileUseCase>(),
+        gh<_i680.AuthRepository>(),
+      ),
+    );
+    gh.factory<_i136.HomeStatsCubit>(
+      () => _i136.HomeStatsCubit(
+        gh<_i994.GroupRepository>(),
+        gh<_i571.PersonRepository>(),
+        gh<_i219.EventRepository>(),
+        gh<_i84.GetCurrentUserProfileUseCase>(),
       ),
     );
     return this;

@@ -102,6 +102,14 @@ public class AuthController(IAuthService authService) : ControllerBase
         return new ResultActionResult<UserProfileDto>(result);
     }
 
+    [HttpPut("me")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+    {
+        var result = await authService.UpdateProfileAsync(GetUserId(), dto);
+        return new ResultActionResult<UserProfileDto>(result);
+    }
+
     // Safe: every action calling this is behind [Authorize], and TokenService.GenerateAccessToken
     // always emits a NameIdentifier claim, so it's never actually missing here.
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;

@@ -26,7 +26,8 @@
     "home": "Home",
     "groups": "Groups",
     "people": "People",
-    "events": "Events"
+    "events": "Events",
+    "settings": "Settings"
   },
   "auth": {
     "firstName": "First name",
@@ -93,9 +94,26 @@
       "requiredGender": "Select a gender"
     }
   },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get started",
+    "page1Title": "Your People, Organized",
+    "page1Body": "Keep every friend, family member, and contact organized into groups — and now subgroups — so you always know who's who, right when you need them.",
+    "page2Title": "Plan Events Without the Chaos",
+    "page2Body": "Create an event, add guests one by one or invite a whole group at once, and track exactly who's invited, who's still pending, and who you've decided to skip.",
+    "page3Title": "Never Forget Who Invited You",
+    "page3Body": "Your Space quietly tracks who's invited you to their own occasions — so when it's time to plan your next event, you'll know exactly who to invite back."
+  },
+  "settings": {
+    "title": "Settings",
+    "savedMessage": "Profile updated"
+  },
   "home": {
-    "title": "Your Space",
-    "greeting": "Welcome back",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "hiName": "Hi {name}",
     "groupsLabel": "Groups",
     "peopleLabel": "People",
     "eventsLabel": "Events",

@@ -22,11 +22,18 @@ class AppBottomNav extends StatelessWidget {
     Icons.groups_rounded,
     Icons.people_alt_rounded,
     Icons.event_rounded,
+    Icons.settings_rounded,
   ];
 
-  static const _routes = [AppRoutes.home, AppRoutes.groups, AppRoutes.people, AppRoutes.events];
+  static const _routes = [
+    AppRoutes.home,
+    AppRoutes.groups,
+    AppRoutes.people,
+    AppRoutes.events,
+    AppRoutes.settings,
+  ];
 
-  static const _labelKeys = ['nav.home', 'nav.groups', 'nav.people', 'nav.events'];
+  static const _labelKeys = ['nav.home', 'nav.groups', 'nav.people', 'nav.events', 'nav.settings'];
 
   void _handleTap(BuildContext context, int index) {
     if (onTap != null) {

@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/storage/app_preferences_helper.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
+import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart';
@@ -39,9 +41,12 @@ import 'package:your_space_mobile/features/people/presentation/cubit/add_occasio
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_details_cubit/person_details_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart';
+import 'package:your_space_mobile/features/onboarding/presentation/pages/onboarding_screen/onboarding_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/people_screen/people_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_details_screen/person_details_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
+import 'package:your_space_mobile/features/settings/presentation/cubit/profile_form_cubit/profile_form_cubit.dart';
+import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen.dart';
 
 import 'app_routes.dart';
 import 'session_redirect.dart';
@@ -67,7 +72,10 @@ class AppRouter {
       routes: [
         GoRoute(
           path: AppRoutes.splash,
-          redirect: (context, state) => resolveSplashRedirect(getIt<SecureStorageHelper>()),
+          redirect: (context, state) => resolveSplashRedirect(
+            getIt<AppPreferencesHelper>(),
+            getIt<SecureStorageHelper>(),
+          ),
         ),
         GoRoute(
           path: AppRoutes.login,
@@ -125,39 +133,92 @@ class AppRouter {
             child: const ChangePasswordScreen(),
           ),
         ),
-
-        // --- Home ---
         GoRoute(
-          path: AppRoutes.home,
-          name: AppRoutes.home,
-          builder: (context, state) => BlocProvider(
-            create: (_) => getIt<HomeStatsCubit>()..load(),
-            child: const HomeScreen(),
-          ),
+          path: AppRoutes.onboarding,
+          name: AppRoutes.onboarding,
+          builder: (context, state) => const OnboardingScreen(),
         ),
 
-        // --- Groups ---
-        GoRoute(
-          path: AppRoutes.groups,
-          name: AppRoutes.groups,
-          builder: (context, state) => MultiBlocProvider(
-            providers: [
-              BlocProvider(create: (_) => getIt<GroupsListCubit>()..load()),
-              BlocProvider(create: (_) => getIt<GroupActionCubit>()),
-            ],
-            child: const GroupsScreen(),
+        // --- Bottom-nav shell: Home / Groups / People / Events / Settings share one
+        // persistent AppBottomNav and keep each branch's own state across tab switches
+        // (StatefulShellRoute.indexedStack, not a full rebuild per navigation like a
+        // plain GoRoute would do). Every route below stays a top-level GoRoute, pushed
+        // on top of the shell exactly as before — unchanged behavior.
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => Scaffold(
+            body: navigationShell,
+            bottomNavigationBar: AppBottomNav(
+              currentIndex: navigationShell.currentIndex,
+              onTap: navigationShell.goBranch,
+            ),
           ),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.home,
+                  name: AppRoutes.home,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<HomeStatsCubit>()..load(),
+                    child: const HomeScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.groups,
+                  name: AppRoutes.groups,
+                  builder: (context, state) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (_) => getIt<GroupsListCubit>()..load()),
+                      BlocProvider(create: (_) => getIt<GroupActionCubit>()),
+                    ],
+                    child: const GroupsScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.people,
+                  name: AppRoutes.people,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<PeopleListCubit>()..load(),
+                    child: const PeopleScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.events,
+                  name: AppRoutes.events,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<EventsListCubit>()..load(),
+                    child: const EventsScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.settings,
+                  name: AppRoutes.settings,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<ProfileFormCubit>()..initialize(),
+                    child: const SettingsScreen(),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
 
-        // --- People ---
-        GoRoute(
-          path: AppRoutes.people,
-          name: AppRoutes.people,
-          builder: (context, state) => BlocProvider(
-            create: (_) => getIt<PeopleListCubit>()..load(),
-            child: const PeopleScreen(),
-          ),
-        ),
         GoRoute(
           path: AppRoutes.personForm,
           name: AppRoutes.personForm,
@@ -185,15 +246,7 @@ class AppRouter {
           },
         ),
 
-        // --- Events ---
-        GoRoute(
-          path: AppRoutes.events,
-          name: AppRoutes.events,
-          builder: (context, state) => BlocProvider(
-            create: (_) => getIt<EventsListCubit>()..load(),
-            child: const EventsScreen(),
-          ),
-        ),
+        // --- Events (list route lives in the shell above; these stay top-level) ---
         GoRoute(
           path: AppRoutes.eventForm,
           name: AppRoutes.eventForm,

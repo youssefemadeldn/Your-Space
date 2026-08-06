@@ -57,6 +57,22 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
         var meResponse = await client.SendAsync(authorizedRequest);
         meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        using var updateProfileRequest = new HttpRequestMessage(HttpMethod.Put, "/api/v1/Auth/me")
+        {
+            Content = JsonContent.Create(new UpdateProfileDto
+            {
+                FirstName = "Updated",
+                LastName = "Name",
+                PhoneNumber = "+201111111111"
+            })
+        };
+        updateProfileRequest.Headers.Add("Authorization", $"Bearer {loginResult.Data.AccessToken}");
+        var updateProfileResponse = await client.SendAsync(updateProfileRequest);
+        updateProfileResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updateProfileResult = await DeserializeAsync<UserProfileDto>(updateProfileResponse);
+        updateProfileResult.Data!.FirstName.Should().Be("Updated");
+        updateProfileResult.Data.PhoneNumber.Should().Be("+201111111111");
+
         var refreshResponse = await client.PostAsJsonAsync("/api/v1/Auth/refresh-token", new RefreshTokenRequestDto
         {
             RefreshToken = loginResult.Data.RefreshToken
@@ -83,6 +99,21 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
             RefreshToken = refreshResult.Data.RefreshToken
         });
         refreshAfterLogoutResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_without_a_token_is_rejected()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.PutAsJsonAsync("/api/v1/Auth/me", new UpdateProfileDto
+        {
+            FirstName = "No",
+            LastName = "Auth",
+            PhoneNumber = "+201234567890"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private static async Task<ServiceResult<T>> DeserializeAsync<T>(HttpResponseMessage response)

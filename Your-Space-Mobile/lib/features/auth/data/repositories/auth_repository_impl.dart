@@ -14,6 +14,7 @@ import '../models/login_request.dart';
 import '../models/register_request.dart';
 import '../models/resend_confirmation_email_request.dart';
 import '../models/reset_password_request.dart';
+import '../models/update_profile_request.dart';
 
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
@@ -109,5 +110,25 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Right(unit);
       },
     );
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> getProfile() async {
+    final result = await _remote.getProfile();
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+  }) async {
+    final result = await _remote.updateProfile(UpdateProfileRequest(
+      firstName: firstName,
+      lastName: lastName,
+      phoneNumber: phoneNumber,
+    ));
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
   }
 }

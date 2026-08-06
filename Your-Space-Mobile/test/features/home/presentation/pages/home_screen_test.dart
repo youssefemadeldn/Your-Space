@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_cubit.dart';
@@ -22,12 +23,19 @@ class MockPersonRepository extends Mock implements PersonRepository {}
 
 class MockEventRepository extends Mock implements EventRepository {}
 
+class MockGetCurrentUserProfileUseCase extends Mock implements GetCurrentUserProfileUseCase {}
+
 /// `Cubit.emit` is `@protected` and this project has no `bloc_test` dependency
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround, letting the test render a
 /// state directly instead of depending on repository call timing.
 class _TestHomeStatsCubit extends HomeStatsCubit {
-  _TestHomeStatsCubit(super.groupRepository, super.personRepository, super.eventRepository);
+  _TestHomeStatsCubit(
+    super.groupRepository,
+    super.personRepository,
+    super.eventRepository,
+    super.getCurrentUserProfile,
+  );
   void pushState(HomeStatsState state) => emit(state);
 }
 
@@ -49,10 +57,17 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final cubit = _TestHomeStatsCubit(MockGroupRepository(), MockPersonRepository(), MockEventRepository());
+    final cubit = _TestHomeStatsCubit(
+      MockGroupRepository(),
+      MockPersonRepository(),
+      MockEventRepository(),
+      MockGetCurrentUserProfileUseCase(),
+    );
     addTearDown(cubit.close);
 
-    cubit.pushState(const HomeStatsSuccess(groupsCount: 0, peopleCount: 0, eventsCount: 0));
+    cubit.pushState(
+      const HomeStatsSuccess(groupsCount: 0, peopleCount: 0, eventsCount: 0, firstName: 'Jane'),
+    );
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -76,14 +91,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // App bar exposes a logout action so a persisted session always has an exit.
-    expect(find.widgetWithIcon(IconButton, Icons.logout_rounded), findsOneWidget);
+    // No AppBar/logout here anymore — Settings owns logout now (Sprint 2).
+    // The header shows the avatar-initials + personalized greeting instead.
+    expect(find.widgetWithIcon(IconButton, Icons.logout_rounded), findsNothing);
+    expect(find.text('Hi Jane'), findsOneWidget);
 
     // Success, groupsCount == 0 → empty state.
     expect(find.text('Start with one group'), findsOneWidget);
 
     // Success, groupsCount > 0 → stat content.
-    cubit.pushState(const HomeStatsSuccess(groupsCount: 4, peopleCount: 10, eventsCount: 2));
+    cubit.pushState(
+      const HomeStatsSuccess(groupsCount: 4, peopleCount: 10, eventsCount: 2, firstName: 'Jane'),
+    );
     await tester.pumpAndSettle();
     // groupsCount/peopleCount each render twice: once in a stat AppCard, once
     // as an AppListTile subtitle. eventsCount only has the list tile.

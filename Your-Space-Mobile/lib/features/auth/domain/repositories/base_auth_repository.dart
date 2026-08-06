@@ -42,4 +42,12 @@ abstract class AuthRepository {
     required String newPassword,
     required String confirmNewPassword,
   });
+
+  Future<Either<Failure, UserProfile>> getProfile();
+
+  Future<Either<Failure, UserProfile>> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+  });
 }

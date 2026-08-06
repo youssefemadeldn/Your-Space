@@ -13,6 +13,7 @@ import '../models/login_request.dart';
 import '../models/register_request.dart';
 import '../models/resend_confirmation_email_request.dart';
 import '../models/reset_password_request.dart';
+import '../models/update_profile_request.dart';
 import '../models/user_profile_response.dart';
 
 @lazySingleton
@@ -76,5 +77,24 @@ class AuthRemoteDataSourceImpl {
         path: ApiConstants.changePassword,
         data: request.toJson(),
         fromJson: (_) => unit,
+      );
+
+  Future<Either<Failure, UserProfileResponse>> getProfile() =>
+      _api.get<UserProfileResponse>(
+        path: ApiConstants.profile,
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => UserProfileResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  Future<Either<Failure, UserProfileResponse>> updateProfile(UpdateProfileRequest request) =>
+      _api.put<UserProfileResponse>(
+        path: ApiConstants.profile,
+        data: request.toJson(),
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => UserProfileResponse.fromJson(inner as Map<String, dynamic>),
+        ),
       );
 }

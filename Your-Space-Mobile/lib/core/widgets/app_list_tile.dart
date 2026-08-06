@@ -9,6 +9,8 @@ class AppListTile extends StatelessWidget {
   final String? subtitle;
   final String? avatarName;
   final IconData? icon;
+  final Color? iconColor;
+  final Color? titleColor;
   final Widget? trailing;
   final bool divider;
   final VoidCallback? onTap;
@@ -19,6 +21,8 @@ class AppListTile extends StatelessWidget {
     this.subtitle,
     this.avatarName,
     this.icon,
+    this.iconColor,
+    this.titleColor,
     this.trailing,
     this.divider = false,
     this.onTap,
@@ -52,7 +56,7 @@ class AppListTile extends StatelessWidget {
       child: Icon(
         icon ?? Icons.person_rounded,
         size: 20.w,
-        color: AppColors.textSecondary,
+        color: iconColor ?? AppColors.textSecondary,
       ),
     );
   }
@@ -66,7 +70,9 @@ class AppListTile extends StatelessWidget {
       leading: _leading,
       title: Text(
         title,
-        style: AppTextStyles.titleMedium,
+        style: titleColor == null
+            ? AppTextStyles.titleMedium
+            : AppTextStyles.titleMedium.copyWith(color: titleColor),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

@@ -4,18 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:your_space_mobile/core/di/injection_container.dart';
-import 'package:your_space_mobile/core/helpers/dialog_helper.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
-import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
-import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
-import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
+import 'package:your_space_mobile/core/widgets/app_avatar.dart';
 import 'package:your_space_mobile/core/widgets/app_card.dart';
 import 'package:your_space_mobile/core/widgets/app_list_tile.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
-import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
 import 'package:your_space_mobile/core/widgets/empty_state_widget.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
 
@@ -28,19 +23,16 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar(
-        title: 'home.title'.tr(),
-        trailing: IconButton(
-          icon: const Icon(Icons.logout_rounded),
-          tooltip: 'common.logout'.tr(),
-          onPressed: () => _confirmLogout(context),
-        ),
-      ),
       body: SafeArea(
         child: BlocBuilder<HomeStatsCubit, HomeStatsState>(
           builder: (context, state) => switch (state) {
-            HomeStatsSuccess(:final groupsCount, :final peopleCount, :final eventsCount) =>
-              _HomeContent(groupsCount: groupsCount, peopleCount: peopleCount, eventsCount: eventsCount),
+            HomeStatsSuccess(:final groupsCount, :final peopleCount, :final eventsCount, :final firstName) =>
+              _HomeContent(
+                groupsCount: groupsCount,
+                peopleCount: peopleCount,
+                eventsCount: eventsCount,
+                firstName: firstName,
+              ),
             HomeStatsError(:final message) => ErrorStateWidget(
                 message: message,
                 onRetry: () => context.read<HomeStatsCubit>().load(),
@@ -49,41 +41,63 @@ class HomeScreen extends StatelessWidget {
           },
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 }
 
-void _confirmLogout(BuildContext context) {
-  getIt<DialogHelper>().showConfirmDialog(
-    title: 'common.logoutConfirmTitle'.tr(),
-    message: 'common.logoutConfirmMessage'.tr(),
-    confirmText: 'common.logout'.tr(),
-    cancelText: 'common.cancel'.tr(),
-    onConfirm: () async {
-      await getIt<SecureStorageHelper>().clearSession();
-      if (!context.mounted) return;
-      context.go(AppRoutes.login);
-    },
-  );
+/// Time-of-day greeting key, matching the design mockup's "Good evening"
+/// header line — resolved dynamically instead of hardcoded so it's actually
+/// correct outside the evening.
+String _greetingKey() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'home.greetingMorning';
+  if (hour < 17) return 'home.greetingAfternoon';
+  return 'home.greetingEvening';
 }
 
 class _HomeContent extends StatelessWidget {
   final int groupsCount;
   final int peopleCount;
   final int eventsCount;
+  final String firstName;
 
   const _HomeContent({
     required this.groupsCount,
     required this.peopleCount,
     required this.eventsCount,
+    required this.firstName,
   });
 
-  Widget get _logoLockup => AppLogoHeader(
-        compact: true,
-        centered: false,
-        logoSize: 28.w,
+  Widget get _header => Padding(
         padding: EdgeInsets.only(bottom: 16.h),
+        child: Row(
+          children: [
+            AppAvatar(name: firstName, size: 44.w),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _greetingKey().tr(),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  ),
+                  Text(
+                    'home.hiName'.tr(namedArgs: {'name': firstName}),
+                    style: AppTextStyles.headlineSmall,
+                  ),
+                ],
+              ),
+            ),
+            // Static for now — no notifications feature exists yet (no backend,
+            // no badge data); matches the design mockup's header slot as a
+            // non-functional placeholder rather than inventing a fake feature.
+            IconButton(
+              icon: const Icon(Icons.notifications_none_rounded),
+              onPressed: () {},
+            ),
+          ],
+        ),
       );
 
   @override
@@ -94,7 +108,7 @@ class _HomeContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _logoLockup,
+            _header,
             Expanded(
               child: EmptyStateWidget(
                 icon: Icons.groups_rounded,
@@ -114,9 +128,7 @@ class _HomeContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _logoLockup,
-          Text('home.greeting'.tr(), style: AppTextStyles.headlineSmall),
-          SizedBox(height: 16.h),
+          _header,
           Row(
             children: [
               Expanded(
