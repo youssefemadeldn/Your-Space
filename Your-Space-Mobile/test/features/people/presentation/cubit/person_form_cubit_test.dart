@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
@@ -23,8 +24,17 @@ void main() {
   late PersonFormCubit cubit;
 
   const family = Group(id: 1, name: 'Family');
-  const existingPerson =
-      Person(id: 7, name: 'Sara Adel', groupId: 1, groupName: 'Family', hasReciprocityHistory: false);
+  const existingPerson = Person(
+      id: 7,
+      name: 'Sara Adel',
+      gender: Gender.female,
+      groupId: 1,
+      groupName: 'Family',
+      hasReciprocityHistory: false);
+
+  setUpAll(() {
+    registerFallbackValue(Gender.male);
+  });
 
   setUp(() {
     personRepository = MockPersonRepository();
@@ -74,8 +84,12 @@ void main() {
     when(() => personRepository.createPerson(
           name: any(named: 'name'),
           phoneNumber: any(named: 'phoneNumber'),
+          phoneNumber2: any(named: 'phoneNumber2'),
+          gender: any(named: 'gender'),
           groupId: any(named: 'groupId'),
-        )).thenAnswer((_) async => const Right(Person(id: 10, name: 'New Person', groupId: 1, groupName: 'Family')));
+          notes: any(named: 'notes'),
+        )).thenAnswer((_) async => const Right(
+            Person(id: 10, name: 'New Person', gender: Gender.male, groupId: 1, groupName: 'Family')));
 
     final expectation = expectLater(
       cubit.stream,
@@ -85,7 +99,7 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.submit(name: 'New Person', groupId: 1));
+    unawaited(cubit.submit(name: 'New Person', gender: Gender.male, groupId: 1));
     await expectation;
   });
 
@@ -94,8 +108,12 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           phoneNumber: any(named: 'phoneNumber'),
+          phoneNumber2: any(named: 'phoneNumber2'),
+          gender: any(named: 'gender'),
           groupId: any(named: 'groupId'),
-        )).thenAnswer((_) async => const Right(Person(id: 7, name: 'Renamed', groupId: 1, groupName: 'Family')));
+          notes: any(named: 'notes'),
+        )).thenAnswer((_) async =>
+            const Right(Person(id: 7, name: 'Renamed', gender: Gender.female, groupId: 1, groupName: 'Family')));
 
     final expectation = expectLater(
       cubit.stream,
@@ -105,7 +123,7 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.submit(personId: 7, name: 'Renamed', groupId: 1));
+    unawaited(cubit.submit(personId: 7, name: 'Renamed', gender: Gender.female, groupId: 1));
     await expectation;
   });
 }

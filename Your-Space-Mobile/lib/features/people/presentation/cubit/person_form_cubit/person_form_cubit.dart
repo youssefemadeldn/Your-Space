@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 
@@ -39,16 +40,29 @@ class PersonFormCubit extends Cubit<PersonFormState> {
     int? personId,
     required String name,
     String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
     required int groupId,
+    String? notes,
   }) async {
     emit(const PersonFormSubmitting());
     final result = personId == null
-        ? await _personRepository.createPerson(name: name, phoneNumber: phoneNumber, groupId: groupId)
+        ? await _personRepository.createPerson(
+            name: name,
+            phoneNumber: phoneNumber,
+            phoneNumber2: phoneNumber2,
+            gender: gender,
+            groupId: groupId,
+            notes: notes,
+          )
         : await _personRepository.updatePerson(
             id: personId,
             name: name,
             phoneNumber: phoneNumber,
+            phoneNumber2: phoneNumber2,
+            gender: gender,
             groupId: groupId,
+            notes: notes,
           );
     result.fold(
       (failure) => emit(PersonFormError(failureToMessage(failure))),

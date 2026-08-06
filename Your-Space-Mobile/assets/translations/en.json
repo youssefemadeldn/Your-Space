@@ -16,6 +16,10 @@
       "whatsApp": "WhatsApp",
       "phoneCall": "Phone call",
       "physical": "In person"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female"
     }
   },
   "nav": {
@@ -29,6 +33,7 @@
     "lastName": "Last name",
     "email": "Email",
     "phone": "Phone number",
+    "gender": "Gender",
     "password": "Password",
     "confirmPassword": "Confirm password",
     "newPassword": "New password",
@@ -84,7 +89,8 @@
       "invalidPhone": "Enter a valid phone number, e.g. +201234567890",
       "passwordMismatch": "Passwords don't match",
       "otpIncomplete": "Enter the 6-digit code",
-      "requiredCurrentPassword": "Enter your current password"
+      "requiredCurrentPassword": "Enter your current password",
+      "requiredGender": "Select a gender"
     }
   },
   "home": {
@@ -128,7 +134,11 @@
       "editTitle": "Edit person",
       "nameLabel": "Name",
       "nameRequired": "Enter a name",
-      "phoneLabel": "Phone (optional)",
+      "phoneLabel": "Phone 1 (optional)",
+      "phone2Label": "Phone 2 (optional)",
+      "genderLabel": "Gender",
+      "genderRequired": "Select a gender",
+      "notesLabel": "Notes (optional)",
       "groupLabel": "Group",
       "saveCta": "Save person",
       "savedMessage": "Person saved",
@@ -142,7 +152,8 @@
       "emptyTitle": "Nothing logged with {name} yet",
       "emptyAction": "Add occasion",
       "occasionUnnamed": "Occasion",
-      "notFound": "Person not found"
+      "notFound": "Person not found",
+      "notesTitle": "Notes"
     },
     "occasion": {
       "addTitle": "Add occasion",

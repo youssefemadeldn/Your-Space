@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/invite_method.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
@@ -21,14 +22,20 @@ abstract class PersonRepository {
   Future<Either<Failure, Person>> createPerson({
     required String name,
     String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
     required int groupId,
+    String? notes,
   });
 
   Future<Either<Failure, Person>> updatePerson({
     required int id,
     required String name,
     String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
     required int groupId,
+    String? notes,
   });
 
   Future<Either<Failure, PersonOccasionHistoryEntry>> addOccasionHistory({

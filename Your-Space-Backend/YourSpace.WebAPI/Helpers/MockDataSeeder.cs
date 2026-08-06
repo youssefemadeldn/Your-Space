@@ -43,12 +43,12 @@ public static class MockDataSeeder
     // hashing and the security stamp are set up the same way a real registration would.
     private static async Task<(string ActiveUserId, string LockedUserId)> SeedDevUsersAsync(UserManager<AppUser> userManager)
     {
-        var activeUser = await GetOrCreateSeedUserAsync(userManager, ActiveUserEmail, "Seed", "Active");
-        var lockedUser = await GetOrCreateSeedUserAsync(userManager, LockedUserEmail, "Seed", "Locked");
+        var activeUser = await GetOrCreateSeedUserAsync(userManager, ActiveUserEmail, "Seed", "Active", Gender.Male);
+        var lockedUser = await GetOrCreateSeedUserAsync(userManager, LockedUserEmail, "Seed", "Locked", Gender.Female);
         return (activeUser.Id, lockedUser.Id);
     }
 
-    private static async Task<AppUser> GetOrCreateSeedUserAsync(UserManager<AppUser> userManager, string email, string firstName, string lastName)
+    private static async Task<AppUser> GetOrCreateSeedUserAsync(UserManager<AppUser> userManager, string email, string firstName, string lastName, Gender gender)
     {
         var existing = await userManager.FindByEmailAsync(email);
         if (existing is not null)
@@ -62,6 +62,7 @@ public static class MockDataSeeder
             Email = email,
             FirstName = firstName,
             LastName = lastName,
+            Gender = gender,
             EmailConfirmed = true
         };
 
@@ -237,21 +238,23 @@ public static class MockDataSeeder
             .RuleFor(p => p.OwnerUserId, _ => activeUserId)
             .RuleFor(p => p.Name, f => f.Name.FullName())
             .RuleFor(p => p.PhoneNumber, f => f.Random.Replace("+2010#######"))
+            .RuleFor(p => p.Gender, f => f.PickRandom<Gender>())
             .RuleFor(p => p.GroupId, f => f.PickRandom(relatives.Id, villageFriends.Id, universityFriends.Id));
 
         var persons = faker.Generate(15); // enough rows to exercise pagination
 
-        persons.Add(new Person { OwnerUserId = activeUserId, Name = "Friend With No Phone", GroupId = villageFriends.Id }); // edge case — null PhoneNumber
-        persons.Add(new Person { OwnerUserId = activeUserId, Name = new string('B', 200), GroupId = relatives.Id }); // edge case — max-length name
+        persons.Add(new Person { OwnerUserId = activeUserId, Name = "Friend With No Phone", Gender = Gender.Male, GroupId = villageFriends.Id }); // edge case — null PhoneNumber
+        persons.Add(new Person { OwnerUserId = activeUserId, Name = new string('B', 200), Gender = Gender.Female, GroupId = relatives.Id }); // edge case — max-length name
         persons.Add(new Person // edge case — soft-deleted
         {
             OwnerUserId = activeUserId,
             Name = "Departed Contact",
+            Gender = Gender.Male,
             GroupId = relatives.Id,
             DeletedAt = DateTime.UtcNow.AddDays(-5)
         });
 
-        persons.Add(new Person { OwnerUserId = lockedUserId, Name = "Locked User's Friend", PhoneNumber = "+201111111111", GroupId = lockedUserGroup.Id });
+        persons.Add(new Person { OwnerUserId = lockedUserId, Name = "Locked User's Friend", PhoneNumber = "+201111111111", Gender = Gender.Female, GroupId = lockedUserGroup.Id });
 
         await context.People.AddRangeAsync(persons);
         await context.SaveChangesAsync();

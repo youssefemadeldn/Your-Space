@@ -16,6 +16,10 @@
       "whatsApp": "واتساب",
       "phoneCall": "مكالمة هاتفية",
       "physical": "شخصيًا"
+    },
+    "gender": {
+      "male": "ذكر",
+      "female": "أنثى"
     }
   },
   "nav": {
@@ -29,6 +33,7 @@
     "lastName": "اسم العائلة",
     "email": "البريد الإلكتروني",
     "phone": "رقم الهاتف",
+    "gender": "الجنس",
     "password": "كلمة المرور",
     "confirmPassword": "تأكيد كلمة المرور",
     "newPassword": "كلمة المرور الجديدة",
@@ -84,7 +89,8 @@
       "invalidPhone": "أدخل رقم هاتف صحيحًا، مثل ‎+201234567890",
       "passwordMismatch": "كلمتا المرور غير متطابقتين",
       "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
-      "requiredCurrentPassword": "أدخل كلمة المرور الحالية"
+      "requiredCurrentPassword": "أدخل كلمة المرور الحالية",
+      "requiredGender": "اختر الجنس"
     }
   },
   "home": {
@@ -128,7 +134,11 @@
       "editTitle": "تعديل الشخص",
       "nameLabel": "الاسم",
       "nameRequired": "أدخل الاسم",
-      "phoneLabel": "الهاتف (اختياري)",
+      "phoneLabel": "رقم الهاتف 1 (اختياري)",
+      "phone2Label": "رقم الهاتف 2 (اختياري)",
+      "genderLabel": "الجنس",
+      "genderRequired": "اختر الجنس",
+      "notesLabel": "ملاحظات (اختياري)",
       "groupLabel": "المجموعة",
       "saveCta": "حفظ الشخص",
       "savedMessage": "تم حفظ الشخص",
@@ -142,7 +152,8 @@
       "emptyTitle": "لا يوجد شيء مسجّل مع {name} بعد",
       "emptyAction": "إضافة مناسبة",
       "occasionUnnamed": "مناسبة",
-      "notFound": "الشخص غير موجود"
+      "notFound": "الشخص غير موجود",
+      "notesTitle": "ملاحظات"
     },
     "occasion": {
       "addTitle": "إضافة مناسبة",

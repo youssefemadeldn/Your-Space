@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import '../../../domain/repositories/base_auth_repository.dart';
 import '../failure_messages.dart';
@@ -19,6 +20,7 @@ class RegisterCubit extends Cubit<RegisterState> {
     required String firstName,
     required String lastName,
     required String phoneNumber,
+    required Gender gender,
   }) async {
     emit(const RegisterLoading());
     final result = await _repository.register(
@@ -28,6 +30,7 @@ class RegisterCubit extends Cubit<RegisterState> {
       firstName: firstName,
       lastName: lastName,
       phoneNumber: phoneNumber,
+      gender: gender,
     );
     result.fold(
       (failure) => emit(RegisterError(

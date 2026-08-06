@@ -61,7 +61,8 @@ public class AuthService(
             Email = dto.Email,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            PhoneNumber = dto.PhoneNumber
+            PhoneNumber = dto.PhoneNumber,
+            Gender = dto.Gender
         };
 
         // CreateAsync (AspNetUsers) and AddToRoleAsync (AspNetUserRoles) are two separate writes —
@@ -501,6 +502,7 @@ public class AuthService(
         FirstName = user.FirstName,
         LastName = user.LastName,
         PhoneNumber = user.PhoneNumber,
+        Gender = user.Gender,
         Roles = roles
     };
 

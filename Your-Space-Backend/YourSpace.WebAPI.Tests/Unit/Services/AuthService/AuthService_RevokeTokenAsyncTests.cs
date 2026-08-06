@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.EmailService;
@@ -57,7 +58,7 @@ public class AuthService_RevokeTokenAsyncTests
             UserId = "user-1",
             TokenHash = "hash-of-token",
             ExpiresAt = DateTime.UtcNow.AddDays(1),
-            User = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B" }
+            User = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B", Gender = Gender.Female }
         };
         _refreshTokenRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<RefreshToken>>()))
             .ReturnsAsync(token);
@@ -80,7 +81,7 @@ public class AuthService_RevokeTokenAsyncTests
             TokenHash = "hash-of-token",
             RevokedAt = DateTime.UtcNow.AddMinutes(-5),
             ExpiresAt = DateTime.UtcNow.AddDays(1),
-            User = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B" }
+            User = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B", Gender = Gender.Female }
         };
         _refreshTokenRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<RefreshToken>>()))
             .ReturnsAsync(token);

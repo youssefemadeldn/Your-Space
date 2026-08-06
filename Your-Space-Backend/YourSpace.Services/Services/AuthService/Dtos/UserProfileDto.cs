@@ -1,3 +1,5 @@
+using YourSpace.Data.Enums;
+
 namespace YourSpace.Services.Services.AuthService.Dtos;
 
 public class UserProfileDto
@@ -7,5 +9,6 @@ public class UserProfileDto
     public required string FirstName { get; set; }
     public required string LastName { get; set; }
     public string? PhoneNumber { get; set; }
+    public required Gender Gender { get; set; }
     public required IList<string> Roles { get; set; }
 }

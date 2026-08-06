@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
@@ -21,6 +22,7 @@ void main() {
     email: 'a@a.com',
     firstName: 'A',
     lastName: 'B',
+    gender: Gender.male,
     roles: ['User'],
   );
 

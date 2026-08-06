@@ -41,7 +41,7 @@ public class EventGuestService_MarkSkippedAsyncTests
     public async Task Clears_a_previously_recorded_invite_method_and_timestamp_when_skipped()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = group };
         var guest = new EventGuest
         {
             Id = 1, EventId = 1, PersonId = 10, Person = person,

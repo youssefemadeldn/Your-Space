@@ -100,7 +100,7 @@ class _AddGuestsScreenState extends State<AddGuestsScreen> {
                     label: 'events.addGuests.addNPeople'
                         .tr(namedArgs: {'count': '${_selectedPersonIds.length}'}),
                     fullWidth: true,
-                    loading: state is AddGuestsActionSubmitting,
+                    loading: state is AddGuestsActionSubmitting && state.personIds != null,
                     onPressed: _selectedPersonIds.isEmpty
                         ? null
                         : () => context.read<AddGuestsActionCubit>().addPersons(

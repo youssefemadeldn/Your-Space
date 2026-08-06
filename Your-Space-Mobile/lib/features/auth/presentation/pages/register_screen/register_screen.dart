@@ -1,24 +1,21 @@
-// `hide TextDirection` — easy_localization re-exports intl's own TextDirection
-// class (LTR/RTL/UNKNOWN), which would otherwise shadow Flutter's TextDirection
-// (ltr/rtl) used for forcing LTR on email/phone fields under Arabic locale.
-import 'package:easy_localization/easy_localization.dart' hide TextDirection;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/helpers/regex_helper.dart';
 import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/confirm_email_args.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
-import 'package:your_space_mobile/core/widgets/app_input.dart';
 import 'package:your_space_mobile/core/widgets/app_logo_header.dart';
-import 'package:your_space_mobile/core/widgets/app_password_input.dart';
 
-import '../cubit/register_cubit/register_cubit.dart';
-import '../cubit/register_cubit/register_state.dart';
+import '../../cubit/register_cubit/register_cubit.dart';
+import '../../cubit/register_cubit/register_state.dart';
+import 'register_form_fields.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -41,6 +38,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _phoneError;
   String? _passwordError;
   String? _confirmPasswordError;
+  Gender? _selectedGender;
+  String? _genderError;
 
   @override
   void dispose() {
@@ -73,6 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           RegexHelper.validate(RegexHelper.accountPassword, password) ? null : 'auth.passwordRule'.tr();
       _confirmPasswordError =
           confirmPassword == password ? null : 'auth.validation.passwordMismatch'.tr();
+      _genderError = _selectedGender == null ? 'auth.validation.requiredGender'.tr() : null;
     });
 
     return _firstNameError == null &&
@@ -80,7 +80,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _emailError == null &&
         _phoneError == null &&
         _passwordError == null &&
-        _confirmPasswordError == null;
+        _confirmPasswordError == null &&
+        _genderError == null;
   }
 
   void _submit() {
@@ -92,6 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
+          gender: _selectedGender!,
         );
   }
 
@@ -143,75 +145,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 SizedBox(height: 22.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppInput(
-                        label: 'auth.firstName'.tr(),
-                        controller: _firstNameController,
-                        errorText: _firstNameError,
-                        onChanged: (_) {
-                          if (_firstNameError != null) setState(() => _firstNameError = null);
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: AppInput(
-                        label: 'auth.lastName'.tr(),
-                        controller: _lastNameController,
-                        errorText: _lastNameError,
-                        onChanged: (_) {
-                          if (_lastNameError != null) setState(() => _lastNameError = null);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 14.h),
-                AppInput(
-                  label: 'auth.email'.tr(),
-                  hintText: 'you@example.com',
-                  prefixIcon: Icons.mail_outline_rounded,
-                  keyboardType: TextInputType.emailAddress,
-                  textDirection: TextDirection.ltr,
-                  controller: _emailController,
-                  errorText: _emailError,
-                  onChanged: (_) {
+                RegisterFormFields(
+                  firstNameController: _firstNameController,
+                  lastNameController: _lastNameController,
+                  emailController: _emailController,
+                  phoneController: _phoneController,
+                  passwordController: _passwordController,
+                  confirmPasswordController: _confirmPasswordController,
+                  firstNameError: _firstNameError,
+                  lastNameError: _lastNameError,
+                  emailError: _emailError,
+                  phoneError: _phoneError,
+                  passwordError: _passwordError,
+                  confirmPasswordError: _confirmPasswordError,
+                  selectedGender: _selectedGender,
+                  genderError: _genderError,
+                  onFirstNameChanged: (_) {
+                    if (_firstNameError != null) setState(() => _firstNameError = null);
+                  },
+                  onLastNameChanged: (_) {
+                    if (_lastNameError != null) setState(() => _lastNameError = null);
+                  },
+                  onEmailChanged: (_) {
                     if (_emailError != null) setState(() => _emailError = null);
                   },
-                ),
-                SizedBox(height: 14.h),
-                AppInput(
-                  label: 'auth.phone'.tr(),
-                  hintText: '+201234567890',
-                  prefixIcon: Icons.call_outlined,
-                  keyboardType: TextInputType.phone,
-                  textDirection: TextDirection.ltr,
-                  controller: _phoneController,
-                  errorText: _phoneError,
-                  onChanged: (_) {
+                  onPhoneChanged: (_) {
                     if (_phoneError != null) setState(() => _phoneError = null);
                   },
-                ),
-                SizedBox(height: 14.h),
-                AppPasswordInput(
-                  label: 'auth.password'.tr(),
-                  controller: _passwordController,
-                  errorText: _passwordError,
-                  helperText: 'auth.passwordRule'.tr(),
-                  onChanged: (_) {
+                  onPasswordChanged: (_) {
                     if (_passwordError != null) setState(() => _passwordError = null);
                   },
-                ),
-                SizedBox(height: 14.h),
-                AppPasswordInput(
-                  label: 'auth.confirmPassword'.tr(),
-                  controller: _confirmPasswordController,
-                  errorText: _confirmPasswordError,
-                  onChanged: (_) {
+                  onConfirmPasswordChanged: (_) {
                     if (_confirmPasswordError != null) setState(() => _confirmPasswordError = null);
                   },
+                  onGenderChanged: (gender) => setState(() {
+                    _selectedGender = gender;
+                    _genderError = null;
+                  }),
                 ),
                 SizedBox(height: 20.h),
                 BlocBuilder<RegisterCubit, RegisterState>(

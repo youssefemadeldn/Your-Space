@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using YourSpace.Data.Enums;
+
 namespace YourSpace.Data.Entities;
 
 // Deliberately shared/core — not owned by any one feature. Other future features can reference
@@ -18,7 +20,15 @@ public class Person
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
 
+    [MaxLength(20)]
+    public string? PhoneNumber2 { get; set; }
+
+    public required Gender Gender { get; set; }
+
     public required int GroupId { get; set; }
+
+    [MaxLength(2000)]
+    public string? Notes { get; set; }
 
     public DateTime? DeletedAt { get; set; }
 

@@ -14,7 +14,7 @@ import 'package:your_space_mobile/features/auth/presentation/pages/change_passwo
 import 'package:your_space_mobile/features/auth/presentation/pages/confirm_email_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/pages/forgot_password_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/pages/login_screen.dart';
-import 'package:your_space_mobile/features/auth/presentation/pages/register_screen.dart';
+import 'package:your_space_mobile/features/auth/presentation/pages/register_screen/register_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/pages/reset_password_screen.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_action_cubit/add_guests_action_cubit.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_list_cubit/add_guests_list_cubit.dart';

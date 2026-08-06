@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_data_source_impl.dart';
@@ -33,6 +34,7 @@ void main() {
       firstName: '',
       lastName: '',
       phoneNumber: '',
+      gender: Gender.male,
     ));
     registerFallbackValue(const LoginRequest(email: '', password: ''));
     registerFallbackValue(const ConfirmEmailRequest(email: '', code: ''));
@@ -63,6 +65,7 @@ void main() {
       email: 'a@a.com',
       firstName: 'A',
       lastName: 'B',
+      gender: Gender.male,
       roles: ['User'],
     );
 

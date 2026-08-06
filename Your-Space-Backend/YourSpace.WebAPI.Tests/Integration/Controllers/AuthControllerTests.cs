@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using YourSpace.Data.Enums;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.WebAPI.Tests.Common;
@@ -26,7 +27,8 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
             ConfirmPassword = "Str0ng!Pass",
             FirstName = "Integration",
             LastName = "Tester",
-            PhoneNumber = "+201234567890"
+            PhoneNumber = "+201234567890",
+            Gender = Gender.Male
         });
         registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 

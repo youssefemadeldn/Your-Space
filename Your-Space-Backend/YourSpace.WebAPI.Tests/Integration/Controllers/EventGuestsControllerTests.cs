@@ -114,7 +114,7 @@ public class EventGuestsControllerTests(TestWebApplicationFactory factory) : ICl
 
     private static async Task<PersonDetailsDto> CreatePersonAsync(HttpClient client, string name, int groupId)
     {
-        var response = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = name, GroupId = groupId });
+        var response = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = name, GroupId = groupId, Gender = Gender.Male });
         return (await DeserializeAsync<PersonDetailsDto>(response)).Data!;
     }
 

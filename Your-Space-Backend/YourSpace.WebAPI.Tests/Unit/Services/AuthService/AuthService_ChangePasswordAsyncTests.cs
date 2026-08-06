@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.AuthService.Dtos;
@@ -31,7 +32,8 @@ public class AuthService_ChangePasswordAsyncTests
         Email = "jane@example.com",
         UserName = "jane@example.com",
         FirstName = "Jane",
-        LastName = "Doe"
+        LastName = "Doe",
+        Gender = Gender.Female
     };
 
     private static readonly ChangePasswordDto Dto = new()

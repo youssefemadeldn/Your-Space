@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event.dart';
@@ -43,7 +44,7 @@ void main() {
     );
     when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
       (_) async => const Right(PaginatedResult(
-        items: [Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family')],
+        items: [Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family')],
         pageIndex: 1,
         totalPages: 10,
         totalItems: 10,

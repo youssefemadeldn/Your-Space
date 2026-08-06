@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
@@ -23,7 +24,7 @@ public class AuthService_ConfirmEmailAsyncTests
 
     private static readonly AppUser User = new()
     {
-        Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B"
+        Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B", Gender = Gender.Female
     };
 
     private static readonly ConfirmEmailDto Dto = new() { Email = User.Email!, Code = "123456" };

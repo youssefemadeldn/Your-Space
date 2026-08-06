@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
@@ -21,8 +22,13 @@ void main() {
     email: 'a@a.com',
     firstName: 'A',
     lastName: 'B',
+    gender: Gender.male,
     roles: ['User'],
   );
+
+  setUpAll(() {
+    registerFallbackValue(Gender.male);
+  });
 
   setUp(() {
     repository = MockAuthRepository();
@@ -39,6 +45,7 @@ void main() {
           firstName: any(named: 'firstName'),
           lastName: any(named: 'lastName'),
           phoneNumber: any(named: 'phoneNumber'),
+          gender: any(named: 'gender'),
         )).thenAnswer((_) async => result);
   }
 
@@ -49,6 +56,7 @@ void main() {
         firstName: 'A',
         lastName: 'B',
         phoneNumber: '+201234567890',
+        gender: Gender.male,
       ));
 
   test('emits [Loading, Success] on successful registration', () async {

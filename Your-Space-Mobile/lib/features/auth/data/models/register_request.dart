@@ -1,3 +1,5 @@
+import 'package:your_space_mobile/core/entities/gender.dart';
+
 class RegisterRequest {
   final String email;
   final String password;
@@ -5,6 +7,7 @@ class RegisterRequest {
   final String firstName;
   final String lastName;
   final String phoneNumber;
+  final Gender gender;
 
   const RegisterRequest({
     required this.email,
@@ -13,6 +16,7 @@ class RegisterRequest {
     required this.firstName,
     required this.lastName,
     required this.phoneNumber,
+    required this.gender,
   });
 
   Map<String, dynamic> toJson() => {
@@ -22,5 +26,6 @@ class RegisterRequest {
         'firstName': firstName,
         'lastName': lastName,
         'phoneNumber': phoneNumber,
+        'gender': gender.toWire(),
       };
 }

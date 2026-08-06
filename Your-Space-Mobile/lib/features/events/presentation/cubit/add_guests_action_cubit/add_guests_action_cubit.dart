@@ -16,7 +16,7 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
   AddGuestsActionCubit(this._eventGuestRepository) : super(const AddGuestsActionInitial());
 
   Future<void> addPersons({required int eventId, required List<int> personIds}) async {
-    emit(const AddGuestsActionSubmitting());
+    emit(AddGuestsActionSubmitting(personIds: personIds));
     final result = await _eventGuestRepository.addPersonsToEvent(eventId: eventId, personIds: personIds);
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
@@ -25,7 +25,7 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
   }
 
   Future<void> addGroup({required int eventId, required int groupId}) async {
-    emit(const AddGuestsActionSubmitting());
+    emit(AddGuestsActionSubmitting(groupId: groupId));
     final result = await _eventGuestRepository.addGroupToEvent(eventId: eventId, groupId: groupId);
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),

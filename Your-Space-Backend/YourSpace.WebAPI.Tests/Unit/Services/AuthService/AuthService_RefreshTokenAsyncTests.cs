@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.EmailService;
@@ -30,7 +31,8 @@ public class AuthService_RefreshTokenAsyncTests
         Email = "jane@example.com",
         UserName = "jane@example.com",
         FirstName = "Jane",
-        LastName = "Doe"
+        LastName = "Doe",
+        Gender = Gender.Female
     };
 
     public AuthService_RefreshTokenAsyncTests()

@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.EventGuestService.Dtos;
@@ -38,7 +39,7 @@ public class EventGuestService_AddPersonsAsyncTests
     {
         // Only 1 of the 2 requested IDs resolves — the whole request is rejected, not partially applied.
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync([new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", GroupId = 1 }]);
+            .ReturnsAsync([new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 }]);
 
         var result = await CreateSut().AddPersonsAsync("owner-1", eventId: 1, new AddPersonsToEventDto { PersonIds = [1, 999] });
 
@@ -51,8 +52,8 @@ public class EventGuestService_AddPersonsAsyncTests
     public async Task Skips_persons_already_on_the_guest_list_and_reports_both_counts()
     {
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync([
-            new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", GroupId = 1 },
-            new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", GroupId = 1 }
+            new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 },
+            new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 1 }
         ]);
         _guestRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<EventGuest>>()))
             .ReturnsAsync([new EventGuest { Id = 1, EventId = 1, PersonId = 1 }]); // Ahmed already added

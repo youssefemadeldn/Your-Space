@@ -1,3 +1,5 @@
+import 'package:your_space_mobile/core/entities/gender.dart';
+
 import '../../domain/entities/user_profile.dart';
 
 class UserProfileResponse {
@@ -6,6 +8,7 @@ class UserProfileResponse {
   final String firstName;
   final String lastName;
   final String? phoneNumber;
+  final Gender gender;
   final List<String> roles;
 
   const UserProfileResponse({
@@ -14,6 +17,7 @@ class UserProfileResponse {
     required this.firstName,
     required this.lastName,
     this.phoneNumber,
+    required this.gender,
     required this.roles,
   });
 
@@ -23,6 +27,7 @@ class UserProfileResponse {
         firstName: json['firstName'] as String,
         lastName: json['lastName'] as String,
         phoneNumber: json['phoneNumber'] as String?,
+        gender: Gender.fromWire(json['gender'] as String),
         roles: (json['roles'] as List<dynamic>).map((role) => role as String).toList(),
       );
 
@@ -32,6 +37,7 @@ class UserProfileResponse {
         firstName: firstName,
         lastName: lastName,
         phoneNumber: phoneNumber,
+        gender: gender,
         roles: roles,
       );
 }

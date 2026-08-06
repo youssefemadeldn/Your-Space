@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using YourSpace.Data.Enums;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService.Dtos;
 
@@ -26,7 +27,8 @@ public static class AuthenticatedClientExtensions
             ConfirmPassword = Password,
             FirstName = "Test",
             LastName = "User",
-            PhoneNumber = "+201234567890"
+            PhoneNumber = "+201234567890",
+            Gender = Gender.Male
         });
 
         var confirmationEmail = factory.EmailSender.SentEmails.Last(e => e.ToEmail == email);

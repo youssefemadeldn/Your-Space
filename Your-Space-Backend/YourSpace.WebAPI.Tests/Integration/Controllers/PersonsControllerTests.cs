@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using YourSpace.Data.Enums;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.GroupService.Dtos;
 using YourSpace.Services.Services.PersonService.Dtos;
@@ -25,7 +26,8 @@ public class PersonsControllerTests(TestWebApplicationFactory factory) : IClassF
         {
             Name = "Ahmed",
             PhoneNumber = "+201234567890",
-            GroupId = group.Data!.Id
+            GroupId = group.Data!.Id,
+            Gender = Gender.Male
         });
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await DeserializeAsync<PersonDetailsDto>(createResponse);
@@ -51,7 +53,7 @@ public class PersonsControllerTests(TestWebApplicationFactory factory) : IClassF
         var group = await DeserializeAsync<GroupDetailsDto>(groupResponse);
 
         var otherClient = await factory.CreateAuthenticatedClientAsync("persons.intruder@example.com");
-        var response = await otherClient.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = "Ahmed", GroupId = group.Data!.Id });
+        var response = await otherClient.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = "Ahmed", GroupId = group.Data!.Id, Gender = Gender.Male });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

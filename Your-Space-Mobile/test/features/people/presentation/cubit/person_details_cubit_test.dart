@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/people/domain/entities/person_details.dart';
@@ -26,7 +27,13 @@ void main() {
   tearDown(() => cubit.close());
 
   test('emits [Loading, Success] with the person and their occasion history', () async {
-    const person = Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family', hasReciprocityHistory: true);
+    const person = Person(
+        id: 1,
+        name: 'Sara Adel',
+        gender: Gender.female,
+        groupId: 1,
+        groupName: 'Family',
+        hasReciprocityHistory: true);
     final details = PersonDetails(
       person: person,
       occasionHistory: [

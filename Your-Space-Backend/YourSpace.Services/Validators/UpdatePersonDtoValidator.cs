@@ -22,6 +22,17 @@ public class UpdatePersonDtoValidator : AbstractValidator<UpdatePersonDto>
             .Matches(@"^\+?[1-9]\d{7,14}$").WithMessage(localizer["Person.PhoneNumber.InvalidFormat"])
             .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
 
+        RuleFor(x => x.PhoneNumber2)
+            .Matches(@"^\+?[1-9]\d{7,14}$").WithMessage(localizer["Person.PhoneNumber2.InvalidFormat"])
+            .When(x => !string.IsNullOrEmpty(x.PhoneNumber2));
+
+        RuleFor(x => x.Notes)
+            .MaximumLength(2000).WithMessage(localizer["Person.Notes.MaxLength"]);
+
+        RuleFor(x => x.Gender)
+            .IsInEnum().WithMessage(localizer["Person.Gender.Required"])
+            .When(x => x.Gender is not null);
+
         RuleFor(x => x.GroupId)
             .GreaterThan(0).WithMessage(localizer["Person.GroupId.Invalid"])
             .When(x => x.GroupId is not null);

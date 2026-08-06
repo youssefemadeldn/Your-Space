@@ -87,7 +87,7 @@ public class PersonOccasionHistoryControllerTests(TestWebApplicationFactory fact
         var groupResponse = await client.PostAsJsonAsync("/api/v1/Groups", new CreateGroupDto { Name = $"{name}'s Group" });
         var group = await DeserializeAsync<GroupDetailsDto>(groupResponse);
 
-        var personResponse = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = name, GroupId = group.Data!.Id });
+        var personResponse = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = name, GroupId = group.Data!.Id, Gender = Gender.Male });
         var person = await DeserializeAsync<PersonDetailsDto>(personResponse);
         return person.Data!.Id;
     }

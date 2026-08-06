@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.AuthService.Dtos;
@@ -25,7 +26,7 @@ public class AuthService_ResetPasswordAsyncTests
 
     private static readonly AppUser User = new()
     {
-        Id = "user-1", Email = "jane@example.com", UserName = "jane@example.com", FirstName = "Jane", LastName = "Doe"
+        Id = "user-1", Email = "jane@example.com", UserName = "jane@example.com", FirstName = "Jane", LastName = "Doe", Gender = Gender.Female
     };
 
     private static readonly ResetPasswordDto Dto = new()

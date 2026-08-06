@@ -7,7 +7,6 @@ class AppConstants {
   static const String kAppName = 'Your Space';
 
   static const Duration kAnimationDuration = Duration(milliseconds: 300);
-  static const Duration kSplashDuration = Duration(seconds: 2);
 
   static const int kDefaultPageSize = 20;
 

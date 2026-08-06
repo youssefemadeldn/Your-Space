@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
@@ -40,7 +41,7 @@ public class AuthService_ForgotPasswordAsyncTests
         _userManager.Setup(m => m.FindByEmailAsync("unknown@example.com")).ReturnsAsync((AppUser?)null);
         _userManager.Setup(m => m.FindByEmailAsync("known@example.com")).ReturnsAsync(new AppUser
         {
-            Id = "user-1", Email = "known@example.com", UserName = "known@example.com", FirstName = "A", LastName = "B"
+            Id = "user-1", Email = "known@example.com", UserName = "known@example.com", FirstName = "A", LastName = "B", Gender = Gender.Female
         });
 
         var unknownResult = await CreateSut().ForgotPasswordAsync(new ForgotPasswordDto { Email = "unknown@example.com" });

@@ -106,6 +106,18 @@
   <data name="Person.GroupId.Invalid" xml:space="preserve">
     <value>يجب اختيار مجموعة صحيحة.</value>
   </data>
+  <data name="Person.PhoneNumber2.InvalidFormat" xml:space="preserve">
+    <value>يجب أن يكون رقم الهاتف بصيغة دولية صحيحة، مثال: +201234567890.</value>
+  </data>
+  <data name="Person.Notes.MaxLength" xml:space="preserve">
+    <value>يجب ألا تتجاوز الملاحظات 2000 حرف.</value>
+  </data>
+  <data name="Person.Gender.Required" xml:space="preserve">
+    <value>يجب اختيار جنس صحيح.</value>
+  </data>
+  <data name="Auth.Register.Gender.Required" xml:space="preserve">
+    <value>يجب اختيار جنس صحيح.</value>
+  </data>
   <data name="PersonOccasionHistory.InviteMethod.MustBeNullWhenNotInvitedMe" xml:space="preserve">
     <value>لا يمكن تحديد وسيلة الدعوة إلا إذا كان هذا الشخص قد دعاك.</value>
   </data>
