@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
@@ -14,13 +15,21 @@ import 'package:your_space_mobile/features/events/presentation/cubit/event_guest
 
 class MockEventGuestRepository extends Mock implements EventGuestRepository {}
 
+class MockDataRefreshBus extends Mock implements DataRefreshBus {}
+
 void main() {
   late MockEventGuestRepository repository;
+  late MockDataRefreshBus dataRefreshBus;
   late EventGuestActionCubit cubit;
+
+  setUpAll(() {
+    registerFallbackValue(DataScope.people);
+  });
 
   setUp(() {
     repository = MockEventGuestRepository();
-    cubit = EventGuestActionCubit(repository);
+    dataRefreshBus = MockDataRefreshBus();
+    cubit = EventGuestActionCubit(repository, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -46,6 +55,7 @@ void main() {
 
     unawaited(cubit.markInvited(1, 2, inviteMethod: InviteMethod.whatsApp));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.eventGuests)).called(1);
   });
 
   test('revert emits [Submitting, Success]', () async {
@@ -68,6 +78,7 @@ void main() {
 
     unawaited(cubit.revert(1, 2));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.eventGuests)).called(1);
   });
 
   test('remove emits [Submitting, Success]', () async {
@@ -80,6 +91,7 @@ void main() {
 
     unawaited(cubit.remove(1, 2));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.eventGuests)).called(1);
   });
 
   test('markSkipped emits [Submitting, Error] on failure', () async {
@@ -95,5 +107,6 @@ void main() {
 
     unawaited(cubit.markSkipped(1, 2));
     await expectation;
+    verifyNever(() => dataRefreshBus.notify(any()));
   });
 }

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/gender.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
@@ -17,9 +18,12 @@ class MockGetCurrentUserProfileUseCase extends Mock implements GetCurrentUserPro
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
+class MockDataRefreshBus extends Mock implements DataRefreshBus {}
+
 void main() {
   late MockGetCurrentUserProfileUseCase getCurrentUserProfile;
   late MockAuthRepository authRepository;
+  late MockDataRefreshBus dataRefreshBus;
   late ProfileFormCubit cubit;
 
   const profile = UserProfile(
@@ -39,7 +43,8 @@ void main() {
   setUp(() {
     getCurrentUserProfile = MockGetCurrentUserProfileUseCase();
     authRepository = MockAuthRepository();
-    cubit = ProfileFormCubit(getCurrentUserProfile, authRepository);
+    dataRefreshBus = MockDataRefreshBus();
+    cubit = ProfileFormCubit(getCurrentUserProfile, authRepository, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -98,6 +103,7 @@ void main() {
 
     unawaited(cubit.submit(firstName: 'Janet', lastName: 'Doe', phoneNumber: '+201234567890'));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.profile)).called(1);
   });
 
   test('submit() emits an Error when the update fails', () async {
@@ -150,6 +156,7 @@ void main() {
 
       unawaited(cubit.uploadAvatar(File('photo.jpg')));
       await expectation;
+      verify(() => dataRefreshBus.notify(DataScope.profile)).called(1);
     });
 
     test('emits an AvatarError, keeping the previously-known profile, on failure', () async {
@@ -196,6 +203,7 @@ void main() {
 
       unawaited(cubit.removeAvatar());
       await expectation;
+      verify(() => dataRefreshBus.notify(DataScope.profile)).called(1);
     });
   });
 }

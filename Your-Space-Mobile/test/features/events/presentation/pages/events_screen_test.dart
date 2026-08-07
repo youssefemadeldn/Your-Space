@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
@@ -21,7 +22,7 @@ class MockEventRepository extends Mock implements EventRepository {}
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestEventsListCubit extends EventsListCubit {
-  _TestEventsListCubit(super.eventRepository);
+  _TestEventsListCubit(super.eventRepository, super.dataRefreshBus);
   void pushState(EventsListState state) => emit(state);
 }
 
@@ -41,7 +42,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final cubit = _TestEventsListCubit(MockEventRepository());
+    final cubit = _TestEventsListCubit(MockEventRepository(), DataRefreshBus());
     addTearDown(cubit.close);
 
     cubit.pushState(const EventsListSuccess([], pageIndex: 1, hasNextPage: false));

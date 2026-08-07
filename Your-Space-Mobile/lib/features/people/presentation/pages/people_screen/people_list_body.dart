@@ -110,30 +110,33 @@ class _PeopleListBodyState extends State<PeopleListBody> {
                     onAction: () =>
                         context.pushNamed(AppRoutes.personForm, extra: const PersonFormArgs()),
                   )
-                : ListView.builder(
-                    controller: _scrollController,
-                    itemCount: widget.people.length + (widget.isLoadingMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= widget.people.length) {
-                        return Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                          child: const AppLoadingIndicator(),
+                : RefreshIndicator(
+                    onRefresh: () => context.read<PeopleListCubit>().refresh(),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: widget.people.length + (widget.isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= widget.people.length) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            child: const AppLoadingIndicator(),
+                          );
+                        }
+                        final person = widget.people[index];
+                        return AppProfileRow(
+                          name: person.name,
+                          groupName: person.groupName,
+                          phoneNumber: person.phoneNumber,
+                          trailing: person.hasReciprocityHistory
+                              ? AppBadge(label: 'people.list.reciprocityBadge'.tr(), tone: AppBadgeTone.info)
+                              : const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                          onTap: () => context.pushNamed(
+                            AppRoutes.personDetails,
+                            extra: PersonDetailsArgs(personId: person.id, personName: person.name),
+                          ),
                         );
-                      }
-                      final person = widget.people[index];
-                      return AppProfileRow(
-                        name: person.name,
-                        groupName: person.groupName,
-                        phoneNumber: person.phoneNumber,
-                        trailing: person.hasReciprocityHistory
-                            ? AppBadge(label: 'people.list.reciprocityBadge'.tr(), tone: AppBadgeTone.info)
-                            : const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
-                        onTap: () => context.pushNamed(
-                          AppRoutes.personDetails,
-                          extra: PersonDetailsArgs(personId: person.id, personName: person.name),
-                        ),
-                      );
-                    },
+                      },
+                    ),
                   ),
           ),
         ],

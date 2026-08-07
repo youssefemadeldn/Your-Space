@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
@@ -26,7 +27,7 @@ class MockGroupRepository extends Mock implements GroupRepository {}
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestPeopleListCubit extends PeopleListCubit {
-  _TestPeopleListCubit(super.personRepository, super.groupRepository);
+  _TestPeopleListCubit(super.personRepository, super.groupRepository, super.dataRefreshBus);
   void pushState(PeopleListState state) => emit(state);
 }
 
@@ -46,7 +47,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final cubit = _TestPeopleListCubit(MockPersonRepository(), MockGroupRepository());
+    final cubit = _TestPeopleListCubit(MockPersonRepository(), MockGroupRepository(), DataRefreshBus());
     addTearDown(cubit.close);
 
     cubit.pushState(const PeopleListSuccess(people: [], groups: [], pageIndex: 1, hasNextPage: false));

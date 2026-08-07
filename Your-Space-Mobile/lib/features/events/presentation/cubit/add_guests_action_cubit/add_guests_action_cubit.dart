@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 
@@ -12,15 +13,20 @@ import 'add_guests_action_state.dart';
 @injectable
 class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
   final EventGuestRepository _eventGuestRepository;
+  final DataRefreshBus _dataRefreshBus;
 
-  AddGuestsActionCubit(this._eventGuestRepository) : super(const AddGuestsActionInitial());
+  AddGuestsActionCubit(this._eventGuestRepository, this._dataRefreshBus)
+      : super(const AddGuestsActionInitial());
 
   Future<void> addPersons({required int eventId, required List<int> personIds}) async {
     emit(AddGuestsActionSubmitting(personIds: personIds));
     final result = await _eventGuestRepository.addPersonsToEvent(eventId: eventId, personIds: personIds);
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
-      (bulkResult) => emit(AddGuestsActionSuccess(bulkResult)),
+      (bulkResult) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(AddGuestsActionSuccess(bulkResult));
+      },
     );
   }
 
@@ -29,7 +35,10 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     final result = await _eventGuestRepository.addGroupToEvent(eventId: eventId, groupId: groupId);
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
-      (bulkResult) => emit(AddGuestsActionSuccess(bulkResult)),
+      (bulkResult) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(AddGuestsActionSuccess(bulkResult));
+      },
     );
   }
 }

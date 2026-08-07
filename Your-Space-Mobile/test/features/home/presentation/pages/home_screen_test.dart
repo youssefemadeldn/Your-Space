@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
@@ -35,6 +36,7 @@ class _TestHomeStatsCubit extends HomeStatsCubit {
     super.personRepository,
     super.eventRepository,
     super.getCurrentUserProfile,
+    super.dataRefreshBus,
   );
   void pushState(HomeStatsState state) => emit(state);
 }
@@ -62,6 +64,7 @@ void main() {
       MockPersonRepository(),
       MockEventRepository(),
       MockGetCurrentUserProfileUseCase(),
+      DataRefreshBus(),
     );
     addTearDown(cubit.close);
 

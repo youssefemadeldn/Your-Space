@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
@@ -22,7 +23,7 @@ class MockGroupRepository extends Mock implements GroupRepository {}
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestGroupsListCubit extends GroupsListCubit {
-  _TestGroupsListCubit(super.groupRepository);
+  _TestGroupsListCubit(super.groupRepository, super.dataRefreshBus);
   void pushState(GroupsListState state) => emit(state);
 }
 
@@ -43,8 +44,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final groupRepository = MockGroupRepository();
-    final listCubit = _TestGroupsListCubit(groupRepository);
-    final actionCubit = GroupActionCubit(groupRepository);
+    final dataRefreshBus = DataRefreshBus();
+    final listCubit = _TestGroupsListCubit(groupRepository, dataRefreshBus);
+    final actionCubit = GroupActionCubit(groupRepository, dataRefreshBus);
     addTearDown(listCubit.close);
     addTearDown(actionCubit.close);
 

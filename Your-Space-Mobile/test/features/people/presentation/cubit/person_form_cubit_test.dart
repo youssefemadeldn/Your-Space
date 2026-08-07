@@ -8,6 +8,7 @@ import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/entities/person_details.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
@@ -18,9 +19,12 @@ class MockPersonRepository extends Mock implements PersonRepository {}
 
 class MockGroupRepository extends Mock implements GroupRepository {}
 
+class MockDataRefreshBus extends Mock implements DataRefreshBus {}
+
 void main() {
   late MockPersonRepository personRepository;
   late MockGroupRepository groupRepository;
+  late MockDataRefreshBus dataRefreshBus;
   late PersonFormCubit cubit;
 
   const family = Group(id: 1, name: 'Family');
@@ -39,7 +43,8 @@ void main() {
   setUp(() {
     personRepository = MockPersonRepository();
     groupRepository = MockGroupRepository();
-    cubit = PersonFormCubit(personRepository, groupRepository);
+    dataRefreshBus = MockDataRefreshBus();
+    cubit = PersonFormCubit(personRepository, groupRepository, dataRefreshBus);
 
     when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50))
         .thenAnswer((_) async => const Right(PaginatedResult(items: [family], pageIndex: 1, totalPages: 1, totalItems: 1)));
@@ -101,6 +106,7 @@ void main() {
 
     unawaited(cubit.submit(name: 'New Person', gender: Gender.male, groupId: 1));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.people)).called(1);
   });
 
   test('submit with a personId updates the existing person', () async {
@@ -125,5 +131,6 @@ void main() {
 
     unawaited(cubit.submit(personId: 7, name: 'Renamed', gender: Gender.female, groupId: 1));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.people)).called(1);
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/entities/gender.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 
@@ -14,8 +15,10 @@ import 'person_form_state.dart';
 class PersonFormCubit extends Cubit<PersonFormState> {
   final PersonRepository _personRepository;
   final GroupRepository _groupRepository;
+  final DataRefreshBus _dataRefreshBus;
 
-  PersonFormCubit(this._personRepository, this._groupRepository) : super(const PersonFormInitial());
+  PersonFormCubit(this._personRepository, this._groupRepository, this._dataRefreshBus)
+      : super(const PersonFormInitial());
 
   Future<void> initialize(int? personId) async {
     emit(const PersonFormLoading());
@@ -66,7 +69,10 @@ class PersonFormCubit extends Cubit<PersonFormState> {
           );
     result.fold(
       (failure) => emit(PersonFormError(failureToMessage(failure))),
-      (person) => emit(PersonFormSuccess(person)),
+      (person) {
+        _dataRefreshBus.notify(DataScope.people);
+        emit(PersonFormSuccess(person));
+      },
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
@@ -15,6 +16,7 @@ class MockEventRepository extends Mock implements EventRepository {}
 
 void main() {
   late MockEventRepository repository;
+  late DataRefreshBus dataRefreshBus;
   late EventsListCubit cubit;
 
   const event1 = Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5);
@@ -22,7 +24,8 @@ void main() {
 
   setUp(() {
     repository = MockEventRepository();
-    cubit = EventsListCubit(repository);
+    dataRefreshBus = DataRefreshBus();
+    cubit = EventsListCubit(repository, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -132,5 +135,78 @@ void main() {
     expect(state.pageIndex, 1);
     expect(state.hasNextPage, isTrue);
     expect(state.isLoadingMore, isFalse);
+  });
+
+  group('DataRefreshBus', () {
+    // Reproduces the original bug: EventsListCubit is a shell-branch cubit,
+    // built once by IndexedStack and never rebuilt — an event created via
+    // the sibling EventForm route never reached it until logout/login. A bus
+    // notification must now silently pull the updated list in.
+    test('an `events` notification re-fetches page 1 preserving search, no Loading flash', () async {
+      when(() => repository.getEvents(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [event1, event2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const newEvent = Event(id: 3, name: 'Housewarming');
+      when(() => repository.getEvents(search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [event1, event2, newEvent], pageIndex: 1, totalPages: 1, totalItems: 3),
+        ),
+      );
+
+      final states = <dynamic>[];
+      final sub = cubit.stream.listen(states.add);
+
+      dataRefreshBus.notify(DataScope.events);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(states, isNot(contains(isA<EventsListLoading>())));
+      expect(cubit.state, isA<EventsListSuccess>().having((s) => s.events, 'events', [event1, event2, newEvent]));
+    });
+
+    // `totalGuestCount` (shown in the list subtitle) changes when guests are
+    // added/removed, not just when the event itself is edited.
+    test('an `eventGuests` notification also triggers a re-fetch (totalGuestCount can change)', () async {
+      when(() => repository.getEvents(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [event1, event2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const updatedEvent1 = Event(id: 1, name: "Sara's Birthday", totalGuestCount: 8);
+      when(() => repository.getEvents(search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [updatedEvent1, event2], pageIndex: 1, totalPages: 1, totalItems: 2),
+        ),
+      );
+
+      dataRefreshBus.notify(DataScope.eventGuests);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        cubit.state,
+        isA<EventsListSuccess>().having((s) => s.events.first.totalGuestCount, 'totalGuestCount', 8),
+      );
+    });
+
+    test('a failed background refresh keeps the last-good list on screen', () async {
+      when(() => repository.getEvents(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [event1, event2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+      final beforeRefresh = cubit.state;
+
+      when(() => repository.getEvents(search: null, pageIndex: 1, pageSize: 20))
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+
+      dataRefreshBus.notify(DataScope.events);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, beforeRefresh);
+    });
   });
 }

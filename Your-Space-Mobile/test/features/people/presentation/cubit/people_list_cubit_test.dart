@@ -8,6 +8,7 @@ import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
@@ -21,6 +22,7 @@ class MockGroupRepository extends Mock implements GroupRepository {}
 void main() {
   late MockPersonRepository personRepository;
   late MockGroupRepository groupRepository;
+  late DataRefreshBus dataRefreshBus;
   late PeopleListCubit cubit;
 
   const family = Group(id: 1, name: 'Family');
@@ -32,7 +34,8 @@ void main() {
   setUp(() {
     personRepository = MockPersonRepository();
     groupRepository = MockGroupRepository();
-    cubit = PeopleListCubit(personRepository, groupRepository);
+    dataRefreshBus = DataRefreshBus();
+    cubit = PeopleListCubit(personRepository, groupRepository, dataRefreshBus);
 
     when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50)).thenAnswer(
       (_) async =>
@@ -154,5 +157,76 @@ void main() {
     expect(state.isLoadingMore, isFalse);
     expect(state.loadMoreErrorMessage, isNotNull);
     expect(state.loadMoreErrorId, 1);
+  });
+
+  group('DataRefreshBus', () {
+    // Reproduces the original bug: PeopleListCubit is a shell-branch cubit,
+    // built once by IndexedStack and never rebuilt — a person added via the
+    // sibling PersonForm route never reached it until logout/login. A bus
+    // notification must now silently pull the updated list in.
+    test('a `people` notification re-fetches page 1 preserving filter/search, no Loading flash', () async {
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const newPerson =
+          Person(id: 3, name: 'Laila Fathy', gender: Gender.female, groupId: 1, groupName: 'Family');
+      when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [person1, person2, newPerson], pageIndex: 1, totalPages: 1, totalItems: 3),
+        ),
+      );
+
+      final states = <dynamic>[];
+      final sub = cubit.stream.listen(states.add);
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(states, isNot(contains(isA<PeopleListLoading>())));
+      expect(cubit.state, isA<PeopleListSuccess>().having((s) => s.people, 'people', [person1, person2, newPerson]));
+    });
+
+    test('a `groups` notification refreshes only the group dropdown, leaving the people page untouched', () async {
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const newGroup = Group(id: 3, name: 'Book club');
+      when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [family, closeFriends, newGroup], pageIndex: 1, totalPages: 1, totalItems: 3),
+        ),
+      );
+
+      dataRefreshBus.notify(DataScope.groups);
+      await Future<void>.delayed(Duration.zero);
+
+      final state = cubit.state as PeopleListSuccess;
+      expect(state.groups, [family, closeFriends, newGroup]);
+      expect(state.people, [person1, person2]);
+    });
+
+    test('a failed background refresh keeps the last-good list on screen', () async {
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+      final beforeRefresh = cubit.state;
+
+      when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 1, pageSize: 20))
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, beforeRefresh);
+    });
   });
 }

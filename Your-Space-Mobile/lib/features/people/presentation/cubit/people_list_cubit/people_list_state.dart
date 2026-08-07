@@ -48,6 +48,7 @@ final class PeopleListSuccess extends PeopleListState {
 
   PeopleListSuccess copyWith({
     List<Person>? people,
+    List<Group>? groups,
     int? pageIndex,
     bool? hasNextPage,
     bool? isLoadingMore,
@@ -56,7 +57,7 @@ final class PeopleListSuccess extends PeopleListState {
   }) =>
       PeopleListSuccess(
         people: people ?? this.people,
-        groups: groups,
+        groups: groups ?? this.groups,
         selectedGroupId: selectedGroupId,
         search: search,
         pageIndex: pageIndex ?? this.pageIndex,

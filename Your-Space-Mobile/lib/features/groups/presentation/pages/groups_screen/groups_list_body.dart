@@ -76,26 +76,29 @@ class _GroupsListBodyState extends State<GroupsListBody> {
                   )
                 : AppCard(
                     padding: EdgeInsets.symmetric(vertical: 4.h),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: widget.groups.length + (widget.isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= widget.groups.length) {
-                          return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.h),
-                            child: const AppLoadingIndicator(),
+                    child: RefreshIndicator(
+                      onRefresh: () => context.read<GroupsListCubit>().refresh(),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        itemCount: widget.groups.length + (widget.isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= widget.groups.length) {
+                            return Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.h),
+                              child: const AppLoadingIndicator(),
+                            );
+                          }
+                          final group = widget.groups[index];
+                          return AppListTile(
+                            avatarName: group.name,
+                            title: group.name,
+                            trailing:
+                                const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                            divider: index != widget.groups.length - 1,
+                            onTap: () => GroupFormSheet.open(context, group: group),
                           );
-                        }
-                        final group = widget.groups[index];
-                        return AppListTile(
-                          avatarName: group.name,
-                          title: group.name,
-                          trailing:
-                              const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
-                          divider: index != widget.groups.length - 1,
-                          onTap: () => GroupFormSheet.open(context, group: group),
-                        );
-                      },
+                        },
+                      ),
                     ),
                   ),
           ),

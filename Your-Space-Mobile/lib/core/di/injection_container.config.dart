@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart' as _i583;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:shared_preferences/shared_preferences.dart' as _i460;
 import 'package:your_space_mobile/core/di/register_module.dart' as _i876;
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart' as _i215;
 import 'package:your_space_mobile/core/helpers/dialog_helper.dart' as _i733;
 import 'package:your_space_mobile/core/helpers/locale_helper.dart' as _i559;
 import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart' as _i967;
@@ -123,6 +124,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => registerModule.secureStorage,
     );
+    gh.lazySingleton<_i215.DataRefreshBus>(
+      () => _i215.DataRefreshBus(),
+      dispose: (i) => i.dispose(),
+    );
     gh.lazySingleton<_i0.ConnectivityHelper>(() => _i0.ConnectivityHelper());
     gh.lazySingleton<_i134.SecureStorageHelper>(
       () => _i134.SecureStorageHelper(gh<_i558.FlutterSecureStorage>()),
@@ -177,6 +182,38 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i571.PersonRepository>(
       () => _i504.PersonRepositoryImpl(gh<_i293.PersonRemoteDataSourceImpl>()),
     );
+    gh.factory<_i512.PeopleListCubit>(
+      () => _i512.PeopleListCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i994.GroupRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
+    gh.factory<_i228.PersonFormCubit>(
+      () => _i228.PersonFormCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i994.GroupRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
+    gh.factory<_i426.AddGuestsActionCubit>(
+      () => _i426.AddGuestsActionCubit(
+        gh<_i235.EventGuestRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
+    gh.factory<_i410.EventGuestActionCubit>(
+      () => _i410.EventGuestActionCubit(
+        gh<_i235.EventGuestRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
+    gh.factory<_i930.PersonDetailsCubit>(
+      () => _i930.PersonDetailsCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
     gh.factory<_i889.EventGuestsListCubit>(
       () => _i889.EventGuestsListCubit(
         gh<_i235.EventGuestRepository>(),
@@ -198,29 +235,24 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i219.EventRepository>(
       () => _i155.EventRepositoryImpl(gh<_i557.EventRemoteDataSourceImpl>()),
     );
-    gh.factory<_i755.EventFormCubit>(
-      () => _i755.EventFormCubit(gh<_i219.EventRepository>()),
-    );
-    gh.factory<_i890.EventsListCubit>(
-      () => _i890.EventsListCubit(gh<_i219.EventRepository>()),
-    );
-    gh.factory<_i512.PeopleListCubit>(
-      () => _i512.PeopleListCubit(
-        gh<_i571.PersonRepository>(),
+    gh.factory<_i965.GroupActionCubit>(
+      () => _i965.GroupActionCubit(
         gh<_i994.GroupRepository>(),
+        gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i228.PersonFormCubit>(
-      () => _i228.PersonFormCubit(
-        gh<_i571.PersonRepository>(),
+    gh.factory<_i771.GroupsListCubit>(
+      () => _i771.GroupsListCubit(
         gh<_i994.GroupRepository>(),
+        gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i426.AddGuestsActionCubit>(
-      () => _i426.AddGuestsActionCubit(gh<_i235.EventGuestRepository>()),
-    );
-    gh.factory<_i410.EventGuestActionCubit>(
-      () => _i410.EventGuestActionCubit(gh<_i235.EventGuestRepository>()),
+    gh.factory<_i391.EventDetailsCubit>(
+      () => _i391.EventDetailsCubit(
+        gh<_i219.EventRepository>(),
+        gh<_i235.EventGuestRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
     );
     gh.factory<_i895.AddGuestsListCubit>(
       () => _i895.AddGuestsListCubit(
@@ -228,17 +260,8 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i235.EventGuestRepository>(),
       ),
     );
-    gh.factory<_i965.GroupActionCubit>(
-      () => _i965.GroupActionCubit(gh<_i994.GroupRepository>()),
-    );
-    gh.factory<_i771.GroupsListCubit>(
-      () => _i771.GroupsListCubit(gh<_i994.GroupRepository>()),
-    );
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
-    );
-    gh.factory<_i930.PersonDetailsCubit>(
-      () => _i930.PersonDetailsCubit(gh<_i571.PersonRepository>()),
     );
     gh.factory<_i1019.ChangePasswordCubit>(
       () => _i1019.ChangePasswordCubit(gh<_i680.AuthRepository>()),
@@ -258,10 +281,16 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i115.ResetPasswordCubit>(
       () => _i115.ResetPasswordCubit(gh<_i680.AuthRepository>()),
     );
-    gh.factory<_i391.EventDetailsCubit>(
-      () => _i391.EventDetailsCubit(
+    gh.factory<_i755.EventFormCubit>(
+      () => _i755.EventFormCubit(
         gh<_i219.EventRepository>(),
-        gh<_i235.EventGuestRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
+    gh.factory<_i890.EventsListCubit>(
+      () => _i890.EventsListCubit(
+        gh<_i219.EventRepository>(),
+        gh<_i215.DataRefreshBus>(),
       ),
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
@@ -271,6 +300,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i291.ProfileFormCubit(
         gh<_i84.GetCurrentUserProfileUseCase>(),
         gh<_i680.AuthRepository>(),
+        gh<_i215.DataRefreshBus>(),
       ),
     );
     gh.factory<_i136.HomeStatsCubit>(
@@ -279,6 +309,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i571.PersonRepository>(),
         gh<_i219.EventRepository>(),
         gh<_i84.GetCurrentUserProfileUseCase>(),
+        gh<_i215.DataRefreshBus>(),
       ),
     );
     return this;

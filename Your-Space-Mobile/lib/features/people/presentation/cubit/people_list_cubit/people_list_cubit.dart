@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
@@ -16,9 +17,25 @@ const _pageSize = 20;
 class PeopleListCubit extends Cubit<PeopleListState> {
   final PersonRepository _personRepository;
   final GroupRepository _groupRepository;
+  final DataRefreshBus _dataRefreshBus;
   Timer? _searchDebounce;
+  late final StreamSubscription<DataScope> _refreshSubscription;
 
-  PeopleListCubit(this._personRepository, this._groupRepository) : super(const PeopleListInitial());
+  PeopleListCubit(this._personRepository, this._groupRepository, this._dataRefreshBus)
+      : super(const PeopleListInitial()) {
+    _refreshSubscription = _dataRefreshBus.stream.listen((scope) {
+      switch (scope) {
+        case DataScope.people:
+          refresh();
+        case DataScope.groups:
+          refreshGroups();
+        case DataScope.events:
+        case DataScope.eventGuests:
+        case DataScope.profile:
+          break;
+      }
+    });
+  }
 
   Future<void> load() async {
     emit(const PeopleListLoading());
@@ -108,9 +125,39 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     );
   }
 
+  /// Re-fetches page 1 with the current filter/search, without a `Loading`
+  /// flash — triggered by [DataRefreshBus] on a `people` scope notification
+  /// (a person was added/edited/removed elsewhere). Keeps the last-good list
+  /// on a background failure rather than replacing it with an error screen.
+  Future<void> refresh() async {
+    final current = state;
+    if (current is! PeopleListSuccess) return;
+    final result = await _personRepository.getPersons(
+      groupId: current.selectedGroupId,
+      search: current.search,
+      pageIndex: 1,
+      pageSize: _pageSize,
+    );
+    result.fold(
+      (_) {},
+      (page) => emit(current.copyWith(people: page.items, pageIndex: page.pageIndex, hasNextPage: page.hasNextPage)),
+    );
+  }
+
+  /// Re-fetches only the group-filter dropdown — triggered by
+  /// [DataRefreshBus] on a `groups` scope notification (a group was
+  /// created/renamed elsewhere), without touching the current people page.
+  Future<void> refreshGroups() async {
+    final current = state;
+    if (current is! PeopleListSuccess) return;
+    final result = await _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
+    result.fold((_) {}, (page) => emit(current.copyWith(groups: page.items)));
+  }
+
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
+    _refreshSubscription.cancel();
     return super.close();
   }
 }

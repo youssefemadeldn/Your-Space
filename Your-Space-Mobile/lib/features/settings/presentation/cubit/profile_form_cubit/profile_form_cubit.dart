@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
@@ -16,8 +17,9 @@ import 'profile_form_state.dart';
 class ProfileFormCubit extends Cubit<ProfileFormState> {
   final GetCurrentUserProfileUseCase _getCurrentUserProfile;
   final AuthRepository _authRepository;
+  final DataRefreshBus _dataRefreshBus;
 
-  ProfileFormCubit(this._getCurrentUserProfile, this._authRepository)
+  ProfileFormCubit(this._getCurrentUserProfile, this._authRepository, this._dataRefreshBus)
       : super(const ProfileFormInitial());
 
   Future<void> initialize() async {
@@ -42,7 +44,10 @@ class ProfileFormCubit extends Cubit<ProfileFormState> {
     );
     result.fold(
       (failure) => emit(ProfileFormError(core.failureToMessage(failure))),
-      (profile) => emit(ProfileFormSuccess(profile)),
+      (profile) {
+        _dataRefreshBus.notify(DataScope.profile);
+        emit(ProfileFormSuccess(profile));
+      },
     );
   }
 
@@ -65,7 +70,10 @@ class ProfileFormCubit extends Cubit<ProfileFormState> {
     final result = await _authRepository.uploadAvatar(file);
     result.fold(
       (failure) => emit(ProfileFormAvatarError(current, core.failureToMessage(failure))),
-      (profile) => emit(ProfileFormAvatarSuccess(profile)),
+      (profile) {
+        _dataRefreshBus.notify(DataScope.profile);
+        emit(ProfileFormAvatarSuccess(profile));
+      },
     );
   }
 
@@ -77,7 +85,10 @@ class ProfileFormCubit extends Cubit<ProfileFormState> {
     final result = await _authRepository.removeAvatar();
     result.fold(
       (failure) => emit(ProfileFormAvatarError(current, core.failureToMessage(failure))),
-      (profile) => emit(ProfileFormAvatarSuccess(profile)),
+      (profile) {
+        _dataRefreshBus.notify(DataScope.profile);
+        emit(ProfileFormAvatarSuccess(profile));
+      },
     );
   }
 }

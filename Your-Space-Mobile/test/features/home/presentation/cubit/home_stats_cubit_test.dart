@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
 import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart';
@@ -41,6 +42,7 @@ void main() {
   late MockPersonRepository personRepository;
   late MockEventRepository eventRepository;
   late MockGetCurrentUserProfileUseCase getCurrentUserProfile;
+  late DataRefreshBus dataRefreshBus;
   late HomeStatsCubit cubit;
 
   setUp(() {
@@ -48,8 +50,10 @@ void main() {
     personRepository = MockPersonRepository();
     eventRepository = MockEventRepository();
     getCurrentUserProfile = MockGetCurrentUserProfileUseCase();
+    dataRefreshBus = DataRefreshBus();
     when(() => getCurrentUserProfile()).thenAnswer((_) async => const Right(_profile));
-    cubit = HomeStatsCubit(groupRepository, personRepository, eventRepository, getCurrentUserProfile);
+    cubit =
+        HomeStatsCubit(groupRepository, personRepository, eventRepository, getCurrentUserProfile, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -109,6 +113,64 @@ void main() {
 
     unawaited(cubit.load());
     await expectation;
+  });
+
+  group('DataRefreshBus', () {
+    Future<void> loadSuccessfully() async {
+      when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 1)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 1)),
+      );
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 1)),
+      );
+      when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 1)),
+      );
+      await cubit.load();
+    }
+
+    // Reproduces the original bug: Home's IndexedStack branch cubit is built
+    // once and never rebuilt, so a mutation elsewhere (adding a person, etc.)
+    // never reached it until logout/login. A DataRefreshBus notification must
+    // now silently pull the updated counts in, with no Loading flash.
+    test('a bus notification triggers a silent re-fetch, without a Loading flash', () async {
+      await loadSuccessfully();
+
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 5)),
+      );
+
+      final states = <dynamic>[];
+      final sub = cubit.stream.listen(states.add);
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(states, isNot(contains(isA<HomeStatsLoading>())));
+      expect(cubit.state, isA<HomeStatsSuccess>().having((s) => s.peopleCount, 'peopleCount', 5));
+    });
+
+    test('a failed background refresh keeps the last-good stats on screen', () async {
+      await loadSuccessfully();
+      final beforeRefresh = cubit.state;
+
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1))
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, beforeRefresh);
+    });
+
+    test('is ignored while still in the initial/loading state', () async {
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, isA<HomeStatsInitial>());
+      verifyNever(() => personRepository.getPersons(pageIndex: any(named: 'pageIndex'), pageSize: any(named: 'pageSize')));
+    });
   });
 
   test('emits an Error when any one of the three calls fails', () async {
