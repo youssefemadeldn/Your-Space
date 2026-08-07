@@ -139,4 +139,28 @@
   <data name="EventGuest.InviteMethod.Required" xml:space="preserve">
     <value>وسيلة دعوة صحيحة مطلوبة.</value>
   </data>
+  <data name="PersonImage.NotFound" xml:space="preserve">
+    <value>الصورة غير موجودة.</value>
+  </data>
+  <data name="PersonImage.MaxReached" xml:space="preserve">
+    <value>هذا الشخص لديه بالفعل الحد الأقصى من 6 صور.</value>
+  </data>
+  <data name="PersonImage.File.Required" xml:space="preserve">
+    <value>ملف الصورة مطلوب.</value>
+  </data>
+  <data name="PersonImage.File.TooLarge" xml:space="preserve">
+    <value>يجب ألا يتجاوز حجم الصورة 5 ميجابايت.</value>
+  </data>
+  <data name="PersonImage.File.InvalidType" xml:space="preserve">
+    <value>يجب أن تكون الصورة بصيغة JPEG أو PNG.</value>
+  </data>
+  <data name="Avatar.File.Required" xml:space="preserve">
+    <value>ملف الصورة مطلوب.</value>
+  </data>
+  <data name="Avatar.File.TooLarge" xml:space="preserve">
+    <value>يجب ألا يتجاوز حجم الصورة 5 ميجابايت.</value>
+  </data>
+  <data name="Avatar.File.InvalidType" xml:space="preserve">
+    <value>يجب أن تكون الصورة بصيغة JPEG أو PNG.</value>
+  </data>
 </root>

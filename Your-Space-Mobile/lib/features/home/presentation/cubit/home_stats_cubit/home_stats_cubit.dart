@@ -61,6 +61,7 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
       peopleCount: results[1].fold((_) => 0, (count) => count),
       eventsCount: results[2].fold((_) => 0, (count) => count),
       firstName: profileResult.fold((_) => '', (profile) => profile.firstName),
+      avatarUrl: profileResult.fold((_) => null, (profile) => profile.avatarUrl),
     ));
   }
 }

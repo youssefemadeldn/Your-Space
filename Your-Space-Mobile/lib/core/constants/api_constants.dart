@@ -1,10 +1,8 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Android emulator alias for the host machine's localhost. Swap this to your
-  // machine's LAN IP when testing on a physical device or iOS simulator.
   static const String _devBaseUrl =
-      'https://4a3a-197-120-204-119.ngrok-free.app/api/v1';
+      'https://2b49-197-120-204-119.ngrok-free.app/api/v1';
   static const String _prodBaseUrl =
       'http://bcd1i88mdmvzb563lwx1vnas.49.13.218.137.sslip.io/api/v1';
 
@@ -29,6 +27,7 @@ class ApiConstants {
   static const String resetPassword = '/auth/reset-password';
   static const String changePassword = '/auth/change-password';
   static const String profile = '/auth/me';
+  static const String avatar = '/auth/me/avatar';
 
   // Base segments only — nested paths (e.g. '$events/$eventId/guests') are
   // interpolated at the datasource call site.

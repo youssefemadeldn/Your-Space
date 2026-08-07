@@ -107,7 +107,16 @@
   },
   "settings": {
     "title": "Settings",
-    "savedMessage": "Profile updated"
+    "savedMessage": "Profile updated",
+    "photoHint": "JPEG or PNG · one photo",
+    "replacePhoto": "Replace photo",
+    "removePhoto": "Remove photo",
+    "takePhoto": "Take a photo",
+    "chooseFromGallery": "Choose from gallery",
+    "removePhotoConfirmTitle": "Remove profile photo?",
+    "removePhotoConfirmMessage": "You can always add a new one later.",
+    "photoUpdated": "Photo updated",
+    "photoRemoved": "Photo removed"
   },
   "home": {
     "greetingMorning": "Good morning",

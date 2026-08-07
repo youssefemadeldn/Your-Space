@@ -9,6 +9,7 @@ class UserProfileResponse {
   final String lastName;
   final String? phoneNumber;
   final Gender gender;
+  final String? avatarUrl;
   final List<String> roles;
 
   const UserProfileResponse({
@@ -18,6 +19,7 @@ class UserProfileResponse {
     required this.lastName,
     this.phoneNumber,
     required this.gender,
+    this.avatarUrl,
     required this.roles,
   });
 
@@ -28,6 +30,7 @@ class UserProfileResponse {
         lastName: json['lastName'] as String,
         phoneNumber: json['phoneNumber'] as String?,
         gender: Gender.fromWire(json['gender'] as String),
+        avatarUrl: json['avatarUrl'] as String?,
         roles: (json['roles'] as List<dynamic>).map((role) => role as String).toList(),
       );
 
@@ -38,6 +41,7 @@ class UserProfileResponse {
         lastName: lastName,
         phoneNumber: phoneNumber,
         gender: gender,
+        avatarUrl: avatarUrl,
         roles: roles,
       );
 }

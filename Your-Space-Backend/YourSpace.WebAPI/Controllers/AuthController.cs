@@ -110,6 +110,22 @@ public class AuthController(IAuthService authService) : ControllerBase
         return new ResultActionResult<UserProfileDto>(result);
     }
 
+    [HttpPost("me/avatar")]
+    [Authorize]
+    public async Task<IActionResult> UploadAvatar([FromForm] UploadAvatarDto dto)
+    {
+        var result = await authService.UploadAvatarAsync(GetUserId(), dto);
+        return new ResultActionResult<UserProfileDto>(result);
+    }
+
+    [HttpDelete("me/avatar")]
+    [Authorize]
+    public async Task<IActionResult> RemoveAvatar()
+    {
+        var result = await authService.RemoveAvatarAsync(GetUserId());
+        return new ResultActionResult<UserProfileDto>(result);
+    }
+
     // Safe: every action calling this is behind [Authorize], and TokenService.GenerateAccessToken
     // always emits a NameIdentifier claim, so it's never actually missing here.
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;

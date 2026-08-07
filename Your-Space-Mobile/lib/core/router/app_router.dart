@@ -46,7 +46,7 @@ import 'package:your_space_mobile/features/people/presentation/pages/people_scre
 import 'package:your_space_mobile/features/people/presentation/pages/person_details_screen/person_details_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
 import 'package:your_space_mobile/features/settings/presentation/cubit/profile_form_cubit/profile_form_cubit.dart';
-import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen.dart';
+import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen/settings_screen.dart';
 
 import 'app_routes.dart';
 import 'session_redirect.dart';

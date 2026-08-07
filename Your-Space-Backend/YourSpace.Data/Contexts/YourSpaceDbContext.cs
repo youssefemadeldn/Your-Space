@@ -16,6 +16,7 @@ public class YourSpaceDbContext(DbContextOptions<YourSpaceDbContext> options)
     public DbSet<Event> Events => Set<Event>();
     public DbSet<EventGuest> EventGuests => Set<EventGuest>();
     public DbSet<PersonOccasionHistory> PersonOccasionHistories => Set<PersonOccasionHistory>();
+    public DbSet<PersonImage> PersonImages => Set<PersonImage>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

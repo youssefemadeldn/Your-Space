@@ -9,6 +9,7 @@ using YourSpace.Services.Services.EventGuestService;
 using YourSpace.Services.Services.EventService;
 using YourSpace.Services.Services.GroupService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.PersonImageService;
 using YourSpace.Services.Services.PersonOccasionHistoryService;
 using YourSpace.Services.Services.PersonService;
 using YourSpace.Services.Services.TokenService;
@@ -40,6 +41,7 @@ public static class ServiceRegistration
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IPersonService, PersonService>();
         services.AddScoped<IPersonOccasionHistoryService, PersonOccasionHistoryService>();
+        services.AddScoped<IPersonImageService, PersonImageService>();
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IEventGuestService, EventGuestService>();
         services.AddScoped<IUserSettingsService, UserSettingsService>();

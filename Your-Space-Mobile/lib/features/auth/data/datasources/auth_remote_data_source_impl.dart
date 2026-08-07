@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/constants/api_constants.dart';
@@ -92,6 +95,29 @@ class AuthRemoteDataSourceImpl {
       _api.put<UserProfileResponse>(
         path: ApiConstants.profile,
         data: request.toJson(),
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => UserProfileResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  Future<Either<Failure, UserProfileResponse>> uploadAvatar(File file) async {
+    final formData = FormData.fromMap({
+      'File': await MultipartFile.fromFile(file.path),
+    });
+    return _api.post<UserProfileResponse>(
+      path: ApiConstants.avatar,
+      data: formData,
+      fromJson: (json) => unwrapServiceResult(
+        json,
+        (inner) => UserProfileResponse.fromJson(inner as Map<String, dynamic>),
+      ),
+    );
+  }
+
+  Future<Either<Failure, UserProfileResponse>> removeAvatar() =>
+      _api.delete<UserProfileResponse>(
+        path: ApiConstants.avatar,
         fromJson: (json) => unwrapServiceResult(
           json,
           (inner) => UserProfileResponse.fromJson(inner as Map<String, dynamic>),

@@ -16,4 +16,6 @@ public interface IAuthService
     Task<ServiceResult> ChangePasswordAsync(string userId, ChangePasswordDto dto);
     Task<ServiceResult<UserProfileDto>> GetProfileAsync(string userId);
     Task<ServiceResult<UserProfileDto>> UpdateProfileAsync(string userId, UpdateProfileDto dto);
+    Task<ServiceResult<UserProfileDto>> UploadAvatarAsync(string userId, UploadAvatarDto dto);
+    Task<ServiceResult<UserProfileDto>> RemoveAvatarAsync(string userId);
 }

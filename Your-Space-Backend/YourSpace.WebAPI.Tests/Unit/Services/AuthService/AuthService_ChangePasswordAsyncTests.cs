@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Data.Enums;
@@ -10,6 +11,7 @@ using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -57,6 +59,8 @@ public class AuthService_ChangePasswordAsyncTests
         _tokenService.Object,
         Mock.Of<IOtpService>(),
         _emailSender.Object,
+        Mock.Of<IR2StorageService>(),
+        Options.Create(new R2Settings { AccountId = "test", AccessKey = "test", SecretKey = "test", AvatarsBucketName = "avatars", PeoplePhotosBucketName = "people" }),
         _configuration,
         Mock.Of<ILogger<AuthServiceImpl>>());
 

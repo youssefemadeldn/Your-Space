@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.AuthSpecifications;
@@ -8,6 +9,7 @@ using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.Services.Services.TokenService;
 
 namespace YourSpace.Services.Services.AuthService;
@@ -18,6 +20,8 @@ public class AuthService(
     ITokenService tokenService,
     IOtpService otpService,
     IEmailSender emailSender,
+    IR2StorageService r2StorageService,
+    IOptions<R2Settings> r2Options,
     IConfiguration configuration,
     ILogger<AuthService> logger) : IAuthService
 {
@@ -217,7 +221,7 @@ public class AuthService(
             throw;
         }
 
-        var profile = BuildProfile(stored.User, roles);
+        var profile = await BuildProfileAsync(stored.User, roles);
         return ServiceResult<AuthResponseDto>.Ok(new AuthResponseDto
         {
             AccessToken = accessToken,
@@ -428,6 +432,86 @@ public class AuthService(
         return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user), "Profile updated successfully.");
     }
 
+    public async Task<ServiceResult<UserProfileDto>> UploadAvatarAsync(string userId, UploadAvatarDto dto)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return ServiceResult<UserProfileDto>.NotFound("User not found.", ErrorCodes.UserNotFound);
+        }
+
+        var bucketName = r2Options.Value.AvatarsBucketName;
+
+        if (user.AvatarObjectKey is not null)
+        {
+            // Best-effort: the primary action (replacing the avatar) isn't rolled back if cleanup of
+            // the old object fails — same posture as TrySendEmailAsync.
+            try
+            {
+                await r2StorageService.DeleteAsync(bucketName, user.AvatarObjectKey);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to delete previous avatar object {ObjectKey} for user {UserId}", user.AvatarObjectKey, user.Id);
+            }
+        }
+
+        var objectKey = $"avatars/{user.Id}/{Guid.NewGuid()}{ExtensionFor(dto.File.ContentType)}";
+        await r2StorageService.UploadAsync(bucketName, objectKey, dto.File);
+
+        user.AvatarObjectKey = objectKey;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            logger.LogWarning("Avatar upload failed for user {UserId}: {Errors}", user.Id, string.Join(", ", result.Errors.Select(e => e.Code)));
+            return ServiceResult<UserProfileDto>.ValidationError(MapIdentityErrors(result.Errors), "Avatar upload failed.");
+        }
+
+        logger.LogInformation("Avatar updated for user {UserId}", user.Id);
+        return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user), "Avatar updated successfully.");
+    }
+
+    public async Task<ServiceResult<UserProfileDto>> RemoveAvatarAsync(string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return ServiceResult<UserProfileDto>.NotFound("User not found.", ErrorCodes.UserNotFound);
+        }
+
+        if (user.AvatarObjectKey is null)
+        {
+            // Idempotent — removing an avatar that's already unset is a no-op success, not an error.
+            return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user));
+        }
+
+        try
+        {
+            await r2StorageService.DeleteAsync(r2Options.Value.AvatarsBucketName, user.AvatarObjectKey);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to delete avatar object {ObjectKey} for user {UserId}", user.AvatarObjectKey, user.Id);
+        }
+
+        user.AvatarObjectKey = null;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            logger.LogWarning("Avatar removal failed for user {UserId}: {Errors}", user.Id, string.Join(", ", result.Errors.Select(e => e.Code)));
+            return ServiceResult<UserProfileDto>.ValidationError(MapIdentityErrors(result.Errors), "Avatar removal failed.");
+        }
+
+        logger.LogInformation("Avatar removed for user {UserId}", user.Id);
+        return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user), "Avatar removed successfully.");
+    }
+
+    private static string ExtensionFor(string contentType) => contentType switch
+    {
+        "image/png" => ".png",
+        _ => ".jpg"
+    };
+
     private async Task<AuthResponseDto> IssueTokensAsync(AppUser user, IList<string> roles, string? ipAddress)
     {
         var (accessToken, accessExpiresAt) = tokenService.GenerateAccessToken(user, roles);
@@ -445,12 +529,13 @@ public class AuthService(
         });
         await unitOfWork.SaveChangesAsync();
 
+        var profile = await BuildProfileAsync(user, roles);
         return new AuthResponseDto
         {
             AccessToken = accessToken,
             AccessTokenExpiresAt = accessExpiresAt,
             RefreshToken = rawRefreshToken,
-            User = BuildProfile(user, roles)
+            User = profile
         };
     }
 
@@ -515,19 +600,29 @@ public class AuthService(
     private async Task<UserProfileDto> BuildProfileAsync(AppUser user)
     {
         var roles = await userManager.GetRolesAsync(user);
-        return BuildProfile(user, roles);
+        return await BuildProfileAsync(user, roles);
     }
 
-    private static UserProfileDto BuildProfile(AppUser user, IList<string> roles) => new()
+    // Resolves AvatarUrl via a presigned-URL call — a local signature computation, not a network round
+    // trip (see IR2StorageService's doc comment), so awaiting it on every profile build is cheap.
+    private async Task<UserProfileDto> BuildProfileAsync(AppUser user, IList<string> roles)
     {
-        Id = user.Id,
-        Email = user.Email!,
-        FirstName = user.FirstName,
-        LastName = user.LastName,
-        PhoneNumber = user.PhoneNumber,
-        Gender = user.Gender,
-        Roles = roles
-    };
+        var avatarUrl = user.AvatarObjectKey is null
+            ? null
+            : await r2StorageService.GetPresignedUrlAsync(r2Options.Value.AvatarsBucketName, user.AvatarObjectKey);
+
+        return new UserProfileDto
+        {
+            Id = user.Id,
+            Email = user.Email!,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            PhoneNumber = user.PhoneNumber,
+            Gender = user.Gender,
+            AvatarUrl = avatarUrl,
+            Roles = roles
+        };
+    }
 
     private int GetRefreshTokenExpirationDays() => configuration.GetValue("Jwt:RefreshTokenExpirationDays", 7);
 

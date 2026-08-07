@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,8 +20,11 @@ import 'package:your_space_mobile/core/widgets/app_list_tile.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
 
-import '../cubit/profile_form_cubit/profile_form_cubit.dart';
-import '../cubit/profile_form_cubit/profile_form_state.dart';
+import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
+
+import '../../cubit/profile_form_cubit/profile_form_cubit.dart';
+import '../../cubit/profile_form_cubit/profile_form_state.dart';
+import 'settings_avatar_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -32,7 +37,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  bool _initialized = false;
+  bool _fieldsInitialized = false;
+
+  // Refreshed from every state variant that carries one — unlike the text
+  // controllers above (which must only ever seed once so they don't fight
+  // in-progress typing), the avatar must always reflect the latest known
+  // profile after every mutation.
+  UserProfile? _profile;
 
   @override
   void dispose() {
@@ -42,18 +53,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _seedFromProfile(ProfileFormState state) {
-    if (_initialized) return;
+  void _seedFromState(ProfileFormState state) {
     final profile = switch (state) {
       ProfileFormReady(:final profile) => profile,
       ProfileFormSuccess(:final profile) => profile,
+      ProfileFormAvatarUploading(:final profile) => profile,
+      ProfileFormAvatarSuccess(:final profile) => profile,
+      ProfileFormAvatarError(:final profile) => profile,
       _ => null,
     };
     if (profile == null) return;
-    _initialized = true;
-    _firstNameController.text = profile.firstName;
-    _lastNameController.text = profile.lastName;
-    _phoneController.text = profile.phoneNumber ?? '';
+
+    _profile = profile;
+    if (!_fieldsInitialized) {
+      _fieldsInitialized = true;
+      _firstNameController.text = profile.firstName;
+      _lastNameController.text = profile.lastName;
+      _phoneController.text = profile.phoneNumber ?? '';
+    }
   }
 
   void _save() {
@@ -96,25 +113,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       getIt<SnackBarHelper>().showSuccess('settings.savedMessage'.tr());
                     } else if (state is ProfileFormError) {
                       getIt<SnackBarHelper>().showError(state.message);
+                    } else if (state is ProfileFormAvatarSuccess) {
+                      final message = state.profile.avatarUrl != null
+                          ? 'settings.photoUpdated'.tr()
+                          : 'settings.photoRemoved'.tr();
+                      getIt<SnackBarHelper>().showSuccess(message);
+                    } else if (state is ProfileFormAvatarError) {
+                      getIt<SnackBarHelper>().showError(state.message);
                     }
                   },
                   builder: (context, state) {
                     if (state is ProfileFormInitial || state is ProfileFormLoading) {
                       return const AppLoadingIndicator();
                     }
-                    if (state is ProfileFormError && !_initialized) {
+                    if (state is ProfileFormError && !_fieldsInitialized) {
                       return ErrorStateWidget(
                         message: state.message,
                         onRetry: () => context.read<ProfileFormCubit>().initialize(),
                       );
                     }
-                    _seedFromProfile(state);
+                    _seedFromState(state);
+                    final profile = _profile;
+                    if (profile == null) {
+                      return const AppLoadingIndicator();
+                    }
+
                     final submitting = state is ProfileFormSubmitting;
+                    final avatarUpdating = state is ProfileFormAvatarUploading;
 
                     return SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Center(
+                            child: SettingsAvatarSection(
+                              profile: profile,
+                              isUpdating: avatarUpdating,
+                              onPickImage: (File file) =>
+                                  context.read<ProfileFormCubit>().uploadAvatar(file),
+                              onRemove: () => context.read<ProfileFormCubit>().removeAvatar(),
+                            ),
+                          ),
+                          SizedBox(height: 20.h),
                           AppCard(
                             child: Column(
                               children: [

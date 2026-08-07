@@ -73,6 +73,24 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
         updateProfileResult.Data!.FirstName.Should().Be("Updated");
         updateProfileResult.Data.PhoneNumber.Should().Be("+201111111111");
 
+        using var avatarContent = new MultipartFormDataContent();
+        var avatarFileContent = new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0]); // fake JPEG bytes — never actually decoded
+        avatarFileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+        avatarContent.Add(avatarFileContent, "File", "avatar.jpg");
+        using var uploadAvatarRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/Auth/me/avatar") { Content = avatarContent };
+        uploadAvatarRequest.Headers.Add("Authorization", $"Bearer {loginResult.Data.AccessToken}");
+        var uploadAvatarResponse = await client.SendAsync(uploadAvatarRequest);
+        uploadAvatarResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var uploadAvatarResult = await DeserializeAsync<UserProfileDto>(uploadAvatarResponse);
+        uploadAvatarResult.Data!.AvatarUrl.Should().NotBeNullOrEmpty();
+
+        using var removeAvatarRequest = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/Auth/me/avatar");
+        removeAvatarRequest.Headers.Add("Authorization", $"Bearer {loginResult.Data.AccessToken}");
+        var removeAvatarResponse = await client.SendAsync(removeAvatarRequest);
+        removeAvatarResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var removeAvatarResult = await DeserializeAsync<UserProfileDto>(removeAvatarResponse);
+        removeAvatarResult.Data!.AvatarUrl.Should().BeNull();
+
         var refreshResponse = await client.PostAsJsonAsync("/api/v1/Auth/refresh-token", new RefreshTokenRequestDto
         {
             RefreshToken = loginResult.Data.RefreshToken
@@ -112,6 +130,17 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
             LastName = "Auth",
             PhoneNumber = "+201234567890"
         });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UploadAvatar_without_a_token_is_rejected()
+    {
+        var client = factory.CreateClient();
+        using var content = new MultipartFormDataContent();
+
+        var response = await client.PostAsync("/api/v1/Auth/me/avatar", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

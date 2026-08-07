@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 
 import 'package:your_space_mobile/core/entities/gender.dart';
@@ -50,4 +52,8 @@ abstract class AuthRepository {
     required String lastName,
     required String phoneNumber,
   });
+
+  Future<Either<Failure, UserProfile>> uploadAvatar(File file);
+
+  Future<Either<Failure, UserProfile>> removeAvatar();
 }

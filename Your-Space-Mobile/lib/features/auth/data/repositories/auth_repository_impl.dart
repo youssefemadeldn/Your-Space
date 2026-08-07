@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
@@ -129,6 +131,18 @@ class AuthRepositoryImpl implements AuthRepository {
       lastName: lastName,
       phoneNumber: phoneNumber,
     ));
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> uploadAvatar(File file) async {
+    final result = await _remote.uploadAvatar(file);
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> removeAvatar() async {
+    final result = await _remote.removeAvatar();
     return result.fold(Left.new, (response) => Right(response.toEntity()));
   }
 }
