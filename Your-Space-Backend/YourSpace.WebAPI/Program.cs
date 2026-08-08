@@ -105,6 +105,17 @@ using (var migrationScope = app.Services.CreateScope())
 }
 app.Logger.LogInformation("Database migrations applied successfully");
 
+// IdentitySeeder resolves IUnitOfWork, which is IAsyncDisposable-only (see UnitOfWork.DisposeAsync) —
+// a synchronous `using` scope throws on dispose trying to dispose it synchronously. Must run before
+// MockDataSeeder below — MockDataSeeder.SeedDevUsersAsync calls UserManager.AddToRoleAsync(RoleNames.User),
+// which throws "Role USER does not exist" against a genuinely fresh database if the Identity roles
+// (seeded here) aren't in place first. Only surfaces on a from-scratch DB — an existing DB that's
+// already had IdentitySeeder run once masks the ordering bug, since the roles are already there.
+await using (var seedScope = app.Services.CreateAsyncScope())
+{
+    await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
+}
+
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
@@ -121,13 +132,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-}
-
-// IdentitySeeder resolves IUnitOfWork, which is IAsyncDisposable-only (see UnitOfWork.DisposeAsync) —
-// a synchronous `using` scope throws on dispose trying to dispose it synchronously.
-await using (var seedScope = app.Services.CreateAsyncScope())
-{
-    await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
 }
 
 app.UseHttpsRedirection();

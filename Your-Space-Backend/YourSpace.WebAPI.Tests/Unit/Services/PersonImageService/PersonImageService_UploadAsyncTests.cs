@@ -21,7 +21,7 @@ public class PersonImageService_UploadAsyncTests
     private readonly Mock<IGenericRepository<Person, int>> _personRepo = new();
     private readonly Mock<IR2StorageService> _r2Storage = new();
 
-    private static readonly Person Owner = new() { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 };
+    private static readonly Person Owner = new() { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1 };
 
     public PersonImageService_UploadAsyncTests()
     {

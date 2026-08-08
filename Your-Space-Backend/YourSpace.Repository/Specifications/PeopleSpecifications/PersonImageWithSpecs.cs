@@ -23,6 +23,11 @@ public class PersonImageWithSpecs : BaseSpecification<PersonImage>
         return spec;
     }
 
+    // Batch-resolves the primary image row for a whole page of persons in one query — used by
+    // PersonService to populate PrimaryPhotoUrl on list/detail DTOs without an N+1 query per person.
+    public static PersonImageWithSpecs PrimaryForPersons(List<int> personIds, string ownerUserId)
+        => new(i => i.IsPrimary && personIds.Contains(i.PersonId) && i.Person.OwnerUserId == ownerUserId);
+
     private static Expression<Func<PersonImage, bool>> BuildForPersonPredicate(int personId, string ownerUserId)
         => i => i.PersonId == personId && i.Person.OwnerUserId == ownerUserId;
 }

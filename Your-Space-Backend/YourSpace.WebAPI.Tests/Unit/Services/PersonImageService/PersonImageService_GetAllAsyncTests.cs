@@ -49,7 +49,7 @@ public class PersonImageService_GetAllAsyncTests
     public async Task Returns_presigned_urls_for_every_image()
     {
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync(new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 });
+            .ReturnsAsync(new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1 });
         _imageRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonImage>>()))
             .ReturnsAsync([
                 new PersonImage { Id = 1, PersonId = 10, ObjectKey = "people/10/a.jpg", IsPrimary = true }

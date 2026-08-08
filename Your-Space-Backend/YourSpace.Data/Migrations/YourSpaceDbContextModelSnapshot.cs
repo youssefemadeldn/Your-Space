@@ -235,6 +235,48 @@ namespace YourSpace.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.City", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("GovernorateId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OwnerUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GovernorateId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("Cities");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.EmailConfirmationCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -354,6 +396,45 @@ namespace YourSpace.Data.Migrations
                     b.ToTable("EventGuests");
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.Governorate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OwnerUserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("Governorates");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.Group", b =>
                 {
                     b.Property<int>("Id")
@@ -389,6 +470,48 @@ namespace YourSpace.Data.Migrations
                     b.HasIndex("OwnerUserId");
 
                     b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("YourSpace.Data.Entities.Neighborhood", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CityId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OwnerUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("Neighborhoods");
                 });
 
             modelBuilder.Entity("YourSpace.Data.Entities.PasswordResetCode", b =>
@@ -433,6 +556,9 @@ namespace YourSpace.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("CityId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -442,6 +568,9 @@ namespace YourSpace.Data.Migrations
                     b.Property<int>("Gender")
                         .HasColumnType("integer");
 
+                    b.Property<int>("GovernorateId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("GroupId")
                         .HasColumnType("integer");
 
@@ -449,6 +578,9 @@ namespace YourSpace.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int?>("NeighborhoodId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
@@ -466,16 +598,31 @@ namespace YourSpace.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int?>("SubGroupId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("GovernorateId");
+
                     b.HasIndex("GroupId");
+
+                    b.HasIndex("NeighborhoodId");
 
                     b.HasIndex("OwnerUserId");
 
+                    b.HasIndex("SubGroupId");
+
+                    b.HasIndex("OwnerUserId", "GovernorateId");
+
                     b.HasIndex("OwnerUserId", "GroupId");
+
+                    b.HasIndex("OwnerUserId", "SubGroupId");
 
                     b.ToTable("People");
                 });
@@ -559,6 +706,43 @@ namespace YourSpace.Data.Migrations
                     b.ToTable("PersonOccasionHistories");
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.PersonRelationship", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("InverseRelationshipId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PersonId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RelatedPersonId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RelationType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InverseRelationshipId")
+                        .IsUnique();
+
+                    b.HasIndex("PersonId");
+
+                    b.HasIndex("RelatedPersonId");
+
+                    b.HasIndex("PersonId", "RelationType");
+
+                    b.ToTable("PersonRelationships");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -600,6 +784,48 @@ namespace YourSpace.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("YourSpace.Data.Entities.SubGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NameAr")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OwnerUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("SubGroups");
                 });
 
             modelBuilder.Entity("YourSpace.Data.Entities.UserSettings", b =>
@@ -672,6 +898,25 @@ namespace YourSpace.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.City", b =>
+                {
+                    b.HasOne("YourSpace.Data.Entities.Governorate", "Governorate")
+                        .WithMany()
+                        .HasForeignKey("GovernorateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("YourSpace.Data.Entities.AppUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Governorate");
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.EmailConfirmationCode", b =>
                 {
                     b.HasOne("YourSpace.Data.Entities.AppUser", "User")
@@ -713,6 +958,16 @@ namespace YourSpace.Data.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.Governorate", b =>
+                {
+                    b.HasOne("YourSpace.Data.Entities.AppUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.Group", b =>
                 {
                     b.HasOne("YourSpace.Data.Entities.AppUser", "Owner")
@@ -720,6 +975,25 @@ namespace YourSpace.Data.Migrations
                         .HasForeignKey("OwnerUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("YourSpace.Data.Entities.Neighborhood", b =>
+                {
+                    b.HasOne("YourSpace.Data.Entities.City", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("YourSpace.Data.Entities.AppUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("City");
 
                     b.Navigation("Owner");
                 });
@@ -737,11 +1011,27 @@ namespace YourSpace.Data.Migrations
 
             modelBuilder.Entity("YourSpace.Data.Entities.Person", b =>
                 {
+                    b.HasOne("YourSpace.Data.Entities.City", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("YourSpace.Data.Entities.Governorate", "Governorate")
+                        .WithMany()
+                        .HasForeignKey("GovernorateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("YourSpace.Data.Entities.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("YourSpace.Data.Entities.Neighborhood", "Neighborhood")
+                        .WithMany()
+                        .HasForeignKey("NeighborhoodId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("YourSpace.Data.Entities.AppUser", "Owner")
                         .WithMany()
@@ -749,9 +1039,22 @@ namespace YourSpace.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("YourSpace.Data.Entities.SubGroup", "SubGroup")
+                        .WithMany()
+                        .HasForeignKey("SubGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("City");
+
+                    b.Navigation("Governorate");
+
                     b.Navigation("Group");
 
+                    b.Navigation("Neighborhood");
+
                     b.Navigation("Owner");
+
+                    b.Navigation("SubGroup");
                 });
 
             modelBuilder.Entity("YourSpace.Data.Entities.PersonImage", b =>
@@ -776,6 +1079,30 @@ namespace YourSpace.Data.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.PersonRelationship", b =>
+                {
+                    b.HasOne("YourSpace.Data.Entities.PersonRelationship", null)
+                        .WithOne()
+                        .HasForeignKey("YourSpace.Data.Entities.PersonRelationship", "InverseRelationshipId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("YourSpace.Data.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("YourSpace.Data.Entities.Person", "RelatedPerson")
+                        .WithMany()
+                        .HasForeignKey("RelatedPersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+
+                    b.Navigation("RelatedPerson");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.RefreshToken", b =>
                 {
                     b.HasOne("YourSpace.Data.Entities.AppUser", "User")
@@ -785,6 +1112,25 @@ namespace YourSpace.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("YourSpace.Data.Entities.SubGroup", b =>
+                {
+                    b.HasOne("YourSpace.Data.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("YourSpace.Data.Entities.AppUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("YourSpace.Data.Entities.UserSettings", b =>

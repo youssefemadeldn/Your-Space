@@ -12,6 +12,8 @@ public class PersonConfiguration : IEntityTypeConfiguration<Person>
 
         builder.HasIndex(p => p.OwnerUserId);
         builder.HasIndex(p => new { p.OwnerUserId, p.GroupId });
+        builder.HasIndex(p => new { p.OwnerUserId, p.SubGroupId });
+        builder.HasIndex(p => new { p.OwnerUserId, p.GovernorateId });
 
         builder.HasOne(p => p.Owner)
             .WithMany()
@@ -24,6 +26,28 @@ public class PersonConfiguration : IEntityTypeConfiguration<Person>
         builder.HasOne(p => p.Group)
             .WithMany()
             .HasForeignKey(p => p.GroupId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Same Restrict rationale as Group above — each parent's own service blocks deletion while
+        // active Persons still reference it.
+        builder.HasOne(p => p.SubGroup)
+            .WithMany()
+            .HasForeignKey(p => p.SubGroupId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(p => p.Governorate)
+            .WithMany()
+            .HasForeignKey(p => p.GovernorateId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(p => p.City)
+            .WithMany()
+            .HasForeignKey(p => p.CityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(p => p.Neighborhood)
+            .WithMany()
+            .HasForeignKey(p => p.NeighborhoodId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

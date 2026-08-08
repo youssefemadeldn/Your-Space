@@ -36,5 +36,21 @@ public class UpdatePersonDtoValidator : AbstractValidator<UpdatePersonDto>
         RuleFor(x => x.GroupId)
             .GreaterThan(0).WithMessage(localizer["Person.GroupId.Invalid"])
             .When(x => x.GroupId is not null);
+
+        RuleFor(x => x.SubGroupId)
+            .GreaterThan(0).WithMessage(localizer["Person.SubGroupId.Invalid"])
+            .When(x => x.SubGroupId is not null);
+
+        RuleFor(x => x.GovernorateId)
+            .GreaterThan(0).WithMessage(localizer["Person.GovernorateId.Invalid"])
+            .When(x => x.GovernorateId is not null);
+
+        RuleFor(x => x.CityId)
+            .GreaterThan(0).WithMessage(localizer["Person.CityId.Invalid"])
+            .When(x => x.CityId is not null);
+
+        RuleFor(x => x.NeighborhoodId)
+            .GreaterThan(0).WithMessage(localizer["Person.NeighborhoodId.Invalid"])
+            .When(x => x.NeighborhoodId is not null);
     }
 }

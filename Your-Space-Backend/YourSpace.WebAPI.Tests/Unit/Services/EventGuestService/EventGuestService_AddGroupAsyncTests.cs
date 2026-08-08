@@ -52,8 +52,8 @@ public class EventGuestService_AddGroupAsyncTests
         _groupRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Group>>()))
             .ReturnsAsync(new Group { Id = 1, OwnerUserId = "owner-1", Name = "Village Friends" });
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync([
-            new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 },
-            new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 1 }
+            new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1 },
+            new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 1, GovernorateId = 1 }
         ]);
         _guestRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<EventGuest>>())).ReturnsAsync([]);
 

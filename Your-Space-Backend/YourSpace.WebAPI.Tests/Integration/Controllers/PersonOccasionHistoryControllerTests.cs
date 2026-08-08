@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using FluentAssertions;
 using YourSpace.Data.Enums;
 using YourSpace.Services.Helper;
+using YourSpace.Services.Services.GovernorateService.Dtos;
 using YourSpace.Services.Services.GroupService.Dtos;
 using YourSpace.Services.Services.PersonOccasionHistoryService.Dtos;
 using YourSpace.Services.Services.PersonService.Dtos;
@@ -87,7 +88,11 @@ public class PersonOccasionHistoryControllerTests(TestWebApplicationFactory fact
         var groupResponse = await client.PostAsJsonAsync("/api/v1/Groups", new CreateGroupDto { Name = $"{name}'s Group" });
         var group = await DeserializeAsync<GroupDetailsDto>(groupResponse);
 
-        var personResponse = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = name, GroupId = group.Data!.Id, Gender = Gender.Male });
+        var governorateResponse = await client.PostAsJsonAsync("/api/v1/Governorates", new CreateGovernorateDto { Name = $"{name}'s Governorate" });
+        var governorate = await DeserializeAsync<GovernorateDetailsDto>(governorateResponse);
+
+        var personResponse = await client.PostAsJsonAsync("/api/v1/Persons",
+            new CreatePersonDto { Name = name, GroupId = group.Data!.Id, GovernorateId = governorate.Data!.Id, Gender = Gender.Male });
         var person = await DeserializeAsync<PersonDetailsDto>(personResponse);
         return person.Data!.Id;
     }

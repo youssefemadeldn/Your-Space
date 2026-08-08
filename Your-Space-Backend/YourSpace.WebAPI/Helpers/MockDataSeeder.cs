@@ -30,11 +30,16 @@ public static class MockDataSeeder
         await SeedPasswordResetCodesAsync(context, activeUserId, lockedUserId);
 
         await SeedGroupsAsync(context, activeUserId, lockedUserId);
+        await SeedSubGroupsAsync(context, activeUserId, lockedUserId);
+        await SeedGovernoratesAsync(context, activeUserId);
+        await SeedCitiesAsync(context, activeUserId);
+        await SeedNeighborhoodsAsync(context, activeUserId);
         await SeedPersonsAsync(context, activeUserId, lockedUserId);
         await SeedPersonImagesAsync(context, activeUserId);
         await SeedEventsAsync(context, activeUserId, lockedUserId);
         await SeedEventGuestsAsync(context, activeUserId);
         await SeedPersonOccasionHistoriesAsync(context, activeUserId);
+        await SeedPersonRelationshipsAsync(context, activeUserId);
         await SeedUserSettingsAsync(context, activeUserId, lockedUserId);
     }
 
@@ -223,6 +228,101 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
+    private static async Task SeedSubGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    {
+        if (await context.SubGroups.AnyAsync())
+        {
+            return;
+        }
+
+        var relatives = await context.Groups.SingleAsync(g => g.OwnerUserId == activeUserId && g.Name == "Relatives");
+        var lockedUserGroup = await context.Groups.SingleAsync(g => g.OwnerUserId == lockedUserId);
+
+        await context.SubGroups.AddRangeAsync(
+            new SubGroup { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = "Immediate Family", NameAr = "العائلة المباشرة" }, // normal case
+            new SubGroup { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = "Extended Family", NameAr = "العائلة الممتدة" }, // normal case
+            new SubGroup { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = new string('D', 200) }, // edge case — max-length name
+            new SubGroup { OwnerUserId = lockedUserId, GroupId = lockedUserGroup.Id, Name = "Locked User's Subgroup" });
+
+        await context.SaveChangesAsync();
+    }
+
+    // Global/seeded rows (OwnerUserId null, IsLocked true) plus one user-owned custom row — the
+    // only entity in this codebase with that dual shape (see Governorate.cs's own comment).
+    private static async Task SeedGovernoratesAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.Governorates.AnyAsync())
+        {
+            return;
+        }
+
+        (string En, string Ar)[] seeded =
+        [
+            ("Cairo", "القاهرة"), ("Giza", "الجيزة"), ("Alexandria", "الإسكندرية"),
+            ("Al Qalyubia", "القليوبية"), ("Port Said", "بورسعيد"), ("Suez", "السويس"),
+            ("Dakahlia", "الدقهلية"), ("Al Sharqia", "الشرقية"), ("Al Gharbia", "الغربية"),
+            ("Al Monufia", "المنوفية"), ("Al Beheira", "البحيرة"), ("Kafr El Sheikh", "كفر الشيخ"),
+            ("Damietta", "دمياط"), ("Ismailia", "الإسماعيلية"), ("Faiyum", "الفيوم"),
+            ("Beni Suef", "بني سويف"), ("Minya", "المنيا"), ("Assiut", "أسيوط"),
+            ("Sohag", "سوهاج"), ("Qena", "قنا"), ("Aswan", "أسوان"),
+            ("Luxor", "الأقصر"), ("Red Sea", "البحر الأحمر"), ("New Valley", "الوادي الجديد"),
+            ("Matrouh", "مطروح"), ("North Sinai", "شمال سيناء"), ("South Sinai", "جنوب سيناء")
+        ];
+
+        var governorates = seeded
+            .Select(n => new Governorate { OwnerUserId = null, IsLocked = true, Name = n.En, NameAr = n.Ar })
+            .ToList();
+
+        // Edge case — a user-owned custom governorate, exercising the "global OR mine" visibility
+        // rule and the not-locked/fully-editable path.
+        governorates.Add(new Governorate { OwnerUserId = activeUserId, IsLocked = false, Name = "Custom Region (Seed)" });
+
+        await context.Governorates.AddRangeAsync(governorates);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedCitiesAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.Cities.AnyAsync())
+        {
+            return;
+        }
+
+        var cairo = await context.Governorates.SingleAsync(g => g.OwnerUserId == null && g.Name == "Cairo");
+        var giza = await context.Governorates.SingleAsync(g => g.OwnerUserId == null && g.Name == "Giza");
+
+        await context.Cities.AddRangeAsync(
+            new City { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = "Nasr City", NameAr = "مدينة نصر" }, // normal case
+            new City { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = "Heliopolis", NameAr = "مصر الجديدة" }, // normal case
+            new City { OwnerUserId = activeUserId, GovernorateId = giza.Id, Name = "6th of October", NameAr = "السادس من أكتوبر" }, // normal case, different parent
+            new City { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = new string('E', 200) }); // edge case — max-length name
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedNeighborhoodsAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.Neighborhoods.AnyAsync())
+        {
+            return;
+        }
+
+        var nasrCity = await context.Cities.SingleAsync(c => c.OwnerUserId == activeUserId && c.Name == "Nasr City");
+
+        await context.Neighborhoods.AddRangeAsync(
+            new Neighborhood { OwnerUserId = activeUserId, CityId = nasrCity.Id, Name = "Zone 1", NameAr = "الحي الأول" }, // normal case
+            new Neighborhood { OwnerUserId = activeUserId, CityId = nasrCity.Id, Name = "Zone 3", NameAr = "الحي الثالث" }, // normal case
+            new Neighborhood // edge case — soft-deleted
+            {
+                OwnerUserId = activeUserId,
+                CityId = nasrCity.Id,
+                Name = "Old Zone (Archived)",
+                DeletedAt = DateTime.UtcNow.AddDays(-15)
+            });
+
+        await context.SaveChangesAsync();
+    }
+
     private static async Task SeedPersonsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
     {
         if (await context.People.AnyAsync())
@@ -235,27 +335,60 @@ public static class MockDataSeeder
         var universityFriends = await context.Groups.SingleAsync(g => g.OwnerUserId == activeUserId && g.Name == "University Friends");
         var lockedUserGroup = await context.Groups.SingleAsync(g => g.OwnerUserId == lockedUserId);
 
+        var immediateFamily = await context.SubGroups.SingleAsync(s => s.OwnerUserId == activeUserId && s.Name == "Immediate Family");
+        var lockedUserSubGroup = await context.SubGroups.SingleAsync(s => s.OwnerUserId == lockedUserId);
+
+        // Person.GovernorateId is required — every row below (Faker-generated and hand-literal
+        // edge cases alike) needs one, per the migration that made this column NOT NULL.
+        var cairo = await context.Governorates.SingleAsync(g => g.OwnerUserId == null && g.Name == "Cairo");
+        var giza = await context.Governorates.SingleAsync(g => g.OwnerUserId == null && g.Name == "Giza");
+        var nasrCity = await context.Cities.SingleAsync(c => c.OwnerUserId == activeUserId && c.Name == "Nasr City");
+        var zone1 = await context.Neighborhoods.SingleAsync(n => n.OwnerUserId == activeUserId && n.Name == "Zone 1");
+
         var faker = new Faker<Person>()
             .RuleFor(p => p.OwnerUserId, _ => activeUserId)
             .RuleFor(p => p.Name, f => f.Name.FullName())
             .RuleFor(p => p.PhoneNumber, f => f.Random.Replace("+2010#######"))
             .RuleFor(p => p.Gender, f => f.PickRandom<Gender>())
-            .RuleFor(p => p.GroupId, f => f.PickRandom(relatives.Id, villageFriends.Id, universityFriends.Id));
+            .RuleFor(p => p.GroupId, f => f.PickRandom(relatives.Id, villageFriends.Id, universityFriends.Id))
+            .RuleFor(p => p.GovernorateId, f => f.PickRandom(cairo.Id, giza.Id))
+            .RuleFor(p => p.CityId, (f, p) => p.GovernorateId == cairo.Id && f.Random.Bool() ? nasrCity.Id : (int?)null)
+            .RuleFor(p => p.NeighborhoodId, (f, p) => p.CityId == nasrCity.Id && f.Random.Bool() ? zone1.Id : (int?)null);
 
         var persons = faker.Generate(15); // enough rows to exercise pagination
 
-        persons.Add(new Person { OwnerUserId = activeUserId, Name = "Friend With No Phone", Gender = Gender.Male, GroupId = villageFriends.Id }); // edge case — null PhoneNumber
-        persons.Add(new Person { OwnerUserId = activeUserId, Name = new string('B', 200), Gender = Gender.Female, GroupId = relatives.Id }); // edge case — max-length name
+        persons.Add(new Person { OwnerUserId = activeUserId, Name = "Friend With No Phone", Gender = Gender.Male, GroupId = villageFriends.Id, GovernorateId = cairo.Id }); // edge case — null PhoneNumber
+        persons.Add(new Person // edge case — max-length name, every classification field set
+        {
+            OwnerUserId = activeUserId,
+            Name = new string('B', 200),
+            Gender = Gender.Female,
+            GroupId = relatives.Id,
+            SubGroupId = immediateFamily.Id,
+            GovernorateId = cairo.Id,
+            CityId = nasrCity.Id,
+            NeighborhoodId = zone1.Id
+        });
         persons.Add(new Person // edge case — soft-deleted
         {
             OwnerUserId = activeUserId,
             Name = "Departed Contact",
             Gender = Gender.Male,
             GroupId = relatives.Id,
+            GovernorateId = cairo.Id,
             DeletedAt = DateTime.UtcNow.AddDays(-5)
         });
 
-        persons.Add(new Person { OwnerUserId = lockedUserId, Name = "Locked User's Friend", PhoneNumber = "+201111111111", Gender = Gender.Female, GroupId = lockedUserGroup.Id });
+        persons.Add(new Person
+        {
+            OwnerUserId = lockedUserId,
+            Name = "Locked User's Friend",
+            PhoneNumber = "+201111111111",
+            Gender = Gender.Female,
+            GroupId = lockedUserGroup.Id,
+            SubGroupId = lockedUserSubGroup.Id,
+            GovernorateId = giza.Id
+        });
 
         await context.People.AddRangeAsync(persons);
         await context.SaveChangesAsync();
@@ -424,6 +557,47 @@ public static class MockDataSeeder
                 InviteMethod = InviteMethod.Physical
             });
 
+        await context.SaveChangesAsync();
+    }
+
+    // Bypasses PersonRelationshipService (raw context inserts), so it must manually replicate the
+    // two-row-plus-cross-link shape from PersonRelationshipService.CreateAsync — insert both rows,
+    // save (real Ids), cross-link InverseRelationshipId, save again.
+    private static async Task SeedPersonRelationshipsAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.PersonRelationships.AnyAsync())
+        {
+            return;
+        }
+
+        var persons = await context.People
+            .Where(p => p.OwnerUserId == activeUserId && p.DeletedAt == null)
+            .OrderBy(p => p.Id)
+            .Take(4)
+            .ToListAsync();
+
+        // Normal case — a Father/Son pair.
+        await AddSeedRelationshipPairAsync(context, personId: persons[1].Id, relatedPersonId: persons[0].Id, relationType: RelationType.Father, inverseType: RelationType.Son);
+
+        // Normal case — a Husband/Wife pair (different two people than the pair above).
+        await AddSeedRelationshipPairAsync(context, personId: persons[2].Id, relatedPersonId: persons[3].Id, relationType: RelationType.Wife, inverseType: RelationType.Husband);
+
+        // Every other seeded person (there's no explicit row for this — it's simply everyone not
+        // referenced above) is left with zero relationships, the natural normal case for most
+        // people, who won't have a family graph entered yet.
+    }
+
+    private static async Task AddSeedRelationshipPairAsync(
+        YourSpaceDbContext context, int personId, int relatedPersonId, RelationType relationType, RelationType inverseType)
+    {
+        var original = new PersonRelationship { PersonId = personId, RelatedPersonId = relatedPersonId, RelationType = relationType };
+        var inverse = new PersonRelationship { PersonId = relatedPersonId, RelatedPersonId = personId, RelationType = inverseType };
+
+        await context.PersonRelationships.AddRangeAsync(original, inverse);
+        await context.SaveChangesAsync(); // real Ids needed before the two rows can cross-link
+
+        original.InverseRelationshipId = inverse.Id;
+        inverse.InverseRelationshipId = original.Id;
         await context.SaveChangesAsync();
     }
 

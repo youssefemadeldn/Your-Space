@@ -6,6 +6,7 @@ using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.PersonService.Dtos;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using PersonServiceImpl = YourSpace.Services.Services.PersonService.PersonService;
 
@@ -17,6 +18,8 @@ public class PersonService_UpdateAsyncTests
     private readonly Mock<IGenericRepository<Person, int>> _personRepo = new();
     private readonly Mock<IGenericRepository<Group, int>> _groupRepo = new();
     private readonly Mock<IGenericRepository<PersonOccasionHistory, int>> _historyRepo = new();
+    private readonly Mock<IGenericRepository<PersonRelationship, int>> _relationshipRepo = new();
+    private readonly Mock<IGenericRepository<PersonImage, int>> _imageRepo = new();
 
     public PersonService_UpdateAsyncTests()
     {
@@ -24,11 +27,17 @@ public class PersonService_UpdateAsyncTests
         _unitOfWork.Setup(u => u.Repository<Group, int>()).Returns(_groupRepo.Object);
         _unitOfWork.Setup(u => u.Repository<PersonOccasionHistory, int>()).Returns(_historyRepo.Object);
         _historyRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonOccasionHistory>>())).ReturnsAsync([]);
+        _unitOfWork.Setup(u => u.Repository<PersonRelationship, int>()).Returns(_relationshipRepo.Object);
+        _relationshipRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonRelationship>>())).ReturnsAsync([]);
+        _unitOfWork.Setup(u => u.Repository<PersonImage, int>()).Returns(_imageRepo.Object);
+        _imageRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonImage>>())).ReturnsAsync([]);
     }
 
     private PersonServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
+        Mock.Of<IR2StorageService>(),
+        R2SettingsFactory.Create(),
         LocalizerMockFactory.Create().Object,
         Mock.Of<ILogger<PersonServiceImpl>>());
 
@@ -47,7 +56,7 @@ public class PersonService_UpdateAsyncTests
     public async Task Returns_not_found_when_new_group_does_not_belong_to_owner()
     {
         var originalGroup = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = originalGroup };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = originalGroup };
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
         _groupRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Group>>())).ReturnsAsync((Group?)null);
 
@@ -62,7 +71,7 @@ public class PersonService_UpdateAsyncTests
     public async Task Leaves_phone_number_unchanged_when_omitted_from_request()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group };
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
 
         var result = await CreateSut().UpdateAsync("owner-1", new UpdatePersonDto { Id = 10, Name = "Ahmed Updated" });
@@ -85,6 +94,7 @@ public class PersonService_UpdateAsyncTests
             Notes = "Original notes.",
             Gender = Gender.Male,
             GroupId = 1,
+            GovernorateId = 1,
             Group = group
         };
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);

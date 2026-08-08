@@ -4,6 +4,7 @@ using System.Text.Json;
 using FluentAssertions;
 using YourSpace.Data.Enums;
 using YourSpace.Services.Helper;
+using YourSpace.Services.Services.GovernorateService.Dtos;
 using YourSpace.Services.Services.GroupService.Dtos;
 using YourSpace.Services.Services.PersonService.Dtos;
 using YourSpace.WebAPI.Tests.Common;
@@ -22,11 +23,15 @@ public class PersonsControllerTests(TestWebApplicationFactory factory) : IClassF
         var groupResponse = await client.PostAsJsonAsync("/api/v1/Groups", new CreateGroupDto { Name = "Relatives" });
         var group = await DeserializeAsync<GroupDetailsDto>(groupResponse);
 
+        var governorateResponse = await client.PostAsJsonAsync("/api/v1/Governorates", new CreateGovernorateDto { Name = "Cairo" });
+        var governorate = await DeserializeAsync<GovernorateDetailsDto>(governorateResponse);
+
         var createResponse = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto
         {
             Name = "Ahmed",
             PhoneNumber = "+201234567890",
             GroupId = group.Data!.Id,
+            GovernorateId = governorate.Data!.Id,
             Gender = Gender.Male
         });
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -53,7 +58,10 @@ public class PersonsControllerTests(TestWebApplicationFactory factory) : IClassF
         var group = await DeserializeAsync<GroupDetailsDto>(groupResponse);
 
         var otherClient = await factory.CreateAuthenticatedClientAsync("persons.intruder@example.com");
-        var response = await otherClient.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = "Ahmed", GroupId = group.Data!.Id, Gender = Gender.Male });
+        // GovernorateId=1 is never actually resolved — the GroupId check runs first and fails
+        // before Governorate validation is ever reached, so a placeholder value is fine here.
+        var response = await otherClient.PostAsJsonAsync("/api/v1/Persons",
+            new CreatePersonDto { Name = "Ahmed", GroupId = group.Data!.Id, GovernorateId = 1, Gender = Gender.Male });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

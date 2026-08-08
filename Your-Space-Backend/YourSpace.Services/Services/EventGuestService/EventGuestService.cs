@@ -6,6 +6,7 @@ using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.EventSpecifications;
 using YourSpace.Repository.Specifications.GroupSpecifications;
+using YourSpace.Repository.Specifications.LocationSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
 using YourSpace.Services.Helper;
@@ -27,6 +28,10 @@ public class EventGuestService(
         public const string EventNotFound = "EventGuest.EventNotFound";
         public const string PersonNotFound = "EventGuest.PersonNotFound";
         public const string GroupNotFound = "EventGuest.GroupNotFound";
+        public const string SubGroupNotFound = "EventGuest.SubGroupNotFound";
+        public const string GovernorateNotFound = "EventGuest.GovernorateNotFound";
+        public const string CityNotFound = "EventGuest.CityNotFound";
+        public const string NeighborhoodNotFound = "EventGuest.NeighborhoodNotFound";
     }
 
     public async Task<ServiceResult<EventGuestDetailsDto>> GetDetailsAsync(string ownerUserId, int eventId, int guestId)
@@ -194,6 +199,94 @@ public class EventGuestService(
         var personRepo = unitOfWork.Repository<Person, int>();
         var personsInGroup = await personRepo.ListAllWithSpecAsync(new PersonWithSpecs(ownerUserId, groupId));
         var personIds = personsInGroup.Select(p => p.Id).ToList();
+
+        return await AddGuestsAsync(ownerUserId, eventId, personIds);
+    }
+
+    public async Task<ServiceResult<BulkAddGuestsResultDto>> AddSubGroupAsync(string ownerUserId, int eventId, int subGroupId)
+    {
+        if (!await EventExistsAsync(eventId, ownerUserId))
+        {
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.EventNotFound"], ErrorCodes.EventNotFound);
+        }
+
+        var subGroupRepo = unitOfWork.Repository<SubGroup, int>();
+        var subGroup = await subGroupRepo.GetByIdWithSpecAsync(new SubGroupWithSpecs(subGroupId, ownerUserId));
+        if (subGroup is null)
+        {
+            logger.LogWarning("Add subgroup to event {EventId} failed — subgroup {SubGroupId} not found for user {UserId}", eventId, subGroupId, ownerUserId);
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.SubGroupNotFound"], ErrorCodes.SubGroupNotFound);
+        }
+
+        var personRepo = unitOfWork.Repository<Person, int>();
+        var personsInSubGroup = await personRepo.ListAllWithSpecAsync(PersonWithSpecs.ForSubGroup(ownerUserId, subGroupId));
+        var personIds = personsInSubGroup.Select(p => p.Id).ToList();
+
+        return await AddGuestsAsync(ownerUserId, eventId, personIds);
+    }
+
+    public async Task<ServiceResult<BulkAddGuestsResultDto>> AddGovernorateAsync(string ownerUserId, int eventId, int governorateId)
+    {
+        if (!await EventExistsAsync(eventId, ownerUserId))
+        {
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.EventNotFound"], ErrorCodes.EventNotFound);
+        }
+
+        var governorateRepo = unitOfWork.Repository<Governorate, int>();
+        var governorate = await governorateRepo.GetByIdWithSpecAsync(new GovernorateWithSpecs(governorateId, ownerUserId));
+        if (governorate is null)
+        {
+            logger.LogWarning("Add governorate to event {EventId} failed — governorate {GovernorateId} not visible to user {UserId}", eventId, governorateId, ownerUserId);
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.GovernorateNotFound"], ErrorCodes.GovernorateNotFound);
+        }
+
+        var personRepo = unitOfWork.Repository<Person, int>();
+        var personsInGovernorate = await personRepo.ListAllWithSpecAsync(PersonWithSpecs.ForGovernorate(ownerUserId, governorateId));
+        var personIds = personsInGovernorate.Select(p => p.Id).ToList();
+
+        return await AddGuestsAsync(ownerUserId, eventId, personIds);
+    }
+
+    public async Task<ServiceResult<BulkAddGuestsResultDto>> AddCityAsync(string ownerUserId, int eventId, int cityId)
+    {
+        if (!await EventExistsAsync(eventId, ownerUserId))
+        {
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.EventNotFound"], ErrorCodes.EventNotFound);
+        }
+
+        var cityRepo = unitOfWork.Repository<City, int>();
+        var city = await cityRepo.GetByIdWithSpecAsync(new CityWithSpecs(cityId, ownerUserId));
+        if (city is null)
+        {
+            logger.LogWarning("Add city to event {EventId} failed — city {CityId} not found for user {UserId}", eventId, cityId, ownerUserId);
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.CityNotFound"], ErrorCodes.CityNotFound);
+        }
+
+        var personRepo = unitOfWork.Repository<Person, int>();
+        var personsInCity = await personRepo.ListAllWithSpecAsync(PersonWithSpecs.ForCity(ownerUserId, cityId));
+        var personIds = personsInCity.Select(p => p.Id).ToList();
+
+        return await AddGuestsAsync(ownerUserId, eventId, personIds);
+    }
+
+    public async Task<ServiceResult<BulkAddGuestsResultDto>> AddNeighborhoodAsync(string ownerUserId, int eventId, int neighborhoodId)
+    {
+        if (!await EventExistsAsync(eventId, ownerUserId))
+        {
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.EventNotFound"], ErrorCodes.EventNotFound);
+        }
+
+        var neighborhoodRepo = unitOfWork.Repository<Neighborhood, int>();
+        var neighborhood = await neighborhoodRepo.GetByIdWithSpecAsync(new NeighborhoodWithSpecs(neighborhoodId, ownerUserId));
+        if (neighborhood is null)
+        {
+            logger.LogWarning("Add neighborhood to event {EventId} failed — neighborhood {NeighborhoodId} not found for user {UserId}", eventId, neighborhoodId, ownerUserId);
+            return ServiceResult<BulkAddGuestsResultDto>.NotFound(localizer["EventGuest.NeighborhoodNotFound"], ErrorCodes.NeighborhoodNotFound);
+        }
+
+        var personRepo = unitOfWork.Repository<Person, int>();
+        var personsInNeighborhood = await personRepo.ListAllWithSpecAsync(PersonWithSpecs.ForNeighborhood(ownerUserId, neighborhoodId));
+        var personIds = personsInNeighborhood.Select(p => p.Id).ToList();
 
         return await AddGuestsAsync(ownerUserId, eventId, personIds);
     }
