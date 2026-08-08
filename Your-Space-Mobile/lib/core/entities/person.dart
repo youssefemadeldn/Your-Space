@@ -14,6 +14,15 @@ class Person extends Equatable {
   final Gender gender;
   final int groupId;
   final String groupName;
+  final int? subGroupId;
+  final String? subGroupName;
+  final int governorateId;
+  final String governorateName;
+  final int? cityId;
+  final String? cityName;
+  final int? neighborhoodId;
+  final String? neighborhoodName;
+  final String? primaryPhotoUrl;
   final String? notes;
   final bool hasReciprocityHistory;
 
@@ -25,6 +34,15 @@ class Person extends Equatable {
     required this.gender,
     required this.groupId,
     required this.groupName,
+    this.subGroupId,
+    this.subGroupName,
+    required this.governorateId,
+    required this.governorateName,
+    this.cityId,
+    this.cityName,
+    this.neighborhoodId,
+    this.neighborhoodName,
+    this.primaryPhotoUrl,
     this.notes,
     this.hasReciprocityHistory = false,
   });
@@ -38,6 +56,15 @@ class Person extends Equatable {
         gender,
         groupId,
         groupName,
+        subGroupId,
+        subGroupName,
+        governorateId,
+        governorateName,
+        cityId,
+        cityName,
+        neighborhoodId,
+        neighborhoodName,
+        primaryPhotoUrl,
         notes,
         hasReciprocityHistory,
       ];

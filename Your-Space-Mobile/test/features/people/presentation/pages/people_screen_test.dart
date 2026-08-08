@@ -13,6 +13,10 @@ import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_neighborhood_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
@@ -23,11 +27,27 @@ class MockPersonRepository extends Mock implements PersonRepository {}
 
 class MockGroupRepository extends Mock implements GroupRepository {}
 
+class MockSubGroupRepository extends Mock implements SubGroupRepository {}
+
+class MockGovernorateRepository extends Mock implements GovernorateRepository {}
+
+class MockCityRepository extends Mock implements CityRepository {}
+
+class MockNeighborhoodRepository extends Mock implements NeighborhoodRepository {}
+
 /// `Cubit.emit` is `@protected` and this project has no `bloc_test` dependency
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestPeopleListCubit extends PeopleListCubit {
-  _TestPeopleListCubit(super.personRepository, super.groupRepository, super.dataRefreshBus);
+  _TestPeopleListCubit(
+    super.personRepository,
+    super.groupRepository,
+    super.subGroupRepository,
+    super.governorateRepository,
+    super.cityRepository,
+    super.neighborhoodRepository,
+    super.dataRefreshBus,
+  );
   void pushState(PeopleListState state) => emit(state);
 }
 
@@ -47,7 +67,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final cubit = _TestPeopleListCubit(MockPersonRepository(), MockGroupRepository(), DataRefreshBus());
+    final cubit = _TestPeopleListCubit(
+      MockPersonRepository(),
+      MockGroupRepository(),
+      MockSubGroupRepository(),
+      MockGovernorateRepository(),
+      MockCityRepository(),
+      MockNeighborhoodRepository(),
+      DataRefreshBus(),
+    );
     addTearDown(cubit.close);
 
     cubit.pushState(const PeopleListSuccess(people: [], groups: [], pageIndex: 1, hasNextPage: false));
@@ -80,7 +108,15 @@ void main() {
     // Success, non-empty → person rows.
     const group = Group(id: 1, name: 'Family');
     const people = [
-      Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family'),
+      Person(
+        id: 1,
+        name: 'Sara Adel',
+        gender: Gender.female,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      ),
     ];
     cubit.pushState(const PeopleListSuccess(people: people, groups: [group], pageIndex: 1, hasNextPage: false));
     await tester.pumpAndSettle();

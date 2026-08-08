@@ -2,8 +2,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:your_space_mobile/core/entities/classification_entity_kind.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/router/app_routes.dart';
+import 'package:your_space_mobile/core/router/args/classification_management_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/widgets/app_card.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
@@ -92,8 +96,24 @@ class _GroupsListBodyState extends State<GroupsListBody> {
                           return AppListTile(
                             avatarName: group.name,
                             title: group.name,
-                            trailing:
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.account_tree_outlined, color: AppColors.textSecondary),
+                                  tooltip: 'groups.list.manageSubGroups'.tr(),
+                                  onPressed: () => context.pushNamed(
+                                    AppRoutes.classificationManagement,
+                                    extra: ClassificationManagementArgs(
+                                      kind: ClassificationEntityKind.subgroup,
+                                      parentId: group.id,
+                                      parentName: group.name,
+                                    ),
+                                  ),
+                                ),
                                 const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                              ],
+                            ),
                             divider: index != widget.groups.length - 1,
                             onTap: () => GroupFormSheet.open(context, group: group),
                           );

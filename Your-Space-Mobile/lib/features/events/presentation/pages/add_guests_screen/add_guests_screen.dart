@@ -17,7 +17,11 @@ import '../../cubit/add_guests_action_cubit/add_guests_action_cubit.dart';
 import '../../cubit/add_guests_action_cubit/add_guests_action_state.dart';
 import '../../cubit/add_guests_list_cubit/add_guests_list_cubit.dart';
 import '../../cubit/add_guests_list_cubit/add_guests_list_state.dart';
+import 'add_guests_by_city_tab.dart';
+import 'add_guests_by_governorate_tab.dart';
 import 'add_guests_by_group_tab.dart';
+import 'add_guests_by_neighborhood_tab.dart';
+import 'add_guests_by_subgroup_tab.dart';
 import 'add_guests_people_tab.dart';
 
 class AddGuestsScreen extends StatefulWidget {
@@ -63,21 +67,33 @@ class _AddGuestsScreenState extends State<AddGuestsScreen> {
                     Padding(
                       padding: EdgeInsets.all(16.w),
                       child: AppTabs(
-                        tabs: ['events.addGuests.peopleTab'.tr(), 'events.addGuests.byGroupTab'.tr()],
+                        tabs: [
+                          'events.addGuests.peopleTab'.tr(),
+                          'events.addGuests.byGroupTab'.tr(),
+                          'events.addGuests.bySubGroupTab'.tr(),
+                          'events.addGuests.byGovernorateTab'.tr(),
+                          'events.addGuests.byCityTab'.tr(),
+                          'events.addGuests.byNeighborhoodTab'.tr(),
+                        ],
                         activeIndex: _tabIndex,
                         onChanged: (index) => setState(() => _tabIndex = index),
                       ),
                     ),
                     Expanded(
-                      child: _tabIndex == 0
-                          ? AddGuestsPeopleTab(
-                              state: state,
-                              selectedPersonIds: _selectedPersonIds,
-                              onToggle: (id) => setState(() {
-                                if (!_selectedPersonIds.remove(id)) _selectedPersonIds.add(id);
-                              }),
-                            )
-                          : AddGuestsByGroupTab(state: state, eventId: widget.args.eventId),
+                      child: switch (_tabIndex) {
+                        0 => AddGuestsPeopleTab(
+                            state: state,
+                            selectedPersonIds: _selectedPersonIds,
+                            onToggle: (id) => setState(() {
+                              if (!_selectedPersonIds.remove(id)) _selectedPersonIds.add(id);
+                            }),
+                          ),
+                        1 => AddGuestsByGroupTab(state: state, eventId: widget.args.eventId),
+                        2 => AddGuestsBySubGroupTab(state: state, eventId: widget.args.eventId),
+                        3 => AddGuestsByGovernorateTab(state: state, eventId: widget.args.eventId),
+                        4 => AddGuestsByCityTab(state: state, eventId: widget.args.eventId),
+                        _ => AddGuestsByNeighborhoodTab(state: state, eventId: widget.args.eventId),
+                      },
                     ),
                   ],
                 ),

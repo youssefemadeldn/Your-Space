@@ -28,6 +28,8 @@ void main() {
       gender: Gender.female,
       groupId: 1,
       groupName: 'Family',
+      governorateId: 1,
+      governorateName: 'Cairo',
       hasReciprocityHistory: true);
   const suggestion2 = Person(
       id: 4,
@@ -35,6 +37,8 @@ void main() {
       gender: Gender.male,
       groupId: 2,
       groupName: 'Close friends',
+      governorateId: 1,
+      governorateName: 'Cairo',
       hasReciprocityHistory: true);
 
   setUp(() {

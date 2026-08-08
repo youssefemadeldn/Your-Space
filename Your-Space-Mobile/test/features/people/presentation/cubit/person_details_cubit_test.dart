@@ -36,12 +36,15 @@ void main() {
         gender: Gender.female,
         groupId: 1,
         groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
         hasReciprocityHistory: true);
     final details = PersonDetails(
       person: person,
       occasionHistory: [
         PersonOccasionHistoryEntry(id: 1, personId: 1, invitedMe: true, createdAt: DateTime(2026)),
       ],
+      relationships: const [],
       createdAt: DateTime(2026),
     );
     when(() => repository.getPersonById(1)).thenAnswer((_) async => Right(details));
@@ -80,8 +83,21 @@ void main() {
     // Bonus fix: PersonDetailsScreen stays alive underneath when the user
     // taps "edit" (pushes PersonForm) and pops back — same root cause as the
     // tab-level bug, one level deeper in the navigation stack.
-    const person = Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family');
-    final details = PersonDetails(person: person, occasionHistory: const [], createdAt: DateTime(2026));
+    const person = Person(
+      id: 1,
+      name: 'Sara Adel',
+      gender: Gender.female,
+      groupId: 1,
+      groupName: 'Family',
+      governorateId: 1,
+      governorateName: 'Cairo',
+    );
+    final details = PersonDetails(
+      person: person,
+      occasionHistory: const [],
+      relationships: const [],
+      createdAt: DateTime(2026),
+    );
 
     Future<void> loadSuccessfully() async {
       when(() => repository.getPersonById(1)).thenAnswer((_) async => Right(details));
@@ -91,8 +107,21 @@ void main() {
     test('a `people` notification re-fetches this same person, no Loading flash', () async {
       await loadSuccessfully();
 
-      const renamed = Person(id: 1, name: 'Sara Ali', gender: Gender.female, groupId: 1, groupName: 'Family');
-      final updatedDetails = PersonDetails(person: renamed, occasionHistory: const [], createdAt: DateTime(2026));
+      const renamed = Person(
+        id: 1,
+        name: 'Sara Ali',
+        gender: Gender.female,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+      final updatedDetails = PersonDetails(
+        person: renamed,
+        occasionHistory: const [],
+        relationships: const [],
+        createdAt: DateTime(2026),
+      );
       when(() => repository.getPersonById(1)).thenAnswer((_) async => Right(updatedDetails));
 
       final states = <dynamic>[];

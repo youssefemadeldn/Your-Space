@@ -65,7 +65,17 @@ void main() {
     );
     when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
       (_) async => const Right(PaginatedResult(
-        items: [Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family')],
+        items: [
+          Person(
+            id: 1,
+            name: 'Sara Adel',
+            gender: Gender.female,
+            groupId: 1,
+            groupName: 'Family',
+            governorateId: 1,
+            governorateName: 'Cairo',
+          ),
+        ],
         pageIndex: 1,
         totalPages: 10,
         totalItems: 10,

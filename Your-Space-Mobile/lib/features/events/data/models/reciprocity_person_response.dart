@@ -15,6 +15,15 @@ class ReciprocityPersonResponse {
   final Gender gender;
   final int groupId;
   final String groupName;
+  final int? subGroupId;
+  final String? subGroupName;
+  final int governorateId;
+  final String governorateName;
+  final int? cityId;
+  final String? cityName;
+  final int? neighborhoodId;
+  final String? neighborhoodName;
+  final String? primaryPhotoUrl;
   final String? notes;
   final bool hasReciprocityHistory;
 
@@ -26,6 +35,15 @@ class ReciprocityPersonResponse {
     required this.gender,
     required this.groupId,
     required this.groupName,
+    this.subGroupId,
+    this.subGroupName,
+    required this.governorateId,
+    required this.governorateName,
+    this.cityId,
+    this.cityName,
+    this.neighborhoodId,
+    this.neighborhoodName,
+    this.primaryPhotoUrl,
     this.notes,
     required this.hasReciprocityHistory,
   });
@@ -38,6 +56,15 @@ class ReciprocityPersonResponse {
         gender: Gender.fromWire(json['gender'] as String),
         groupId: json['groupId'] as int,
         groupName: json['groupName'] as String,
+        subGroupId: json['subGroupId'] as int?,
+        subGroupName: json['subGroupName'] as String?,
+        governorateId: json['governorateId'] as int,
+        governorateName: json['governorateName'] as String,
+        cityId: json['cityId'] as int?,
+        cityName: json['cityName'] as String?,
+        neighborhoodId: json['neighborhoodId'] as int?,
+        neighborhoodName: json['neighborhoodName'] as String?,
+        primaryPhotoUrl: json['primaryPhotoUrl'] as String?,
         notes: json['notes'] as String?,
         hasReciprocityHistory: json['hasReciprocityHistory'] as bool,
       );
@@ -50,6 +77,15 @@ class ReciprocityPersonResponse {
         gender: gender,
         groupId: groupId,
         groupName: groupName,
+        subGroupId: subGroupId,
+        subGroupName: subGroupName,
+        governorateId: governorateId,
+        governorateName: governorateName,
+        cityId: cityId,
+        cityName: cityName,
+        neighborhoodId: neighborhoodId,
+        neighborhoodName: neighborhoodName,
+        primaryPhotoUrl: primaryPhotoUrl,
         notes: notes,
         hasReciprocityHistory: hasReciprocityHistory,
       );

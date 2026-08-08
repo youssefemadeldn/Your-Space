@@ -8,6 +8,10 @@ import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_neighborhood_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_progress_summary.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
@@ -21,9 +25,21 @@ class MockPersonRepository extends Mock implements PersonRepository {}
 
 class MockEventGuestRepository extends Mock implements EventGuestRepository {}
 
+class MockSubGroupRepository extends Mock implements SubGroupRepository {}
+
+class MockGovernorateRepository extends Mock implements GovernorateRepository {}
+
+class MockCityRepository extends Mock implements CityRepository {}
+
+class MockNeighborhoodRepository extends Mock implements NeighborhoodRepository {}
+
 void main() {
   late MockPersonRepository personRepository;
   late MockEventGuestRepository eventGuestRepository;
+  late MockSubGroupRepository subGroupRepository;
+  late MockGovernorateRepository governorateRepository;
+  late MockCityRepository cityRepository;
+  late MockNeighborhoodRepository neighborhoodRepository;
   late AddGuestsListCubit cubit;
 
   const existingGuest = EventGuest(
@@ -35,9 +51,24 @@ void main() {
     groupName: 'Family',
     status: EventGuestStatus.notInvited,
   );
-  const person1 = Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family');
-  const person2 =
-      Person(id: 2, name: 'Omar Khaled', gender: Gender.male, groupId: 2, groupName: 'Close friends');
+  const person1 = Person(
+    id: 1,
+    name: 'Sara Adel',
+    gender: Gender.female,
+    groupId: 1,
+    groupName: 'Family',
+    governorateId: 1,
+    governorateName: 'Cairo',
+  );
+  const person2 = Person(
+    id: 2,
+    name: 'Omar Khaled',
+    gender: Gender.male,
+    groupId: 2,
+    groupName: 'Close friends',
+    governorateId: 1,
+    governorateName: 'Cairo',
+  );
 
   const progress = EventGuestProgressSummary(
     eventId: 1,
@@ -70,12 +101,26 @@ void main() {
   setUp(() {
     personRepository = MockPersonRepository();
     eventGuestRepository = MockEventGuestRepository();
-    cubit = AddGuestsListCubit(personRepository, eventGuestRepository);
+    subGroupRepository = MockSubGroupRepository();
+    governorateRepository = MockGovernorateRepository();
+    cityRepository = MockCityRepository();
+    neighborhoodRepository = MockNeighborhoodRepository();
+    cubit = AddGuestsListCubit(
+      personRepository,
+      eventGuestRepository,
+      subGroupRepository,
+      governorateRepository,
+      cityRepository,
+      neighborhoodRepository,
+    );
 
     when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 50)).thenAnswer(
       (_) async => const Right(PaginatedResult(items: [existingGuest], pageIndex: 1, totalPages: 1, totalItems: 1)),
     );
     when(() => eventGuestRepository.getProgress(1)).thenAnswer((_) async => const Right(progress));
+    when(() => governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 0)),
+    );
   });
 
   tearDown(() => cubit.close());

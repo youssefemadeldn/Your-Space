@@ -38,6 +38,26 @@ abstract class EventGuestRepository {
     required int groupId,
   });
 
+  Future<Either<Failure, BulkAddGuestsResult>> addSubGroupToEvent({
+    required int eventId,
+    required int subGroupId,
+  });
+
+  Future<Either<Failure, BulkAddGuestsResult>> addGovernorateToEvent({
+    required int eventId,
+    required int governorateId,
+  });
+
+  Future<Either<Failure, BulkAddGuestsResult>> addCityToEvent({
+    required int eventId,
+    required int cityId,
+  });
+
+  Future<Either<Failure, BulkAddGuestsResult>> addNeighborhoodToEvent({
+    required int eventId,
+    required int neighborhoodId,
+  });
+
   Future<Either<Failure, EventGuest>> markInvited(
     int eventId,
     int guestId, {

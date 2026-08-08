@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:your_space_mobile/core/di/injection_container.dart';
 import 'package:your_space_mobile/core/helpers/snack_bar_helper.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
-import 'package:your_space_mobile/core/router/args/person_form_args.dart';
+import 'package:your_space_mobile/core/router/args/person_wizard_args.dart';
 import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
@@ -77,7 +77,7 @@ class PeopleScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed(AppRoutes.personForm, extra: const PersonFormArgs()),
+        onPressed: () => context.pushNamed(AppRoutes.personWizard, extra: const PersonWizardArgs()),
         child: const Icon(Icons.person_add_rounded),
       ),
     );

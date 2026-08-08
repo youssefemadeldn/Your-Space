@@ -41,4 +41,54 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
       },
     );
   }
+
+  Future<void> addSubGroup({required int eventId, required int subGroupId}) async {
+    emit(AddGuestsActionSubmitting(subGroupId: subGroupId));
+    final result = await _eventGuestRepository.addSubGroupToEvent(eventId: eventId, subGroupId: subGroupId);
+    result.fold(
+      (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
+      (bulkResult) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(AddGuestsActionSuccess(bulkResult));
+      },
+    );
+  }
+
+  Future<void> addGovernorate({required int eventId, required int governorateId}) async {
+    emit(AddGuestsActionSubmitting(governorateId: governorateId));
+    final result =
+        await _eventGuestRepository.addGovernorateToEvent(eventId: eventId, governorateId: governorateId);
+    result.fold(
+      (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
+      (bulkResult) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(AddGuestsActionSuccess(bulkResult));
+      },
+    );
+  }
+
+  Future<void> addCity({required int eventId, required int cityId}) async {
+    emit(AddGuestsActionSubmitting(cityId: cityId));
+    final result = await _eventGuestRepository.addCityToEvent(eventId: eventId, cityId: cityId);
+    result.fold(
+      (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
+      (bulkResult) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(AddGuestsActionSuccess(bulkResult));
+      },
+    );
+  }
+
+  Future<void> addNeighborhood({required int eventId, required int neighborhoodId}) async {
+    emit(AddGuestsActionSubmitting(neighborhoodId: neighborhoodId));
+    final result =
+        await _eventGuestRepository.addNeighborhoodToEvent(eventId: eventId, neighborhoodId: neighborhoodId);
+    result.fold(
+      (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
+      (bulkResult) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(AddGuestsActionSuccess(bulkResult));
+      },
+    );
+  }
 }

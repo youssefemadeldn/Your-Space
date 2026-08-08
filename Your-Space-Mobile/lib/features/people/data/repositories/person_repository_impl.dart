@@ -23,12 +23,20 @@ class PersonRepositoryImpl implements PersonRepository {
   @override
   Future<Either<Failure, PaginatedResult<Person>>> getPersons({
     int? groupId,
+    int? subGroupId,
+    int? governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? search,
     required int pageIndex,
     required int pageSize,
   }) async {
     final result = await _remote.getPersons(
       groupId: groupId,
+      subGroupId: subGroupId,
+      governorateId: governorateId,
+      cityId: cityId,
+      neighborhoodId: neighborhoodId,
       search: search,
       pageIndex: pageIndex,
       pageSize: pageSize,
@@ -49,6 +57,10 @@ class PersonRepositoryImpl implements PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    int? subGroupId,
+    required int governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? notes,
   }) async {
     final result = await _remote.createPerson(
@@ -58,6 +70,10 @@ class PersonRepositoryImpl implements PersonRepository {
         phoneNumber2: phoneNumber2,
         gender: gender,
         groupId: groupId,
+        subGroupId: subGroupId,
+        governorateId: governorateId,
+        cityId: cityId,
+        neighborhoodId: neighborhoodId,
         notes: notes,
       ),
     );
@@ -72,6 +88,10 @@ class PersonRepositoryImpl implements PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    int? subGroupId,
+    required int governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? notes,
   }) async {
     final result = await _remote.updatePerson(
@@ -82,6 +102,10 @@ class PersonRepositoryImpl implements PersonRepository {
         phoneNumber2: phoneNumber2,
         gender: gender,
         groupId: groupId,
+        subGroupId: subGroupId,
+        governorateId: governorateId,
+        cityId: cityId,
+        neighborhoodId: neighborhoodId,
         notes: notes,
       ),
     );

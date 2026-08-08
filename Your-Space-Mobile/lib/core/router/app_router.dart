@@ -3,9 +3,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/entities/classification_entity_kind.dart';
 import 'package:your_space_mobile/core/storage/app_preferences_helper.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/city_action_cubit/city_action_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/city_list_cubit/city_list_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_action_cubit/neighborhood_action_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_list_cubit/neighborhood_list_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/subgroup_action_cubit/subgroup_action_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/subgroup_list_cubit/subgroup_list_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/pages/classification_management_screen/city_management_screen.dart';
+import 'package:your_space_mobile/features/classification/presentation/pages/classification_management_screen/neighborhood_management_screen.dart';
+import 'package:your_space_mobile/features/classification/presentation/pages/classification_management_screen/subgroup_management_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart';
@@ -40,23 +50,24 @@ import 'package:your_space_mobile/features/home/presentation/pages/home_screen.d
 import 'package:your_space_mobile/features/people/presentation/cubit/add_occasion_cubit/add_occasion_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_details_cubit/person_details_cubit.dart';
-import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart';
+import 'package:your_space_mobile/features/people/presentation/cubit/person_wizard_cubit/person_wizard_cubit.dart';
 import 'package:your_space_mobile/features/onboarding/presentation/pages/onboarding_screen/onboarding_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/people_screen/people_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_details_screen/person_details_screen.dart';
-import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
+import 'package:your_space_mobile/features/people/presentation/pages/person_wizard_screen/person_wizard_screen.dart';
 import 'package:your_space_mobile/features/settings/presentation/cubit/profile_form_cubit/profile_form_cubit.dart';
 import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen/settings_screen.dart';
 
 import 'app_routes.dart';
 import 'session_redirect.dart';
 import 'args/add_guests_args.dart';
+import 'args/classification_management_args.dart';
 import 'args/confirm_email_args.dart';
 import 'args/event_details_args.dart';
 import 'args/event_form_args.dart';
 import 'args/event_guests_args.dart';
 import 'args/person_details_args.dart';
-import 'args/person_form_args.dart';
+import 'args/person_wizard_args.dart';
 import 'args/reciprocity_suggestions_args.dart';
 import 'args/reset_password_args.dart';
 
@@ -220,14 +231,45 @@ class AppRouter {
         ),
 
         GoRoute(
-          path: AppRoutes.personForm,
-          name: AppRoutes.personForm,
+          path: AppRoutes.personWizard,
+          name: AppRoutes.personWizard,
           builder: (context, state) {
-            final args = state.extra as PersonFormArgs? ?? const PersonFormArgs();
+            final args = state.extra as PersonWizardArgs? ?? const PersonWizardArgs();
             return BlocProvider(
-              create: (_) => getIt<PersonFormCubit>()..initialize(args.personId),
-              child: PersonFormScreen(args: args),
+              create: (_) => getIt<PersonWizardCubit>()..initialize(args.personId),
+              child: PersonWizardScreen(args: args),
             );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.classificationManagement,
+          name: AppRoutes.classificationManagement,
+          builder: (context, state) {
+            final args = state.extra as ClassificationManagementArgs?;
+            if (args == null) return _unknown(state);
+            return switch (args.kind) {
+              ClassificationEntityKind.subgroup => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => getIt<SubGroupListCubit>()..load(args.parentId)),
+                    BlocProvider(create: (_) => getIt<SubGroupActionCubit>()),
+                  ],
+                  child: SubgroupManagementScreen(args: args),
+                ),
+              ClassificationEntityKind.city => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => getIt<CityListCubit>()..load(args.parentId)),
+                    BlocProvider(create: (_) => getIt<CityActionCubit>()),
+                  ],
+                  child: CityManagementScreen(args: args),
+                ),
+              ClassificationEntityKind.neighborhood => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => getIt<NeighborhoodListCubit>()..load(args.parentId)),
+                    BlocProvider(create: (_) => getIt<NeighborhoodActionCubit>()),
+                  ],
+                  child: NeighborhoodManagementScreen(args: args),
+                ),
+            };
           },
         ),
         GoRoute(

@@ -34,4 +34,13 @@ class ApiConstants {
   static const String groups = '/groups';
   static const String persons = '/persons';
   static const String events = '/events';
+
+  // Sprint 4 — Subgroup + Location hierarchy + Relationship engine. All
+  // nested under their parent (e.g. '$groups/$groupId/$subgroupsSegment').
+  static const String subgroupsSegment = 'subgroups';
+  static const String governorates = '/governorates';
+  static const String citiesSegment = 'cities';
+  static const String neighborhoodsSegment = 'neighborhoods';
+  static const String personImagesSegment = 'images';
+  static const String personRelationshipsSegment = 'relationships';
 }

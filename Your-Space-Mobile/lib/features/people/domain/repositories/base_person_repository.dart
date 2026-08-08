@@ -12,6 +12,10 @@ import '../entities/person_occasion_history_entry.dart';
 abstract class PersonRepository {
   Future<Either<Failure, PaginatedResult<Person>>> getPersons({
     int? groupId,
+    int? subGroupId,
+    int? governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? search,
     required int pageIndex,
     required int pageSize,
@@ -25,6 +29,10 @@ abstract class PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    int? subGroupId,
+    required int governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? notes,
   });
 
@@ -35,6 +43,10 @@ abstract class PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    int? subGroupId,
+    required int governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? notes,
   });
 
