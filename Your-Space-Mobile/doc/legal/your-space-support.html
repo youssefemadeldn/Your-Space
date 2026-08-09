@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Space — Support</title>
+<style>
+  :root{
+    --bg:#FAF6F3;
+    --card:#FFFFFF;
+    --border:#ECE1DA;
+    --ink:#2B211E;
+    --ink-soft:#6B5C56;
+    --arch:#B11E2E;
+    --arch-dark:#8A1622;
+    --glow:#F6C468;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    color:var(--ink);
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:460px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:48px 36px 40px;
+    text-align:center;
+    box-shadow:0 20px 60px -30px rgba(43,33,30,0.25);
+  }
+  .mark{width:64px;height:64px;margin:0 auto 20px;display:block;}
+  .glow-dot{animation:pulse 3.2s ease-in-out infinite;transform-origin:center;}
+  @keyframes pulse{
+    0%,100%{opacity:.55;}
+    50%{opacity:1;}
+  }
+  h1{
+    font-family:Georgia,"Iowan Old Style","Times New Roman",serif;
+    font-size:28px;
+    font-weight:600;
+    margin:0 0 8px;
+    letter-spacing:.2px;
+  }
+  .tagline{
+    font-size:15px;
+    color:var(--ink-soft);
+    line-height:1.5;
+    margin:0 0 32px;
+  }
+  hr{
+    border:none;
+    border-top:1px solid var(--border);
+    margin:0 0 28px;
+  }
+  h2{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    color:var(--arch);
+    margin:0 0 12px;
+    font-weight:700;
+  }
+  p.body{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    line-height:1.6;
+    margin:0 0 24px;
+  }
+  .contact-group{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .contact{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    max-width:280px;
+    background:var(--arch);
+    color:#fff;
+    text-decoration:none;
+    font-size:15px;
+    font-weight:600;
+    padding:13px 22px;
+    border-radius:12px;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .contact:hover{background:var(--arch-dark);transform:translateY(-1px);}
+  .contact:focus-visible{outline:3px solid var(--glow);outline-offset:2px;}
+  .contact.whatsapp{background:#25D366;}
+  .contact.whatsapp:hover{background:#1DA851;}
+  .contact svg{width:18px;height:18px;flex-shrink:0;}
+  footer{
+    margin-top:32px;
+    font-size:12px;
+    color:var(--ink-soft);
+    opacity:.7;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .glow-dot{animation:none;}
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <svg class="mark" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Your Space logo">
+      <path d="M30 90 L30 56 A30 30 0 0 1 90 56 L90 90 Q90 96 84 96 L36 96 Q30 96 30 90 Z" fill="#B11E2E"/>
+      <circle class="glow-dot" cx="60" cy="74" r="9" fill="#fff"/>
+    </svg>
+    <h1>Your Space</h1>
+    <p class="tagline">Track gifts, events, and the people who matter — and always know who to invite back.</p>
+    <hr>
+    <h2>Support</h2>
+    <p class="body">Running into a bug, have a question, or want to suggest a feature? Send a message and we'll get back to you.</p>
+    <div class="contact-group">
+      <a class="contact whatsapp" href="https://wa.me/201107199249" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.51 2 12.04 2Zm0 18.05h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.17 8.17 0 0 1-1.26-4.36c0-4.53 3.69-8.22 8.23-8.22 2.2 0 4.26.86 5.82 2.41a8.15 8.15 0 0 1 2.41 5.81c0 4.53-3.69 8.22-8.2 8.22Zm4.51-6.16c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.13-.16.25-.64.8-.78.96-.14.16-.29.18-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.48-.01-.16 0-.43.06-.66.31-.23.25-.86.84-.86 2.04 0 1.2.88 2.37 1 2.53.12.16 1.73 2.64 4.19 3.7.59.25 1.05.4 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+        WhatsApp Business
+      </a>
+      <a class="contact" href="mailto:youssefemad63.ye@gmail.com">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
+        Email support
+      </a>
+    </div>
+    <footer>Your Space · Support</footer>
+  </main>
+</body>
+</html>
