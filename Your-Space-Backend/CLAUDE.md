@@ -108,7 +108,8 @@ Controllers/
 Middleware/
 ├── ExceptionMiddleware.cs                # the one error boundary — see "Error handling"
 ├── NotFoundException.cs
-└── ValidationException.cs
+├── ValidationException.cs
+└── SecurityHeadersMiddleware.cs          # nosniff/frame-options always, CSP Production-only — see "Security"
 Extensions/                                # spelled correctly: Extensions, not "Extentions" (see feature prompt anti-patterns)
 └── <Concern>ServiceExtension.cs          # one static class per concern: Identity, Swagger, RateLimiting, Cache, Observability
 Helpers/
@@ -152,6 +153,9 @@ The moment a new entity/table exists, it gets a matching seed method producing r
 
 ### 11. No per-iteration database round-trips
 A loop over an already-fetched collection never issues its own database query per item — not a repository/specification call made once per element, and (if lazy-loading proxies are ever enabled — they are not, today) not a lazily-triggered navigation property access either. The Specification pattern exists to batch-fetch exactly what a query shape needs in one round-trip (Rule 3); reach for a new specification constructor or static factory before adding a loop that touches the database. See `dotnet_feature_prompt.md` Rule 11 and `templates/layers/T2-repository.md`.
+
+### 12. Every query for an owned entity filters by owner inside the Specification
+A specification for a user-owned entity takes the owner id as a required constructor parameter and filters on it directly — ownership is never enforced only at the controller/authorization layer. Shared/global reference rows (e.g. a null `OwnerUserId`) may be included alongside the caller's own rows, but the owner parameter and its filter clause are still always present. See `dotnet_feature_prompt.md` Rule 12 and the real `PersonWithSpecs`/`GovernorateWithSpecs` precedent already in the codebase.
 
 ---
 
@@ -274,6 +278,19 @@ If a secret is ever discovered committed in git history, gitignoring the file go
 
 ---
 
+## Security
+
+Baseline security already exists across the rule set (Rule 6 secrets, Rule 5 validator+authorization, `ExceptionMiddleware`'s dev/prod split, ASP.NET Core Identity, the OTP hash-lookup pattern in `patterns/P4-hashed-verification-code.md`) — this section is where it's organized as one explicit, day-one posture, the same treatment as "Caching" or "Localization."
+
+- **Data Protection key ring persistence — highest priority, day-one, non-negotiable.** `AddDataProtection()` alone is not enough: without explicit persistence, each instance generates and keeps its own key ring, so anything the Data Protection API encrypts (auth cookies, anti-forgery tokens) becomes unreadable the moment a request lands on a *different* instance — a real, immediate bug the moment the app runs behind a load balancer with more than one instance, which is now the stated Scalability & Performance target (200–500 concurrent users). Persist keys to the same Redis already registered for caching: `builder.Services.AddDataProtection().PersistKeysToStackExchangeRedis(redisConnection, "yourspace-dataprotection-keys");`, wired right after `AddCaching()` so the same `IConnectionMultiplexer` connection is reused rather than opening a second one. Requires the `Microsoft.AspNetCore.DataProtection.StackExchangeRedis` package. See `dotnet_scaffold_prompt.md`'s `Program.cs` pipeline order.
+- **Identity lockout policy:** `MaxFailedAccessAttempts = 5`, `DefaultLockoutTimeSpan = 15 minutes`, `AllowedForNewUsers = true` (lockout protection applies from a brand-new account's very first login, not just established ones) — stated explicitly in `AddIdentityService()`, not left to whatever ASP.NET Core Identity's framework defaults happen to be. See `dotnet_scaffold_prompt.md`'s WebAPI file plan.
+- **Security headers:** `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` are applied unconditionally in both environments — this is a JSON API with no server-rendered view ever meant to be framed, and neither header affects script/style loading, so there's no Development-vs-Production tradeoff to make. A `Content-Security-Policy` is applied **Production-only**, mirroring `UseHsts()`'s existing Production-only gating — Swagger UI (already `IsDevelopment()`-gated) needs a looser script/style policy than a locked-down API response ever should, so scoping CSP the same way HSTS already is avoids fighting the dev tooling for no security benefit. See `dotnet_scaffold_prompt.md`'s `Program.cs` pipeline order.
+- **Auth-specific rate limiting:** login, registration, and every OTP-driven endpoint (`register`, `login`, `refresh-token`, `confirm-email`, `resend-confirmation-email`, `forgot-password`, `reset-password`) run under `RateLimitingExtension.AuthPolicy` — a fixed-window limiter distinct from the general API policy, defaulting to 5 requests/60 seconds per IP (configurable via `RateLimiting:AuthPermitLimit`/`AuthWindowSeconds`). See `dotnet_scaffold_prompt.md` Edge Case 6.
+- **Account-enumeration posture — a deliberate, accepted tradeoff, not an oversight.** `AuthService.LoginAsync` merges "unknown email" and "wrong password" into one shared `Auth.InvalidCredentials` code; `Auth.EmailNotConfirmed` stays a separate code, but it's only reachable once the correct password has already been verified, so it leaks minimal information to anyone who doesn't already hold valid credentials. `AuthService.RegisterAsync` similarly returns a distinct `Auth.Register.EmailExists` conflict rather than a generic response — this does let an unauthenticated caller probe whether an email is registered, but a clearer registration error for legitimate users is judged worth that cost at this app's current scale. Any future change to either tradeoff is a deliberate decision, not a silent fix.
+- **Ownership enforcement is mechanical, not just role-based** — see Architecture Rule 12.
+
+---
+
 ## Caching
 
 Redis (`IConnectionMultiplexer` + `IDistributedCache` via `Microsoft.Extensions.Caching.StackExchangeRedis`) is registered from day one, but registration alone is not a caching strategy — every read/write path through the cache follows the same rules regardless of which feature adds the first real usage.
@@ -348,6 +365,7 @@ return ServiceResult<CityDetailsDto>.Ok(mapper.Map<CityDetailsDto>(city));
 - **Using-directive order:** `System.*` → `Microsoft.*` → third-party packages → `<Solution>.*`, one blank line between groups. Never leave an unused `using`.
 - **Naming:** `PascalCase` for types, methods, and public members; `camelCase` for parameters and locals; `_camelCase` for private fields. A misspelled type or namespace that ships (e.g. `Extentions`, `Piority`) becomes load-bearing the moment other code references it — catch it in review before merge, because fixing it afterward is a breaking rename, not a typo fix.
 - **Dependencies rule** — do not add a package unless it's actively used; a referenced-but-unused package (dead weight in the `.csproj`) should be removed, not left "in case." Before adding any new package, check it isn't stale or deprecated, and run `dotnet list package --vulnerable --include-transitive` afterward — a package's "latest stable" release can still carry a known vulnerability, directly or transitively, if the package itself has been superseded or abandoned.
+- **Recurring vulnerability scan cadence** — `dotnet list package --vulnerable --include-transitive` doesn't only run when a package is added; run it again before every release (the same moment release notes are generated) so an already-installed package that became vulnerable *after* it was added doesn't sit unnoticed. Tracked as a manual pre-release step for now, since no CI pipeline exists yet — move this into an automated CI job the moment one is set up, rather than leaving it a human habit indefinitely.
 
 ---
 
@@ -364,7 +382,7 @@ return ServiceResult<CityDetailsDto>.Ok(mapper.Map<CityDetailsDto>(city));
 ## Reliability & safety
 
 - **Edge cases and error handling** — handle null, empty, not-found, and conflicting-state cases explicitly in every service method; no silent failures.
-- **Security awareness** — never hardcode secrets or credentials (see "Secrets"); never log sensitive data; validate every external input (see "Validation"); proactively flag potential security risks (e.g. a missing `[Authorize]`, an endpoint that trusts a client-supplied ID without checking ownership).
+- **Security awareness** — never hardcode secrets or credentials (see "Secrets"); never log sensitive data; validate every external input (see "Validation"); proactively flag potential security risks (e.g. a missing `[Authorize]`, an endpoint that trusts a client-supplied ID without checking ownership — see Architecture rule 12 for the mechanical enforcement). See "Security" for Data Protection, lockout, headers, rate-limiting, and account-enumeration posture.
 - **Concurrency-safe writes** — a write that reads-then-writes a numeric field under contention (stock counts, wallet balances) uses an atomic update (`ExecuteUpdateAsync` with a guard predicate, or optimistic concurrency via a concurrency token) rather than read-modify-write in application code.
 
 ---
@@ -416,6 +434,7 @@ Before finishing any task, verify every item:
 - [ ] A new entity has a matching dev-only seed method in `MockDataSeeder` covering a normal case and at least one edge case (Architecture rule 9).
 - [ ] Every new `ServiceResult` failure (`NotFound`/`Conflict`/`Unauthorized`/`Forbidden`/`Fail`) passes an `ErrorCode` using the same key as its localized `Message` (Architecture rule 10).
 - [ ] No loop makes a per-iteration database/specification call — batched into a single query instead (Architecture rule 11).
+- [ ] Every specification for a user-owned entity filters by owner id, not just a controller-level check (Architecture rule 12).
 - [ ] Any write that changes cached data invalidates/updates the corresponding cache key in the same method ("Caching").
 - [ ] If this feature carries meaningful concurrent traffic (payment, auth, contended writes), an `NBomber` load test was run against the 200–500 concurrent-user target before considering it complete ("Testing discipline").
 - [ ] Logging follows the Information/Warning/Error rules above, with structured templates.

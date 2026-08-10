@@ -404,6 +404,42 @@ See `EventGuestWithSpecs.ForEvents` / `EventService.GetAllAsync` for the real ve
 
 ---
 
+### Rule 12 — Ownership enforcement lives in the Specification, not just the controller
+
+A specification for a user-owned entity takes the owner id as a required constructor parameter and filters on it directly in the query predicate — never left to a controller-level `[Authorize]` check alone, which only proves *who* the caller is, not that the row they asked for belongs to them.
+
+**Correct — owner id required and filtered (real code, `PersonWithSpecs`):**
+```csharp
+public PersonWithSpecs(int id, string ownerUserId)
+    : base(p => p.Id == id && p.OwnerUserId == ownerUserId && p.DeletedAt == null)
+{
+    AddClassificationIncludes(this);
+}
+```
+
+Shared/global reference data still requires the parameter — it just widens the predicate instead of dropping it (real code, `GovernorateWithSpecs`):
+```csharp
+public GovernorateWithSpecs(int id, string ownerUserId)
+    : base(g => g.Id == id && (g.OwnerUserId == null || g.OwnerUserId == ownerUserId) && g.DeletedAt == null)
+{
+}
+```
+
+**Wrong — never do this:**
+```csharp
+// ❌ No owner parameter at all — [Authorize] on the controller only proves the caller is
+// logged in, not that this Person row belongs to them. Any authenticated user can pass any
+// id and read/modify someone else's data.
+public PersonWithSpecs(int id)
+    : base(p => p.Id == id && p.DeletedAt == null)
+{
+}
+```
+
+The owner id itself is always sourced from the JWT claim (`User.FindFirstValue(ClaimTypes.NameIdentifier)`), never a client-supplied field on the request DTO — see the real `PersonsController.GetUserId()` for the pattern every controller follows.
+
+---
+
 ## 3. Response Model Rules
 
 - **`<Entity>DetailsDto`** — single-item shape, used by get-by-id and create/update responses. Include navigation data the client actually renders (images, category name) — not raw foreign keys the client can't use.
@@ -452,6 +488,7 @@ Before marking a feature complete, verify every item:
 - [ ] Specification constructors share predicate logic instead of duplicating it (§4)
 - [ ] If this feature includes an OTP/verification code, it's looked up by `(UserId, not-yet-consumed)`, never by its hash (§4, `patterns/P4-hashed-verification-code.md`)
 - [ ] No loop issues a specification/repository call once per iteration over an already-fetched collection — batched into a single call instead (Rule 11)
+- [ ] Every specification for a user-owned entity takes the owner id as a required constructor parameter and filters on it (Rule 12)
 
 **Service layer**
 - [ ] No whole-method `try/catch` swallowing exceptions into a generic failure (Rule 1)
@@ -493,6 +530,7 @@ The following patterns were found in real production audits and must not appear 
 | A domain-specific method (e.g. a formatted sequence-number generator) added directly to the generic repository interface | Every entity type now nominally exposes a method that only makes sense for one of them | Put it on `IUnitOfWork` or a dedicated repository interface (Rule 3) |
 | The same multi-field search predicate copy-pasted across several specification constructor overloads | A typo fix or business-rule change now has to be applied N times; overloads silently drift out of sync | Extract the shared predicate into one place, called from every overload (§4) |
 | A specification/repository call issued once per iteration inside a loop over an already-fetched collection | Turns one round-trip into N — invisible at small list sizes, a real cost once the page/list grows | Batch-fetch with one specification keyed on the whole id list (e.g. `EventGuestWithSpecs.ForEvents`), then group/look up in memory (Rule 11) |
+| A specification for a user-owned entity with no owner-id parameter, relying only on a controller-level `[Authorize]` check | Any authenticated user can access another user's data by guessing/incrementing an id — `[Authorize]` proves identity, not ownership | Take the owner id as a required constructor parameter and filter on it directly in the specification (Rule 12) |
 | Looking up a low-entropy secret (a 6-digit OTP/verification code) by a hash-uniqueness index, the way a high-entropy `RefreshToken` is | A 6-digit code has only 1,000,000 possible values — its hash *will* collide across users/requests at real scale, unlike a 64-byte random token's hash | Look up the active row by `(UserId, not-yet-consumed)` first, then compare the presented code's hash in application code with a constant-time comparison (§4, `patterns/P4-hashed-verification-code.md`) |
 | FluentValidation wired globally, but most DTOs have no validator class, so mutating endpoints fall back to ad hoc `if`-checks or nothing | Coverage looks systematic (one global registration call) but is actually sparse and inconsistent per endpoint | Every mutating DTO gets a validator the moment it's created — no validator is an incomplete feature, not an optional extra (Rule 2) |
 | `[Authorize]` commented out "temporarily" while testing | Ships as a live authorization gap the moment the branch merges; easy to forget, easy to miss in review | Never comment out an authorization attribute — use a role/policy actually satisfiable in the test environment instead (Rule 6) |
