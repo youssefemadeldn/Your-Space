@@ -17,9 +17,10 @@ entities, services, or controllers — only the infrastructure layer.
 - Validation: `FluentValidation.AspNetCore`
 - Mapping: `AutoMapper.Extensions.Microsoft.DependencyInjection`
 - Logging: `Serilog.AspNetCore`
+- Observability: `OpenTelemetry.Extensions.Hosting`, `OpenTelemetry.Instrumentation.AspNetCore`, `OpenTelemetry.Instrumentation.Http`, `OpenTelemetry.Instrumentation.EntityFrameworkCore` (traces + metrics, wired unconditionally alongside Serilog — see Program.cs pipeline order below). Export target is an OTLP endpoint via `<OTEL_EXPORTER_OTLP_ENDPOINT>` — a placeholder until a concrete collector (self-hosted Jaeger/Grafana, or a SaaS target) is chosen; the SDK no-ops safely with no endpoint configured, so wiring it now is safe ahead of that decision.
 - API surface: `Asp.Versioning.Mvc`, `Asp.Versioning.Mvc.ApiExplorer` (the actively-maintained successor to the now-frozen `Microsoft.AspNetCore.Mvc.Versioning` — same versioning team, tracks .NET's own version numbering), `Microsoft.AspNetCore.OpenApi`, `NSwag.AspNetCore`
 - Caching/resilience: `Microsoft.Extensions.Caching.StackExchangeRedis`, `Polly`
-- Testing: `xunit`, `Moq`, `FluentAssertions`, `Bogus`, `Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.EntityFrameworkCore.Sqlite`, `Testcontainers` (+ the module for any real external dependency, e.g. `Testcontainers.Redis`), `NetArchTest.Rules`
+- Testing: `xunit`, `Moq`, `FluentAssertions`, `Bogus`, `Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.EntityFrameworkCore.Sqlite`, `Testcontainers` (+ the module for any real external dependency, e.g. `Testcontainers.Redis`), `NetArchTest.Rules`, `NBomber` (load-testing — see CLAUDE.md "Testing discipline")
 - Localization: `Microsoft.Extensions.Localization` (`IStringLocalizer<T>`) + `Microsoft.AspNetCore.Localization` (`RequestLocalizationOptions`) — both ship inside the ASP.NET Core shared framework already referenced by `<Solution>.WebAPI`; no separate NuGet package needed. See CLAUDE.md "Localization."
 - Only add anything beyond this list when a concrete, active feature needs it (see CLAUDE.md "Dependencies rule") — never speculatively.
 - After installing, run `dotnet list package --vulnerable --include-transitive` across every project and substitute or pin any flagged package before writing code — a package's own "latest stable" can still be vulnerable if the package itself is stale or superseded, not just outdated.
@@ -50,6 +51,7 @@ Project reference direction must match CLAUDE.md's "Architecture rules #1" exact
 
 - `appsettings.json` and `appsettings.<Environment>.json` contain **shape only** — see CLAUDE.md "Secrets." Real connection strings, JWT keys, and third-party API keys come from `dotnet user-secrets` locally and environment variables in deployed environments.
 - Resolve the connection string with a fallback chain: configured `ConnectionStrings:<Solution>DB` first, then a `DATABASE_URL`-style environment variable (common on PaaS hosts like Railway/Coolify/Render) parsed from URI form (`postgres://user:pass@host:port/db`) into the provider's keyword=value format if the configured value is absent. Mask the password before writing the resolved string to any startup log line.
+- **Connection pool sizing:** Npgsql's defaults (`Minimum Pool Size=0`, `Maximum Pool Size=100`) are appended to the connection string explicitly rather than left implicit, e.g. `Host=...;...;Minimum Pool Size=5;Maximum Pool Size=100`. `Minimum Pool Size=5` keeps a small warm pool ready instead of paying connection-open latency on the first request after an idle period. `Maximum Pool Size=100` (Npgsql's own default) is enough for a single API instance under real concurrent load — raise it only after connection-pool exhaustion is actually observed (pool-timeout exceptions in logs, or pool-usage metrics once "Observability" is wired), never preemptively. If multiple API instances share one Postgres server, the **sum** of every instance's `Maximum Pool Size` must stay under Postgres's own `max_connections` (default 100) with headroom for migrations/admin connections — coordinate pool size down per instance as instance count grows, don't just raise Postgres's `max_connections` to match.
 - Two environments minimum: `Development` (local, verbose HTTP logging, Swagger UI enabled) and `Production` (HSTS, no Swagger UI, generic error messages via `ExceptionMiddleware`'s `IHostEnvironment` check).
 
 ---
@@ -112,6 +114,8 @@ Produce a complete file-by-file plan. For each file specify: full path, responsi
 - `Helpers/ServiceRegistration.cs` — `AddApplicationServices(this IServiceCollection)`: `IUnitOfWork`, `IGenericRepository<,>` (open generic registration), AutoMapper (`AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies())`), FluentValidation (auto-validation + client-side adapters), `AddSignalR()` only if Phase-1 confirmed real-time is in scope, API versioning, authorization policies.
 - `Helpers/MockDataSeeder.cs` — a static `SeedAsync(YourSpaceDbContext context)` orchestrator, empty until the first feature's entity exists. Each feature adds its own `Seed<Entity>Async(context)` method here, called from `SeedAsync`. Development-only — see CLAUDE.md "Development Data Seeding." Distinct from any Identity/role bootstrap seeder, which carries real production data and is not gated behind `IsDevelopment()`.
 - `Extensions/IdentityServiceExtension.cs` — `AddIdentityService(IConfiguration)`: Identity + JWT bearer options (issuer/audience/signing key sourced from configuration, never hardcoded), token validation parameters.
+- `Extensions/CacheServiceExtension.cs` — `AddCaching(IConfiguration)`: registers `IConnectionMultiplexer` (Singleton, connecting to `Redis:ConnectionString`) and `AddStackExchangeRedisCache` for `IDistributedCache` — matching the `Identity`/`RateLimiting`/`Swagger` extension-class convention rather than inlining the registration directly in `Program.cs`. See CLAUDE.md "Caching" for the read/write/invalidation rules every feature follows once this is wired, and `patterns/P5-caching.md` for the full service-layer shape.
+- `Extensions/ObservabilityServiceExtension.cs` — `AddObservability(IConfiguration)`: `AddOpenTelemetry()` with ASP.NET Core + HttpClient + EF Core instrumentation for traces, ASP.NET Core + runtime instrumentation for metrics, and an OTLP exporter pointed at `<OTEL_EXPORTER_OTLP_ENDPOINT>` (placeholder — see package list note). Wired unconditionally from day one, the same treatment as `AddLocalization()`.
 - `Extensions/RateLimitingExtension.cs` — `AddRateLimiting(...)` (spelled correctly — see feature prompt anti-patterns for why this matters).
 - `Extensions/SwaggerServiceExtension.cs` — `AddSwaggerDocumentation()` via NSwag, versioned per the `IApiVersionDescriptionProvider`. The provider isn't resolvable yet when this method runs — the container isn't built — so read it off a short-lived temporary provider scoped only to this lookup, then register one `AddOpenApiDocument` per version:
   ```csharp
@@ -156,8 +160,9 @@ Middleware order is load-bearing — reordering silently changes behavior:
 
 ```
 builder.Services: Controllers (+ enum-as-string JSON converter) → AddLocalization() + RequestLocalizationOptions (en default, en/ar supported)
+                → AddObservability() (traces + metrics — ASP.NET Core/HttpClient/EF Core instrumentation, OTLP exporter; wired unconditionally from day one, same treatment as AddLocalization() — see "Observability" package note)
                 → DataProtection → CORS policy
-                → DbContext → Redis multiplexer → Options bindings (typed settings classes)
+                → DbContext → AddCaching() (IConnectionMultiplexer + IDistributedCache — see CLAUDE.md "Caching") → Options bindings (typed settings classes)
                 → AddApplicationServices() → HostedServices → AddIdentityService()
                 → AddRateLimiting() → AddSwaggerDocumentation()
                 → AddHttpLogging() (Development only)

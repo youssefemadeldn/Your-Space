@@ -363,6 +363,47 @@ See CLAUDE.md Architecture rule 10 and "Response envelope."
 
 ---
 
+### Rule 11 — No per-iteration database round-trips (N+1)
+
+A loop over a collection already fetched from the database never triggers its own query per item. The Specification pattern (§4) already exists to batch-fetch exactly what's needed in one round-trip — reach for a new specification constructor or static factory instead of looping and querying.
+
+This solution doesn't enable EF Core lazy-loading proxies, so the classic "accessing a nav property inside a loop silently fires a query" trap can't happen by accident here — the real risk is a repository/specification call issued once per iteration instead of once for the whole batch.
+
+**Correct — one batched query, grouped in memory:**
+```csharp
+var eventIds = events.Select(e => e.Id).ToList();
+var guestRepo = unitOfWork.Repository<EventGuest, int>();
+var guestCountsByEventId = eventIds.Count == 0
+    ? []
+    : (await guestRepo.ListAllWithSpecAsync(EventGuestWithSpecs.ForEvents(eventIds, ownerUserId)))
+        .GroupBy(g => g.EventId)
+        .ToDictionary(g => g.Key, g => g.Count());
+
+var items = events.Select(e =>
+{
+    var dto = mapper.Map<EventProfileDto>(e);
+    dto.TotalGuestCount = guestCountsByEventId.GetValueOrDefault(e.Id);
+    return dto;
+}).ToList();
+```
+
+**Wrong — never do this:**
+```csharp
+// ❌ One CountWithSpecAsync round-trip per event on the page — fine at 5 events, an
+// N+1 the moment the page grows toward MaxPageSize
+var items = new List<EventProfileDto>();
+foreach (var e in events)
+{
+    var dto = mapper.Map<EventProfileDto>(e);
+    dto.TotalGuestCount = await guestRepo.CountWithSpecAsync(new EventGuestWithSpecs(e.Id, ownerUserId));
+    items.Add(dto);
+}
+```
+
+See `EventGuestWithSpecs.ForEvents` / `EventService.GetAllAsync` for the real version of this pattern already in the codebase, and `templates/layers/T2-repository.md` for specification-authoring conventions.
+
+---
+
 ## 3. Response Model Rules
 
 - **`<Entity>DetailsDto`** — single-item shape, used by get-by-id and create/update responses. Include navigation data the client actually renders (images, category name) — not raw foreign keys the client can't use.
@@ -402,6 +443,7 @@ Before marking a feature complete, verify every item:
 **Data layer**
 - [ ] Entity has `CreatedAt`/`UpdatedAt` (and `DeletedAt` if soft-deletable, `RowVersion` if written concurrently)
 - [ ] Configuration class declares keys, indexes (including composite indexes for real query patterns), and relationship delete behavior explicitly
+- [ ] Every new query shape added to a `Specification` (a new constructor overload or static factory) has its filtered/sorted columns checked against the entity's existing indexes in `Configurations/<Entity>Configurations.cs` — a new multi-column filter combination not yet covered gets a composite index added in the same change, not deferred
 - [ ] Every user-facing text field has an `<Field>Ar` counterpart, and the AutoMapper profile resolves it to one DTO field by `CultureInfo.CurrentUICulture` (Rule 8)
 - [ ] `MockDataSeeder` has a matching `Seed<Entity>Async` method (normal case + at least one edge case), called only from the `IsDevelopment()` block (Rule 9)
 
@@ -409,6 +451,7 @@ Before marking a feature complete, verify every item:
 - [ ] No domain-specific method added to `IGenericRepository<,>` (Rule 3)
 - [ ] Specification constructors share predicate logic instead of duplicating it (§4)
 - [ ] If this feature includes an OTP/verification code, it's looked up by `(UserId, not-yet-consumed)`, never by its hash (§4, `patterns/P4-hashed-verification-code.md`)
+- [ ] No loop issues a specification/repository call once per iteration over an already-fetched collection — batched into a single call instead (Rule 11)
 
 **Service layer**
 - [ ] No whole-method `try/catch` swallowing exceptions into a generic failure (Rule 1)
@@ -416,6 +459,7 @@ Before marking a feature complete, verify every item:
 - [ ] Multi-step writes across tables are transaction-wrapped (Rule 5)
 - [ ] DTOs contain no EF Core / entity references (Rule 4)
 - [ ] Every `ServiceResult` failure (`NotFound`/`Conflict`/`Unauthorized`/`Forbidden`/`Fail`) passes an `ErrorCode` using the same key as its localized message (Rule 10)
+- [ ] Any service method that writes to cached data invalidates/updates its cache key in the same method (CLAUDE.md "Caching")
 
 **Validation**
 - [ ] Every mutating DTO has a validator class (Rule 2)
@@ -430,6 +474,7 @@ Before marking a feature complete, verify every item:
 - [ ] Unit tests exist per service method (`<Feature>Service_<Method>Tests.cs`)
 - [ ] A regression test exists for any bug this feature fixes
 - [ ] Architecture tests still pass (layer boundaries, DTO/entity separation)
+- [ ] If this feature carries meaningful concurrent traffic (payment, auth, contended writes), an `NBomber` load test has been run against the 200–500 concurrent-user target before merge (CLAUDE.md "Testing discipline")
 
 **Dependencies & config**
 - [ ] No new package added without an active call site
@@ -447,6 +492,7 @@ The following patterns were found in real production audits and must not appear 
 | Two `IActionResult` wrapper classes with different names doing identical `StatusCode`-from-`ServiceResult` work | Pure duplication with no behavioral difference; splits the codebase into two conventions for the same job, for no reason | Exactly one `ResultActionResult<T>` / `ResultActionResult` |
 | A domain-specific method (e.g. a formatted sequence-number generator) added directly to the generic repository interface | Every entity type now nominally exposes a method that only makes sense for one of them | Put it on `IUnitOfWork` or a dedicated repository interface (Rule 3) |
 | The same multi-field search predicate copy-pasted across several specification constructor overloads | A typo fix or business-rule change now has to be applied N times; overloads silently drift out of sync | Extract the shared predicate into one place, called from every overload (§4) |
+| A specification/repository call issued once per iteration inside a loop over an already-fetched collection | Turns one round-trip into N — invisible at small list sizes, a real cost once the page/list grows | Batch-fetch with one specification keyed on the whole id list (e.g. `EventGuestWithSpecs.ForEvents`), then group/look up in memory (Rule 11) |
 | Looking up a low-entropy secret (a 6-digit OTP/verification code) by a hash-uniqueness index, the way a high-entropy `RefreshToken` is | A 6-digit code has only 1,000,000 possible values — its hash *will* collide across users/requests at real scale, unlike a 64-byte random token's hash | Look up the active row by `(UserId, not-yet-consumed)` first, then compare the presented code's hash in application code with a constant-time comparison (§4, `patterns/P4-hashed-verification-code.md`) |
 | FluentValidation wired globally, but most DTOs have no validator class, so mutating endpoints fall back to ad hoc `if`-checks or nothing | Coverage looks systematic (one global registration call) but is actually sparse and inconsistent per endpoint | Every mutating DTO gets a validator the moment it's created — no validator is an incomplete feature, not an optional extra (Rule 2) |
 | `[Authorize]` commented out "temporarily" while testing | Ships as a live authorization gap the moment the branch merges; easy to forget, easy to miss in review | Never comment out an authorization attribute — use a role/policy actually satisfiable in the test environment instead (Rule 6) |

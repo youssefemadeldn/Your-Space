@@ -110,7 +110,7 @@ Middleware/
 ├── NotFoundException.cs
 └── ValidationException.cs
 Extensions/                                # spelled correctly: Extensions, not "Extentions" (see feature prompt anti-patterns)
-└── <Concern>ServiceExtensions.cs         # one static class per concern: Identity, Swagger, RateLimiting, Cache
+└── <Concern>ServiceExtension.cs          # one static class per concern: Identity, Swagger, RateLimiting, Cache, Observability
 Helpers/
 ├── ServiceRegistration.cs                # AddApplicationServices — see "Dependency injection"
 └── ResultActionResult.cs                 # the one IActionResult wrapper — see "Response envelope"
@@ -150,6 +150,9 @@ The moment a new entity/table exists, it gets a matching seed method producing r
 ### 10. Every failure response carries a stable ErrorCode, not just a localized Message
 `ServiceResult`/`ServiceResult<T>`'s failure factory methods (`Fail`, `NotFound`, `Unauthorized`, `Forbidden`, `Conflict`) require an `ErrorCode` alongside `Message` — a stable, non-localized string, the same resource key already passed to `IStringLocalizer<SharedResource>` for the message (Rule 8), e.g. `"Product.NotFound"`. A client branches on `ErrorCode`, never on `Message` — `Message` changes with `Accept-Language` and can be reworded without notice. This does not duplicate `ExceptionMiddleware`'s dev/prod detail split (Rule 2) — `ErrorCode` is a stable, client-facing value set once per guard clause, not diagnostic detail decided per environment. See "Response envelope" below.
 
+### 11. No per-iteration database round-trips
+A loop over an already-fetched collection never issues its own database query per item — not a repository/specification call made once per element, and (if lazy-loading proxies are ever enabled — they are not, today) not a lazily-triggered navigation property access either. The Specification pattern exists to batch-fetch exactly what a query shape needs in one round-trip (Rule 3); reach for a new specification constructor or static factory before adding a loop that touches the database. See `dotnet_feature_prompt.md` Rule 11 and `templates/layers/T2-repository.md`.
+
 ---
 
 ## Dependency injection — lifetime table
@@ -161,7 +164,7 @@ The moment a new entity/table exists, it gets a matching seed method producing r
 | Stateless helper with no per-request state and no `DbContext` dependency (e.g. a token signer, a no-op file scanner) | `Singleton` | Safe to share; avoids reallocation per request |
 | `IHostedService` background job | Registered via `AddHostedService` (framework-managed singleton lifetime) | Must resolve its own `IServiceScopeFactory`-created scope per work cycle — never hold a `Scoped` dependency directly in its constructor |
 | Work invoked from a fire-and-forget `Task.Run` outside the request lifetime | Resolved via `IServiceScopeFactory.CreateAsyncScope()` inside the task | The request's `DbContext` and other `Scoped` services are disposed once the response is sent — capturing them by reference is a use-after-dispose bug waiting to happen |
-| Cross-cutting infrastructure (`IConnectionMultiplexer`, `HttpClient` via `AddHttpClient`) | `Singleton` | Expensive to construct, thread-safe by design, meant to be shared app-wide |
+| Cross-cutting infrastructure (`IConnectionMultiplexer`, `IDistributedCache`, `HttpClient` via `AddHttpClient`) | `Singleton` | Expensive to construct, thread-safe by design, meant to be shared app-wide |
 
 **Never inject a `Scoped` service into a `Singleton`'s constructor** (captive dependency — the `Scoped` instance gets silently pinned for the app's lifetime). If a singleton needs scoped data, it takes `IServiceScopeFactory` and creates a scope per use.
 
@@ -271,6 +274,47 @@ If a secret is ever discovered committed in git history, gitignoring the file go
 
 ---
 
+## Caching
+
+Redis (`IConnectionMultiplexer` + `IDistributedCache` via `Microsoft.Extensions.Caching.StackExchangeRedis`) is registered from day one, but registration alone is not a caching strategy — every read/write path through the cache follows the same rules regardless of which feature adds the first real usage.
+
+- **The service layer owns every cache read and write — never the repository.** `IGenericRepository<TEntity,TKey>`/`UnitOfWork` stay persistence-only (Architecture rule 3); a repository method must never check or populate `IDistributedCache` itself. A service method that wants a cached value checks the cache first, falls back to `_unitOfWork.Repository<T,TKey>()` on a miss, and writes the result back to the cache before returning it — see `patterns/P5-caching.md` for the full shape.
+- **Key naming:** `yourspace:<feature>:<shape>:<identifier>`, all lowercase, colon-delimited — e.g. `yourspace:city:details:42`, `yourspace:person:list:{ownerUserId}:{governorateId}`. A list/paginated key includes every parameter that changes the result set (owner, filters, page) so two different queries never collide on one key.
+- **Default TTL:** 15 minutes for anything read far more often than it changes (lookup/reference data such as `Governorate`/`City`/`Neighborhood`, a details view for a rarely-edited entity). A feature may justify a longer or shorter TTL with a one-line comment at the call site — TTL is a per-key decision, not a single global constant.
+- **Invalidation is never left to TTL expiry alone.** Any service method that writes to an entity (`CreateAsync`/`UpdateAsync`/`DeleteAsync`) must invalidate or update every cache key derived from that entity in the same method that performs the write — not deferred, not "it'll expire soon anyway." A stale cached row surviving until TTL expiry after a write is a bug, the same way a missed `Ar` counterpart is (Rule 8).
+- **Registration lives in `CacheServiceExtension.AddCaching(this IServiceCollection, IConfiguration)`** in `WebAPI/Extensions/`, matching `RateLimitingExtension`/`IdentityServiceExtension`'s shape — see `dotnet_scaffold_prompt.md`'s "Environment & connection string strategy" for the registration detail.
+
+**Correct — invalidation in the same method as the write:**
+```csharp
+public async Task<ServiceResult<CityDetailsDto>> UpdateAsync(string ownerUserId, int governorateId, int id, UpdateCityDto dto)
+{
+    var repo = unitOfWork.Repository<City, int>();
+    var city = await repo.GetByIdWithSpecAsync(new CityWithSpecs(id, governorateId, ownerUserId));
+    if (city is null)
+        return ServiceResult<CityDetailsDto>.NotFound(localizer["City.NotFound"], ErrorCodes.NotFound);
+
+    city.Name = dto.Name ?? city.Name;
+    city.UpdatedAt = DateTime.UtcNow;
+    repo.Update(city);
+    await unitOfWork.SaveChangesAsync();
+
+    await cache.RemoveAsync($"yourspace:city:details:{id}");   // same method as the write — never left to TTL
+    return ServiceResult<CityDetailsDto>.Ok(mapper.Map<CityDetailsDto>(city));
+}
+```
+
+**Wrong — never do this:**
+```csharp
+// ❌ Write succeeds, cache key is never touched — callers keep reading the stale row
+// until the 15-minute TTL happens to expire on its own
+city.Name = dto.Name ?? city.Name;
+repo.Update(city);
+await unitOfWork.SaveChangesAsync();
+return ServiceResult<CityDetailsDto>.Ok(mapper.Map<CityDetailsDto>(city));
+```
+
+---
+
 ## Localization
 
 `Accept-Language: en` or `ar` drives every response — wired once in the foundation and never re-decided per feature (Architecture rule 8).
@@ -347,11 +391,12 @@ Act as a professional senior engineering partner, not just a task executor:
 
 ## Testing discipline
 
-- **Taxonomy:** `Unit/` (one file per service method: `<Service>_<Method>Tests.cs`), `Integration/Controllers/` (via `WebApplicationFactory`), `Integration/Database/` (fixtures — in-memory/SQLite for fast tests, Testcontainers for anything that must exercise real Redis/Postgres behavior), `Architecture/` (`NetArchTest` layering rules), `Common/` (shared mock factories and test extensions).
+- **Taxonomy:** `Unit/` (one file per service method: `<Service>_<Method>Tests.cs`), `Integration/Controllers/` (via `WebApplicationFactory`), `Integration/Database/` (fixtures — in-memory/SQLite for fast tests, Testcontainers for anything that must exercise real Redis/Postgres behavior), `Architecture/` (`NetArchTest` layering rules), `LoadTests/` (`NBomber` scenarios — one file per flow under test; slow and environment-sensitive, run separately from the default `dotnet test` loop, not part of it), `Common/` (shared mock factories and test extensions).
 - **Architecture tests cover the whole solution**, not one subsystem — every rule in "Architecture rules" above should have a corresponding `NetArchTest` assertion, not just a written statement of intent.
 - Every bug fix ships with a regression test that reproduces the issue before the fix.
 - Tests must be deterministic — no flaky or timing-dependent assertions.
 - One behavior per test case; test names describe the scenario and expected outcome.
+- **Load-testing gate:** any feature expected to carry meaningful concurrent traffic — a payment/checkout flow, auth (login/register/refresh-token), or any write endpoint likely to see contention (a shared counter, a booking/reservation slot) — ships with an `NBomber` load test run against a realistic concurrency target before merge, in addition to its unit/integration coverage. `NBomber` is the one standardized tool for this — not k6, not a hand-rolled `Parallel.ForEach` script — so load tests live in C# next to the code they exercise. Target **200–500 concurrent virtual users** as the realistic floor, sized for the app's stated path toward a public release rather than just today's personal-use traffic; raise it again once real production numbers exist to size against.
 
 ---
 
@@ -370,6 +415,9 @@ Before finishing any task, verify every item:
 - [ ] New user-facing text fields have an `Ar` counterpart, and new `ServiceResult`/validator messages come from `IStringLocalizer<SharedResource>`, not a string literal (Architecture rule 8).
 - [ ] A new entity has a matching dev-only seed method in `MockDataSeeder` covering a normal case and at least one edge case (Architecture rule 9).
 - [ ] Every new `ServiceResult` failure (`NotFound`/`Conflict`/`Unauthorized`/`Forbidden`/`Fail`) passes an `ErrorCode` using the same key as its localized `Message` (Architecture rule 10).
+- [ ] No loop makes a per-iteration database/specification call — batched into a single query instead (Architecture rule 11).
+- [ ] Any write that changes cached data invalidates/updates the corresponding cache key in the same method ("Caching").
+- [ ] If this feature carries meaningful concurrent traffic (payment, auth, contended writes), an `NBomber` load test was run against the 200–500 concurrent-user target before considering it complete ("Testing discipline").
 - [ ] Logging follows the Information/Warning/Error rules above, with structured templates.
 - [ ] No unnecessary package was added, and any new package was checked for known vulnerabilities (`dotnet list package --vulnerable --include-transitive`).
 - [ ] Acted as a senior partner: non-obvious tradeoffs named, concerns flagged, improvements suggested when genuinely valuable.
