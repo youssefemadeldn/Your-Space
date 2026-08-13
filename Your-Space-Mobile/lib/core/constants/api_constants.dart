@@ -4,7 +4,7 @@ class ApiConstants {
   static const String _devBaseUrl =
       'https://2b49-197-120-204-119.ngrok-free.app/api/v1';
   static const String _prodBaseUrl =
-      'http://bcd1i88mdmvzb563lwx1vnas.49.13.218.137.sslip.io/api/v1';
+      'https://yourspace.booksplatform.net/api/v1';
 
   static String get baseUrl =>
       const String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev') == 'prod'
