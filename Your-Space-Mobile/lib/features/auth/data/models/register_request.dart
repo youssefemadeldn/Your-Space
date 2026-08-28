@@ -4,7 +4,7 @@ class RegisterRequest {
   final String confirmPassword;
   final String firstName;
   final String lastName;
-  final String phoneNumber;
+  final String? phoneNumber;
 
   const RegisterRequest({
     required this.email,
@@ -12,7 +12,7 @@ class RegisterRequest {
     required this.confirmPassword,
     required this.firstName,
     required this.lastName,
-    required this.phoneNumber,
+    this.phoneNumber,
   });
 
   Map<String, dynamic> toJson() => {
@@ -21,6 +21,6 @@ class RegisterRequest {
         'confirmPassword': confirmPassword,
         'firstName': firstName,
         'lastName': lastName,
-        'phoneNumber': phoneNumber,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
       };
 }

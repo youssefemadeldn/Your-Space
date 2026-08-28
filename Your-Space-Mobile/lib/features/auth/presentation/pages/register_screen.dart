@@ -66,7 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _lastNameError = lastName.isEmpty ? 'auth.validation.requiredLastName'.tr() : null;
       _emailError =
           RegexHelper.validate(RegexHelper.email, email) ? null : 'auth.validation.invalidEmail'.tr();
-      _phoneError = RegexHelper.validate(RegexHelper.internationalPhone, phone)
+      _phoneError = phone.isEmpty || RegexHelper.validate(RegexHelper.internationalPhone, phone)
           ? null
           : 'auth.validation.invalidPhone'.tr();
       _passwordError =
@@ -91,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           confirmPassword: _confirmPasswordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          phoneNumber: _phoneController.text.trim(),
+          phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         );
   }
 
@@ -183,7 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 SizedBox(height: 14.h),
                 AppInput(
-                  label: 'auth.phone'.tr(),
+                  label: 'auth.phoneOptional'.tr(),
                   hintText: '+201234567890',
                   prefixIcon: Icons.call_outlined,
                   keyboardType: TextInputType.phone,

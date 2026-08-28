@@ -29,6 +29,7 @@
     "lastName": "Last name",
     "email": "Email",
     "phone": "Phone number",
+    "phoneOptional": "Phone number (optional)",
     "password": "Password",
     "confirmPassword": "Confirm password",
     "newPassword": "New password",

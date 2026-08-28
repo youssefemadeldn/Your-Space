@@ -28,7 +28,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String confirmPassword,
     required String firstName,
     required String lastName,
-    required String phoneNumber,
+    String? phoneNumber,
   }) async {
     final result = await _remote.register(RegisterRequest(
       email: email,

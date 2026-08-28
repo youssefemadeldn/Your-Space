@@ -64,10 +64,15 @@ void main() {
     await EasyLocalization.ensureInitialized();
   });
 
-  testWidgets('shows client-side validation errors when submitted empty', (tester) async {
+  // One testWidgets block — a second EasyLocalization instantiation within the
+  // same test file breaks the widget tree (known easy_localization test-infra
+  // issue, same as login_screen_test.dart / home_screen_test.dart).
+  testWidgets('phone is optional when blank but a malformed value is still rejected', (tester) async {
     final cubit = RegisterCubit(MockAuthRepository());
     await _pumpRegisterScreen(tester, cubit);
 
+    // Submit with every field blank: the genuinely required fields error, but
+    // an empty phone number does not — it is optional.
     await tester.ensureVisible(find.byType(AppButton));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(AppButton));
@@ -76,6 +81,15 @@ void main() {
     expect(find.text('Enter your first name'), findsOneWidget);
     expect(find.text('Enter your last name'), findsOneWidget);
     expect(find.text('Enter a valid email'), findsOneWidget);
+    expect(find.text('Enter a valid phone number, e.g. +201234567890'), findsNothing);
+
+    // A non-empty but malformed phone number is still rejected.
+    // Field order: first name, last name, email, phone, ...
+    await tester.enterText(find.byType(TextField).at(3), '123');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(AppButton));
+    await tester.pumpAndSettle();
+
     expect(find.text('Enter a valid phone number, e.g. +201234567890'), findsOneWidget);
 
     await cubit.close();

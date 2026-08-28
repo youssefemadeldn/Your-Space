@@ -18,7 +18,7 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
         RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
 
         RuleFor(x => x.PhoneNumber)
-            .NotEmpty()
-            .Matches(@"^\+?[1-9]\d{7,14}$").WithMessage("Phone number must be a valid international format, e.g. +201234567890.");
+            .Matches(@"^\+?[1-9]\d{7,14}$").WithMessage("Phone number must be a valid international format, e.g. +201234567890.")
+            .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
     }
 }
