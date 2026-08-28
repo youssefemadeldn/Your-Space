@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Space — New screens</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="new-screens.css">
+<style>
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; width: 100%; max-width: 1180px; }
+  .gallery-card { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-soft); padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+  .gallery-card .num { font: var(--text-label-sm); letter-spacing: var(--ls-label-sm); text-transform: uppercase; color: var(--brand-primary); font-family: var(--font-micro); }
+  .gallery-card h2 { font: var(--text-title-lg); font-family: var(--font-body); color: var(--text-primary); margin: 0; }
+  .gallery-card p { font: var(--text-body-md); color: var(--text-secondary); margin: 0; flex: 1; }
+  .gallery-card .flags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gallery-card .flag { font: var(--text-body-sm); color: var(--brand-primary); background: var(--brand-red-soft); border-radius: 999px; padding: 3px 10px; }
+  .gallery-card a.open { display: inline-flex; align-items: center; gap: 6px; color: var(--brand-primary); font: var(--text-label-lg); font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body class="kit-body">
+
+  <div class="kit-note">
+    <span class="kit-note-title">Your Space — new screens (this task's deliverable)</span>
+    <span class="kit-note-body">Five new mockup screens added to the existing <code>ui_kits/app/</code> app kit, built only from the design system's existing tokens and component conventions (see <code>readme.md</code>, <code>_ds_manifest.json</code>, <code>tokens/</code>). Nothing existing was modified — every file here is new. Open any card below to view the live, interactive screen at 390×800.</span>
+    <span class="kit-note-hint">Shared stylesheet: <code>new-screens.css</code>. Shared CRUD list logic for the three management screens: <code>management-screens.js</code>.</span>
+  </div>
+
+  <div class="gallery">
+
+    <div class="gallery-card">
+      <span class="num">01 · Bottom-nav tab</span>
+      <h2>Settings</h2>
+      <p>Edit profile — name, phone, single profile photo with upload / replace / remove — plus a Logout action. Reached from a 5th BottomNav tab alongside Home / Groups / People / Events.</p>
+      <a class="open" href="settings.html"><span class="msr">open_in_new</span>Open settings.html</a>
+    </div>
+
+    <div class="gallery-card">
+      <span class="num">02 · Replaces the flat Add-person form</span>
+      <h2>Add / edit person — wizard</h2>
+      <p>Linear 4-step wizard: Basic identity, Classification &amp; location, Family &amp; relationships, Notes. Step progress indicator, Next/Back footer.</p>
+      <div class="flags">
+        <span class="flag">new: stepper</span>
+        <span class="flag">new: repeater row</span>
+        <span class="flag">new: cascading picker</span>
+        <span class="flag">new: autocomplete</span>
+      </div>
+      <a class="open" href="person-wizard.html"><span class="msr">open_in_new</span>Open person-wizard.html</a>
+    </div>
+
+    <div class="gallery-card">
+      <span class="num">03 · List + CRUD, sibling 1 of 3</span>
+      <h2>Subgroup management</h2>
+      <p>Subgroups that belong to one Group (e.g. Family) — editable, deletable, with a create action. Parent group shown in the header context.</p>
+      <a class="open" href="subgroup-management.html"><span class="msr">open_in_new</span>Open subgroup-management.html</a>
+    </div>
+
+    <div class="gallery-card">
+      <span class="num">04 · List + CRUD, sibling 2 of 3</span>
+      <h2>City management</h2>
+      <p>Cities that belong to one Governorate (e.g. Cairo) — same layout as Subgroup management, relabeled.</p>
+      <a class="open" href="city-management.html"><span class="msr">open_in_new</span>Open city-management.html</a>
+    </div>
+
+    <div class="gallery-card">
+      <span class="num">05 · List + CRUD, sibling 3 of 3</span>
+      <h2>Neighborhood management</h2>
+      <p>Neighborhoods that belong to one City (e.g. Nasr City) — same layout again, relabeled.</p>
+      <a class="open" href="neighborhood-management.html"><span class="msr">open_in_new</span>Open neighborhood-management.html</a>
+    </div>
+
+  </div>
+
+</body>
+</html>

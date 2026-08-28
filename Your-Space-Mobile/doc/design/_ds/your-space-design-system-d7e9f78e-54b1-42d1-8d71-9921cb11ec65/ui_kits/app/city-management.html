@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Space — City management</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="new-screens.css">
+</head>
+<body class="kit-body">
+
+  <div class="kit-note">
+    <span class="kit-note-title">City management — new screen</span>
+    <span class="kit-note-body">The second sibling of the list+CRUD pattern — same layout as Subgroup management, scoped to one Governorate instead of one Group. Reached from the Governorate picker's "+ Add new city" in the Person wizard, or from a governorate detail screen. Identical Card / ListTile / bottom-sheet / Dialog chrome, only the labels and seed data differ (see management-screens.js).</span>
+    <span class="kit-note-hint">Try it: search, edit or delete a row, or use the + button to add a city.</span>
+  </div>
+
+  <div class="kit-row">
+    <div class="kit-frame-col">
+      <span class="kit-frame-caption">Cities in Cairo · interactive</span>
+      <div class="phone-frame">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">
+            <span class="msr">signal_cellular_alt</span>
+            <span class="msr">wifi</span>
+            <span class="msr">battery_full</span>
+          </span>
+        </div>
+
+        <div class="appbar">
+          <button class="icon-btn"><span class="msr">arrow_back</span></button>
+          <span class="appbar-title" id="appbarTitle">Cities</span>
+          <span class="appbar-spacer"></span>
+        </div>
+        <div class="context-strip" id="contextStrip"></div>
+
+        <div class="screen-content" style="padding-top:0">
+          <span class="field-wrap">
+            <span class="msr">search</span>
+            <input class="field-input" id="searchInput" placeholder="Search">
+          </span>
+
+          <div class="card p-6" id="listCard"></div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-state-icon"><span class="msr" id="emptyStateIcon">location_off</span></div>
+            <div class="empty-state-title" id="emptyStateTitle"></div>
+            <div class="empty-state-body" id="emptyStateBody"></div>
+            <button class="btn primary" id="emptyAddBtn" style="margin-top:12px"><span class="msr">add</span></button>
+          </div>
+        </div>
+
+        <button class="icon-btn primary sz-56 fab" id="addFab" style="right:20px;bottom:20px"><span class="msr">add</span></button>
+
+        <div class="sheet-scrim" id="sheetScrim" hidden></div>
+        <div class="sheet" id="sheet" hidden>
+          <span class="sheet-handle"></span>
+          <span class="sheet-title" id="sheetTitle">New city</span>
+          <label class="field">
+            <span class="field-label">Name</span>
+            <span class="field-wrap">
+              <input class="field-input" id="nameInput" placeholder="e.g. Nasr City">
+            </span>
+            <span class="field-hint" id="nameHint">0 / 200</span>
+          </label>
+          <div class="sheet-actions">
+            <button class="btn secondary" id="sheetCancelBtn">Cancel</button>
+            <button class="btn primary" id="sheetSaveBtn">Create city</button>
+          </div>
+        </div>
+
+        <div class="dialog-scrim" id="dialogScrim" hidden>
+          <div class="dialog-card">
+            <div class="dialog-title">Delete this city?</div>
+            <div class="dialog-body" id="dialogBody"></div>
+            <div class="dialog-actions">
+              <button class="btn text sm" id="dialogCancelBtn">Cancel</button>
+              <button class="btn sm" id="dialogConfirmBtn" style="background:var(--color-error);box-shadow:none;color:#fff">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="management-screens.js"></script>
+<script>
+  initManagementScreen({
+    entitySingular: 'City',
+    entityPlural: 'Cities',
+    parentLabel: 'Governorate',
+    parentName: 'Cairo',
+    parentIcon: 'location_city',
+    itemIcon: 'place',
+    namePlaceholder: 'e.g. Nasr City',
+    searchPlaceholder: 'Search cities',
+    emptyTitle: 'No cities in Cairo yet',
+    emptyBody: 'Cities help you pin down where someone lives more precisely than the governorate alone. Add your first one.',
+    items: [
+      { id: 1, name: 'Nasr City', caption: '3 neighborhoods' },
+      { id: 2, name: 'Maadi', caption: '2 neighborhoods' },
+      { id: 3, name: 'Heliopolis', caption: '0 neighborhoods' },
+      { id: 4, name: 'Downtown Cairo', caption: '0 neighborhoods' }
+    ]
+  });
+</script>
+</body>
+</html>
