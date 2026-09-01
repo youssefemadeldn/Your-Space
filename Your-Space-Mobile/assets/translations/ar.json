@@ -84,6 +84,7 @@
       "invalidEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
       "invalidPhone": "أدخل رقم هاتف صحيحًا، مثل ‎+201234567890",
       "passwordMismatch": "كلمتا المرور غير متطابقتين",
+      "newPasswordSameAsCurrent": "اختر كلمة مرور مختلفة عن كلمتك الحالية",
       "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
       "requiredCurrentPassword": "أدخل كلمة المرور الحالية"
     }

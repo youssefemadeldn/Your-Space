@@ -84,6 +84,7 @@
       "invalidEmail": "Enter a valid email",
       "invalidPhone": "Enter a valid phone number, e.g. +201234567890",
       "passwordMismatch": "Passwords don't match",
+      "newPasswordSameAsCurrent": "Choose a password different from your current one",
       "otpIncomplete": "Enter the 6-digit code",
       "requiredCurrentPassword": "Enter your current password"
     }
