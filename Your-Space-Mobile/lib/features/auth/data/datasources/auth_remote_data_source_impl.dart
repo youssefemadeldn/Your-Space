@@ -8,6 +8,7 @@ import 'package:your_space_mobile/core/network/failure.dart';
 import '../models/auth_response.dart';
 import '../models/change_password_request.dart';
 import '../models/confirm_email_request.dart';
+import '../models/delete_account_request.dart';
 import '../models/forgot_password_request.dart';
 import '../models/login_request.dart';
 import '../models/register_request.dart';
@@ -74,6 +75,13 @@ class AuthRemoteDataSourceImpl {
   Future<Either<Failure, Unit>> changePassword(ChangePasswordRequest request) =>
       _api.post<Unit>(
         path: ApiConstants.changePassword,
+        data: request.toJson(),
+        fromJson: (_) => unit,
+      );
+
+  Future<Either<Failure, Unit>> deleteAccount(DeleteAccountRequest request) =>
+      _api.delete<Unit>(
+        path: ApiConstants.deleteAccount,
         data: request.toJson(),
         fromJson: (_) => unit,
       );

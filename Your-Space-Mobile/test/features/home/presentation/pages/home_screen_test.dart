@@ -76,8 +76,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // App bar exposes a logout action so a persisted session always has an exit.
-    expect(find.widgetWithIcon(IconButton, Icons.logout_rounded), findsOneWidget);
+    // App bar exposes a Settings action (which hosts log out / delete account).
+    expect(find.widgetWithIcon(IconButton, Icons.settings_rounded), findsOneWidget);
 
     // Success, groupsCount == 0 → empty state.
     expect(find.text('Start with one group'), findsOneWidget);

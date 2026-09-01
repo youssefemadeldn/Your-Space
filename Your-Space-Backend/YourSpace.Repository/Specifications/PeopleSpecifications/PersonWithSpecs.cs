@@ -19,6 +19,14 @@ public class PersonWithSpecs : BaseSpecification<Person>
     {
     }
 
+    // Every person for the owner, including soft-deleted rows — feeds a full account deletion,
+    // which must hard-delete even rows that were already soft-deleted. No includes/ordering:
+    // the caller only iterates the result to Delete each row.
+    public PersonWithSpecs(string ownerUserId, bool includeDeleted)
+        : base(p => p.OwnerUserId == ownerUserId && (includeDeleted || p.DeletedAt == null))
+    {
+    }
+
     // Count for the paginated list (no Skip/Take — see PaginationSpecification's count/list pairing note)
     public PersonWithSpecs(string ownerUserId, int? groupId, string? search)
         : base(BuildPredicate(ownerUserId, groupId, search))

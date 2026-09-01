@@ -6,6 +6,7 @@ import 'package:your_space_mobile/core/di/injection_container.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart';
+import 'package:your_space_mobile/features/auth/presentation/cubit/delete_account_cubit/delete_account_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/login_cubit/login_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubit/register_cubit.dart';
@@ -42,6 +43,7 @@ import 'package:your_space_mobile/features/people/presentation/cubit/person_form
 import 'package:your_space_mobile/features/people/presentation/pages/people_screen/people_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_details_screen/person_details_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
+import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen/settings_screen.dart';
 
 import 'app_routes.dart';
 import 'session_redirect.dart';
@@ -123,6 +125,14 @@ class AppRouter {
           builder: (context, state) => BlocProvider(
             create: (_) => getIt<ChangePasswordCubit>(),
             child: const ChangePasswordScreen(),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.settings,
+          name: AppRoutes.settings,
+          builder: (context, state) => BlocProvider(
+            create: (_) => getIt<DeleteAccountCubit>(),
+            child: const SettingsScreen(),
           ),
         ),
 

@@ -21,6 +21,9 @@ COPY --from=build /app/publish .
 
 # Deployment platforms (Coolify/Render/etc.) route to this port dynamically, usually 8080
 ENV ASPNETCORE_URLS=http://+:8080
+# Set RUN_MIGRATIONS_ON_STARTUP=true on the single instance that should apply pending EF Core
+# migrations before Kestrel binds (see Program.cs). Leave unset elsewhere — other instances and
+# the explicit `dotnet ef database update` deploy step cover the rest.
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "YourSpace.WebAPI.dll"]

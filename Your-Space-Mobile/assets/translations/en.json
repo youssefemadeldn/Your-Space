@@ -88,6 +88,19 @@
       "requiredCurrentPassword": "Enter your current password"
     }
   },
+  "settings": {
+    "title": "Settings",
+    "changePassword": "Change password",
+    "logout": "Log out",
+    "deleteAccount": "Delete account",
+    "deleteAccountDialog": {
+      "title": "Delete account?",
+      "warning": "This permanently deletes your account and all your groups, people and events. This can’t be undone.",
+      "passwordLabel": "Enter your password to confirm",
+      "confirm": "Delete my account",
+      "doneMessage": "Your account has been permanently deleted."
+    }
+  },
   "home": {
     "title": "Your Space",
     "greeting": "Welcome back",

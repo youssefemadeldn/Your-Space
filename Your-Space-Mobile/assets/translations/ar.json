@@ -88,6 +88,19 @@
       "requiredCurrentPassword": "أدخل كلمة المرور الحالية"
     }
   },
+  "settings": {
+    "title": "الإعدادات",
+    "changePassword": "تغيير كلمة المرور",
+    "logout": "تسجيل الخروج",
+    "deleteAccount": "حذف الحساب",
+    "deleteAccountDialog": {
+      "title": "حذف الحساب؟",
+      "warning": "سيؤدي هذا إلى حذف حسابك وجميع مجموعاتك والأشخاص والمناسبات نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+      "passwordLabel": "أدخل كلمة المرور للتأكيد",
+      "confirm": "حذف حسابي",
+      "doneMessage": "تم حذف حسابك نهائيًا."
+    }
+  },
   "home": {
     "title": "مساحتك",
     "greeting": "أهلاً بعودتك",

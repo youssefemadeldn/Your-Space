@@ -102,6 +102,17 @@ public class AuthController(IAuthService authService) : ControllerBase
         return new ResultActionResult<UserProfileDto>(result);
     }
 
+    // Irreversible: hard-deletes the account and everything it owns. Rate-limited (unlike
+    // change-password) because it takes a password and a wrong guess is a destructive-action probe.
+    [HttpDelete("me")]
+    [Authorize]
+    [EnableRateLimiting(RateLimitingExtension.AuthPolicy)]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountDto dto)
+    {
+        var result = await authService.DeleteAccountAsync(GetUserId(), dto);
+        return new ResultActionResult(result);
+    }
+
     // Safe: every action calling this is behind [Authorize], and TokenService.GenerateAccessToken
     // always emits a NameIdentifier claim, so it's never actually missing here.
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;

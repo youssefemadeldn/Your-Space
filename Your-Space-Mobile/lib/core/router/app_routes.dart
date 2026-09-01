@@ -9,6 +9,7 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String changePassword = '/change-password';
   static const String home = '/home';
+  static const String settings = '/settings';
 
   static const String groups = '/groups';
 

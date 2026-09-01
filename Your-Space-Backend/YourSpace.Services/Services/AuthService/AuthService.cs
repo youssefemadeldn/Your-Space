@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.AuthSpecifications;
+using YourSpace.Repository.Specifications.EventSpecifications;
+using YourSpace.Repository.Specifications.GroupSpecifications;
+using YourSpace.Repository.Specifications.PeopleSpecifications;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
@@ -39,6 +42,8 @@ public class AuthService(
         public const string ConfirmEmailFailed = "Auth.ConfirmEmail.Failed";
         public const string ResetPasswordInvalidRequest = "Auth.ResetPassword.InvalidRequest";
         public const string UserNotFound = "Auth.User.NotFound";
+        public const string DeleteAccountInvalidPassword = "Auth.DeleteAccount.InvalidPassword";
+        public const string DeleteAccountFailed = "Auth.DeleteAccount.Failed";
         public const string OtpExpired = "Otp.Expired";
         public const string OtpLockedOut = "Otp.LockedOut";
         public const string OtpInvalid = "Otp.Invalid";
@@ -402,6 +407,115 @@ public class AuthService(
         }
 
         return ServiceResult<UserProfileDto>.Ok(await BuildProfileAsync(user));
+    }
+
+    public async Task<ServiceResult> DeleteAccountAsync(string userId, DeleteAccountDto dto)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return ServiceResult.NotFound("User not found.", ErrorCodes.UserNotFound);
+        }
+
+        if (!await userManager.CheckPasswordAsync(user, dto.Password))
+        {
+            logger.LogWarning("Account deletion rejected — incorrect password for user {UserId}", user.Id);
+            // 422, matching ChangePasswordAsync's wrong-password shape — the client shows this message
+            // inline; a bare 401 would carry no body for it to display.
+            return ServiceResult.Fail("The password you entered is incorrect.", ErrorCodes.DeleteAccountInvalidPassword, 422);
+        }
+
+        logger.LogInformation("Account deletion started for user {UserId}", userId);
+
+        // Multi-table hard delete. Children are removed before their parents so the Person → Group
+        // RESTRICT foreign key is never violated — deleting the AspNetUsers row alone would cascade
+        // to both People and Groups with no guaranteed ordering between those two paths. Soft-deleted
+        // People/Groups/Events are included: a real account deletion leaves nothing behind.
+        var transaction = await unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var eventGuestRepo = unitOfWork.Repository<EventGuest, int>();
+            foreach (var guest in await eventGuestRepo.ListAllWithSpecAsync(EventGuestWithSpecs.ForOwner(userId)))
+            {
+                eventGuestRepo.Delete(guest);
+            }
+
+            var historyRepo = unitOfWork.Repository<PersonOccasionHistory, int>();
+            foreach (var entry in await historyRepo.ListAllWithSpecAsync(PersonOccasionHistoryWithSpecs.ForOwner(userId)))
+            {
+                historyRepo.Delete(entry);
+            }
+
+            await unitOfWork.SaveChangesAsync();
+
+            var personRepo = unitOfWork.Repository<Person, int>();
+            foreach (var person in await personRepo.ListAllWithSpecAsync(new PersonWithSpecs(userId, includeDeleted: true)))
+            {
+                personRepo.Delete(person);
+            }
+            await unitOfWork.SaveChangesAsync();
+
+            var eventRepo = unitOfWork.Repository<Event, int>();
+            foreach (var ev in await eventRepo.ListAllWithSpecAsync(new EventWithSpecs(userId, includeDeleted: true)))
+            {
+                eventRepo.Delete(ev);
+            }
+            await unitOfWork.SaveChangesAsync();
+
+            var groupRepo = unitOfWork.Repository<Group, int>();
+            foreach (var group in await groupRepo.ListAllWithSpecAsync(new GroupWithSpecs(userId, includeDeleted: true)))
+            {
+                groupRepo.Delete(group);
+            }
+            await unitOfWork.SaveChangesAsync();
+
+            var refreshTokenRepo = unitOfWork.Repository<RefreshToken, Guid>();
+            foreach (var token in await refreshTokenRepo.ListAllWithSpecAsync(new AllRefreshTokensByUserSpecs(userId)))
+            {
+                refreshTokenRepo.Delete(token);
+            }
+
+            var emailCodeRepo = unitOfWork.Repository<EmailConfirmationCode, Guid>();
+            foreach (var code in await emailCodeRepo.ListAllWithSpecAsync(new AllOtpCodesByUserSpecs<EmailConfirmationCode>(userId)))
+            {
+                emailCodeRepo.Delete(code);
+            }
+
+            var resetCodeRepo = unitOfWork.Repository<PasswordResetCode, Guid>();
+            foreach (var code in await resetCodeRepo.ListAllWithSpecAsync(new AllOtpCodesByUserSpecs<PasswordResetCode>(userId)))
+            {
+                resetCodeRepo.Delete(code);
+            }
+
+            var settingsRepo = unitOfWork.Repository<UserSettings, string>();
+            var settings = await settingsRepo.GetByIdAsync(userId);
+            if (settings is not null)
+            {
+                settingsRepo.Delete(settings);
+            }
+
+            await unitOfWork.SaveChangesAsync();
+
+            // Removes the AspNetUsers row plus its Identity satellite rows (roles, claims, logins,
+            // tokens). Runs on the same scoped DbContext, so it's inside this transaction too.
+            var identityResult = await userManager.DeleteAsync(user);
+            if (!identityResult.Succeeded)
+            {
+                await unitOfWork.RollbackAsync(transaction);
+                logger.LogError("Identity delete failed for user {UserId}: {Errors}", user.Id, string.Join("; ", identityResult.Errors.Select(e => e.Description)));
+                return ServiceResult.Fail("Account deletion failed. Please try again.", ErrorCodes.DeleteAccountFailed, 500);
+            }
+
+            await unitOfWork.CommitAsync(transaction);
+        }
+        catch
+        {
+            await unitOfWork.RollbackAsync(transaction);
+            throw;
+        }
+
+        logger.LogInformation("Account permanently deleted for user {UserId}", userId);
+        return ServiceResult.Ok("Your account has been permanently deleted.");
     }
 
     private async Task<AuthResponseDto> IssueTokensAsync(AppUser user, IList<string> roles, string? ipAddress)

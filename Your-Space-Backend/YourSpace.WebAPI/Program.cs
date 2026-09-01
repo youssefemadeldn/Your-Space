@@ -96,13 +96,21 @@ forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
-app.Logger.LogInformation("Applying database migrations");
-using (var migrationScope = app.Services.CreateScope())
+// Development always auto-migrates. Deployed environments opt in per-instance with
+// RUN_MIGRATIONS_ON_STARTUP=true (set only on the single instance that should own migration —
+// see Dockerfile and dotnet_scaffold_prompt.md edge case 9). Production without the flag still
+// applies migrations via the explicit `dotnet ef database update` deploy step. Left ungated,
+// MigrateAsync() also runs under the SQLite-backed integration-test host, where EF Core's
+// PendingModelChangesWarning trips on the Npgsql-scaffolded snapshot.
+if (app.Environment.IsDevelopment()
+    || builder.Configuration.GetValue<bool>("RUN_MIGRATIONS_ON_STARTUP"))
 {
+    app.Logger.LogInformation("Applying database migrations");
+    using var migrationScope = app.Services.CreateScope();
     var migrationDbContext = migrationScope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
     await migrationDbContext.Database.MigrateAsync();
+    app.Logger.LogInformation("Database migrations applied successfully");
 }
-app.Logger.LogInformation("Database migrations applied successfully");
 
 if (app.Environment.IsDevelopment())
 {

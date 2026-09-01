@@ -83,6 +83,70 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
         refreshAfterLogoutResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task Delete_me_permanently_removes_the_account_and_all_owned_data()
+    {
+        const string email = "delete.full.graph@example.com";
+        const string password = "Str0ng!Pass";
+        var client = await factory.CreateAuthenticatedClientAsync(email);
+
+        // Full owned-data graph: Group ← Person (the RESTRICT edge), Event ← EventGuest → Person,
+        // Person ← PersonOccasionHistory. Deleting the user must tear all of this down in FK-safe
+        // order without tripping the Person → Group RESTRICT constraint.
+        var groupId = await CreateAndGetIdAsync(client, "/api/v1/Groups", new { name = "Family" });
+        var personId = await CreateAndGetIdAsync(client, "/api/v1/Persons", new { name = "Aunt May", groupId });
+        var eventId = await CreateAndGetIdAsync(client, "/api/v1/Events", new { name = "Birthday" });
+
+        var addGuestResponse = await client.PostAsJsonAsync($"/api/v1/events/{eventId}/guests", new { personIds = new[] { personId } });
+        addGuestResponse.IsSuccessStatusCode.Should().BeTrue();
+
+        var addHistoryResponse = await client.PostAsJsonAsync($"/api/v1/persons/{personId}/occasion-history", new { invitedMe = false });
+        addHistoryResponse.IsSuccessStatusCode.Should().BeTrue();
+
+        using var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/Auth/me")
+        {
+            Content = JsonContent.Create(new DeleteAccountDto { Password = password })
+        };
+        var deleteResponse = await client.SendAsync(deleteRequest);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // The account and its data are gone: the still-valid access token can no longer resolve a
+        // profile, and the credentials no longer authenticate.
+        var meResponse = await client.GetAsync("/api/v1/Auth/me");
+        meResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/Auth/login", new LoginDto { Email = email, Password = password });
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Delete_me_with_the_wrong_password_is_rejected_and_keeps_the_account()
+    {
+        const string email = "delete.wrong.password@example.com";
+        var client = await factory.CreateAuthenticatedClientAsync(email);
+
+        using var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/api/v1/Auth/me")
+        {
+            Content = JsonContent.Create(new DeleteAccountDto { Password = "not-my-password" })
+        };
+        var deleteResponse = await client.SendAsync(deleteRequest);
+
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var deleteResult = await DeserializeAsync<object>(deleteResponse);
+        deleteResult.ErrorCode.Should().Be("Auth.DeleteAccount.InvalidPassword");
+
+        var meResponse = await client.GetAsync("/api/v1/Auth/me");
+        meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private static async Task<int> CreateAndGetIdAsync(HttpClient client, string url, object body)
+    {
+        var response = await client.PostAsJsonAsync(url, body);
+        response.IsSuccessStatusCode.Should().BeTrue($"POST {url} should succeed");
+        var result = await response.Content.ReadFromJsonAsync<ServiceResult<JsonElement>>(JsonOptions);
+        return result!.Data.GetProperty("id").GetInt32();
+    }
+
     private static async Task<ServiceResult<T>> DeserializeAsync<T>(HttpResponseMessage response)
     {
         var result = await response.Content.ReadFromJsonAsync<ServiceResult<T>>(JsonOptions);

@@ -36,6 +36,8 @@ import 'package:your_space_mobile/features/auth/presentation/cubit/change_passwo
     as _i1019;
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart'
     as _i723;
+import 'package:your_space_mobile/features/auth/presentation/cubit/delete_account_cubit/delete_account_cubit.dart'
+    as _i516;
 import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart'
     as _i613;
 import 'package:your_space_mobile/features/auth/presentation/cubit/login_cubit/login_cubit.dart'
@@ -243,6 +245,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i723.ConfirmEmailCubit>(
       () => _i723.ConfirmEmailCubit(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i516.DeleteAccountCubit>(
+      () => _i516.DeleteAccountCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i613.ForgotPasswordCubit>(
       () => _i613.ForgotPasswordCubit(gh<_i680.AuthRepository>()),

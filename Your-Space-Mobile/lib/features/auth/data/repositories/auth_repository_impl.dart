@@ -8,6 +8,7 @@ import '../../domain/repositories/base_auth_repository.dart';
 import '../datasources/auth_remote_data_source_impl.dart';
 import '../models/change_password_request.dart';
 import '../models/confirm_email_request.dart';
+import '../models/delete_account_request.dart';
 import '../models/forgot_password_request.dart';
 import '../models/login_request.dart';
 import '../models/register_request.dart';
@@ -99,6 +100,18 @@ class AuthRepositoryImpl implements AuthRepository {
       newPassword: newPassword,
       confirmNewPassword: confirmNewPassword,
     ));
+    return result.fold(
+      (failure) async => Left(failure),
+      (_) async {
+        await _secureStorage.clearSession();
+        return const Right(unit);
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteAccount({required String password}) async {
+    final result = await _remote.deleteAccount(DeleteAccountRequest(password: password));
     return result.fold(
       (failure) async => Left(failure),
       (_) async {

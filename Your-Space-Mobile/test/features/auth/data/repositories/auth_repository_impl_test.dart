@@ -8,6 +8,7 @@ import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_dat
 import 'package:your_space_mobile/features/auth/data/models/auth_response.dart';
 import 'package:your_space_mobile/features/auth/data/models/change_password_request.dart';
 import 'package:your_space_mobile/features/auth/data/models/confirm_email_request.dart';
+import 'package:your_space_mobile/features/auth/data/models/delete_account_request.dart';
 import 'package:your_space_mobile/features/auth/data/models/forgot_password_request.dart';
 import 'package:your_space_mobile/features/auth/data/models/login_request.dart';
 import 'package:your_space_mobile/features/auth/data/models/register_request.dart';
@@ -49,6 +50,7 @@ void main() {
       newPassword: '',
       confirmNewPassword: '',
     ));
+    registerFallbackValue(const DeleteAccountRequest(password: ''));
   });
 
   setUp(() {
@@ -142,6 +144,31 @@ void main() {
         newPassword: 'NewPassw0rd!',
         confirmNewPassword: 'NewPassw0rd!',
       );
+
+      expect(result, const Left(failure));
+      verifyNever(() => secureStorage.clearSession());
+    });
+  });
+
+  group('deleteAccount', () {
+    test('clears the session on success', () async {
+      when(() => remote.deleteAccount(any())).thenAnswer((_) async => const Right(unit));
+      when(() => secureStorage.clearSession()).thenAnswer((_) async {});
+
+      final result = await repository.deleteAccount(password: 'MyPassw0rd!');
+
+      expect(result.isRight(), isTrue);
+      verify(() => secureStorage.clearSession()).called(1);
+    });
+
+    test('never touches storage on failure', () async {
+      const failure = ValidationFailure(
+        message: 'The password you entered is incorrect.',
+        errorCode: 'Auth.DeleteAccount.InvalidPassword',
+      );
+      when(() => remote.deleteAccount(any())).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.deleteAccount(password: 'wrong');
 
       expect(result, const Left(failure));
       verifyNever(() => secureStorage.clearSession());

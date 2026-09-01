@@ -40,4 +40,6 @@ abstract class AuthRepository {
     required String newPassword,
     required String confirmNewPassword,
   });
+
+  Future<Either<Failure, Unit>> deleteAccount({required String password});
 }

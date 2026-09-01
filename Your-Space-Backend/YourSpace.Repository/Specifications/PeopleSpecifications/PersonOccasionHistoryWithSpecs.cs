@@ -37,6 +37,11 @@ public class PersonOccasionHistoryWithSpecs : BaseSpecification<PersonOccasionHi
     public static PersonOccasionHistoryWithSpecs ReciprocityCandidates(string ownerUserId)
         => new(h => h.Person.OwnerUserId == ownerUserId && h.InvitedMe);
 
+    // Every history row the user owns via any of their people, unpaginated — feeds a full account
+    // deletion (these log rows are removed before their parent People).
+    public static PersonOccasionHistoryWithSpecs ForOwner(string ownerUserId)
+        => new(h => h.Person.OwnerUserId == ownerUserId);
+
     private static Expression<Func<PersonOccasionHistory, bool>> BuildForPersonPredicate(int personId, string ownerUserId)
         => h => h.PersonId == personId && h.Person.OwnerUserId == ownerUserId;
 }
