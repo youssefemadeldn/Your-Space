@@ -8,7 +8,7 @@ class UserProfile extends Equatable {
   final String firstName;
   final String lastName;
   final String? phoneNumber;
-  final Gender gender;
+  final Gender? gender;
   final List<String> roles;
 
   const UserProfile({
@@ -17,7 +17,7 @@ class UserProfile extends Equatable {
     required this.firstName,
     required this.lastName,
     this.phoneNumber,
-    required this.gender,
+    this.gender,
     required this.roles,
   });
 

@@ -8,7 +8,7 @@ class UserProfileResponse {
   final String firstName;
   final String lastName;
   final String? phoneNumber;
-  final Gender gender;
+  final Gender? gender;
   final List<String> roles;
 
   const UserProfileResponse({
@@ -17,7 +17,7 @@ class UserProfileResponse {
     required this.firstName,
     required this.lastName,
     this.phoneNumber,
-    required this.gender,
+    this.gender,
     required this.roles,
   });
 
@@ -27,7 +27,7 @@ class UserProfileResponse {
         firstName: json['firstName'] as String,
         lastName: json['lastName'] as String,
         phoneNumber: json['phoneNumber'] as String?,
-        gender: Gender.fromWire(json['gender'] as String),
+        gender: json['gender'] == null ? null : Gender.fromWire(json['gender'] as String),
         roles: (json['roles'] as List<dynamic>).map((role) => role as String).toList(),
       );
 
