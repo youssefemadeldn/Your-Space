@@ -10,7 +10,7 @@ import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_button.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubit/register_cubit.dart';
-import 'package:your_space_mobile/features/auth/presentation/pages/register_screen.dart';
+import 'package:your_space_mobile/features/auth/presentation/pages/register_screen/register_screen.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 

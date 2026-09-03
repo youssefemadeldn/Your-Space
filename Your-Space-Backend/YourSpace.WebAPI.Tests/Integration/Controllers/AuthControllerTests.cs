@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using YourSpace.Data.Enums;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.WebAPI.Tests.Common;
@@ -11,7 +13,7 @@ namespace YourSpace.WebAPI.Tests.Integration.Controllers;
 
 public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
     [Fact]
     public async Task Register_confirm_login_refresh_and_logout_happy_path_succeeds()
@@ -26,7 +28,8 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
             ConfirmPassword = "Str0ng!Pass",
             FirstName = "Integration",
             LastName = "Tester",
-            PhoneNumber = "+201234567890"
+            PhoneNumber = "+201234567890",
+            Gender = Gender.Male
         });
         registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -94,7 +97,7 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
         // Person ← PersonOccasionHistory. Deleting the user must tear all of this down in FK-safe
         // order without tripping the Person → Group RESTRICT constraint.
         var groupId = await CreateAndGetIdAsync(client, "/api/v1/Groups", new { name = "Family" });
-        var personId = await CreateAndGetIdAsync(client, "/api/v1/Persons", new { name = "Aunt May", groupId });
+        var personId = await CreateAndGetIdAsync(client, "/api/v1/Persons", new { name = "Aunt May", gender = "Female", groupId });
         var eventId = await CreateAndGetIdAsync(client, "/api/v1/Events", new { name = "Birthday" });
 
         var addGuestResponse = await client.PostAsJsonAsync($"/api/v1/events/{eventId}/guests", new { personIds = new[] { personId } });

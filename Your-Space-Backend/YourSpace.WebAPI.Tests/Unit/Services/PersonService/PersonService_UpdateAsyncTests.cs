@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.PersonService.Dtos;
@@ -46,7 +47,7 @@ public class PersonService_UpdateAsyncTests
     public async Task Returns_not_found_when_new_group_does_not_belong_to_owner()
     {
         var originalGroup = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", GroupId = 1, Group = originalGroup };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = originalGroup };
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
         _groupRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Group>>())).ReturnsAsync((Group?)null);
 
@@ -61,7 +62,7 @@ public class PersonService_UpdateAsyncTests
     public async Task Leaves_phone_number_unchanged_when_omitted_from_request()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", PhoneNumber = "+201234567890", GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 1, Group = group };
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
 
         var result = await CreateSut().UpdateAsync("owner-1", new UpdatePersonDto { Id = 10, Name = "Ahmed Updated" });
@@ -69,5 +70,30 @@ public class PersonService_UpdateAsyncTests
         result.Success.Should().BeTrue();
         person.Name.Should().Be("Ahmed Updated");
         person.PhoneNumber.Should().Be("+201234567890");
+    }
+
+    [Fact]
+    public async Task Leaves_phone_number_2_notes_and_gender_unchanged_when_omitted_from_request()
+    {
+        var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
+        var person = new Person
+        {
+            Id = 10,
+            OwnerUserId = "owner-1",
+            Name = "Ahmed",
+            PhoneNumber2 = "+201234567891",
+            Notes = "Original notes.",
+            Gender = Gender.Male,
+            GroupId = 1,
+            Group = group
+        };
+        _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
+
+        var result = await CreateSut().UpdateAsync("owner-1", new UpdatePersonDto { Id = 10, Name = "Ahmed Updated" });
+
+        result.Success.Should().BeTrue();
+        person.PhoneNumber2.Should().Be("+201234567891");
+        person.Notes.Should().Be("Original notes.");
+        person.Gender.Should().Be(Gender.Male);
     }
 }

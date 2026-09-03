@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
@@ -78,7 +79,7 @@ void main() {
     // Success, non-empty → person rows.
     const group = Group(id: 1, name: 'Family');
     const people = [
-      Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family'),
+      Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family'),
     ];
     cubit.pushState(const PeopleListSuccess(people: people, groups: [group], pageIndex: 1, hasNextPage: false));
     await tester.pumpAndSettle();

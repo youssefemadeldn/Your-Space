@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.OtpService;
@@ -43,7 +44,7 @@ public class AuthService_GetProfileAsyncTests
         var user = new AppUser
         {
             Id = "user-1", Email = "jane@example.com", UserName = "jane@example.com",
-            FirstName = "Jane", LastName = "Doe", PhoneNumber = "+201234567890"
+            FirstName = "Jane", LastName = "Doe", PhoneNumber = "+201234567890", Gender = Gender.Female
         };
         _userManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
         _userManager.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["User", "StandardAdmin"]);

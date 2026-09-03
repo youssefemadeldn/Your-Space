@@ -51,7 +51,8 @@ class AddGuestsByGroupTab extends StatelessWidget {
                     label: 'events.addGuests.addGroupCta'.tr(),
                     variant: AppButtonVariant.soft,
                     size: AppButtonSize.sm,
-                    loading: actionState is AddGuestsActionSubmitting,
+                    loading: actionState is AddGuestsActionSubmitting &&
+                        actionState.groupId == progress.groupId,
                     onPressed: count == 0
                         ? null
                         : () => context

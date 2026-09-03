@@ -85,7 +85,10 @@ public class PersonService(
             OwnerUserId = ownerUserId,
             Name = dto.Name,
             PhoneNumber = dto.PhoneNumber,
-            GroupId = dto.GroupId
+            PhoneNumber2 = dto.PhoneNumber2,
+            Gender = dto.Gender,
+            GroupId = dto.GroupId,
+            Notes = dto.Notes
         };
 
         await repo.AddAsync(person);
@@ -132,6 +135,21 @@ public class PersonService(
         if (dto.PhoneNumber is not null)
         {
             person.PhoneNumber = dto.PhoneNumber;
+        }
+
+        if (dto.PhoneNumber2 is not null)
+        {
+            person.PhoneNumber2 = dto.PhoneNumber2;
+        }
+
+        if (dto.Gender is not null)
+        {
+            person.Gender = dto.Gender.Value;
+        }
+
+        if (dto.Notes is not null)
+        {
+            person.Notes = dto.Notes;
         }
 
         person.UpdatedAt = DateTime.UtcNow;

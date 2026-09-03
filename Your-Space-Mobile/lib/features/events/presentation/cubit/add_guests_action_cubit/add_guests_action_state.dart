@@ -13,7 +13,16 @@ final class AddGuestsActionInitial extends AddGuestsActionState {
 }
 
 final class AddGuestsActionSubmitting extends AddGuestsActionState {
-  const AddGuestsActionSubmitting();
+  // Which specific action is in flight — never both, so each consumer can tell whether
+  // *its own* row/button is the one submitting instead of reacting to any submission at all.
+  // addGroup sets groupId; addPersons sets personIds.
+  final int? groupId;
+  final List<int>? personIds;
+
+  const AddGuestsActionSubmitting({this.groupId, this.personIds});
+
+  @override
+  List<Object?> get props => [groupId, personIds];
 }
 
 final class AddGuestsActionSuccess extends AddGuestsActionState {

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import '../../domain/entities/user_profile.dart';
@@ -30,6 +31,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String firstName,
     required String lastName,
     String? phoneNumber,
+    Gender? gender,
   }) async {
     final result = await _remote.register(RegisterRequest(
       email: email,
@@ -38,6 +40,7 @@ class AuthRepositoryImpl implements AuthRepository {
       firstName: firstName,
       lastName: lastName,
       phoneNumber: phoneNumber,
+      gender: gender,
     ));
     return result.fold(Left.new, (response) => Right(response.toEntity()));
   }

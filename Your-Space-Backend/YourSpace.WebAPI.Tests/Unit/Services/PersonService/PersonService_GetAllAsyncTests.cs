@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Repository.Specifications.Paginated;
@@ -32,8 +33,8 @@ public class PersonService_GetAllAsyncTests
     public async Task Flags_only_persons_with_an_invited_me_true_record_without_an_n_plus_one_per_row()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var withHistory = new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", GroupId = 1, Group = group };
-        var withoutHistory = new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", GroupId = 1, Group = group };
+        var withHistory = new Person { Id = 1, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = group };
+        var withoutHistory = new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 1, Group = group };
 
         _personRepo.Setup(r => r.CountWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(2);
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync([withHistory, withoutHistory]);

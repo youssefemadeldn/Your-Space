@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
@@ -21,10 +22,20 @@ void main() {
   late MockGroupRepository groupRepository;
   late ReciprocitySuggestionsCubit cubit;
 
-  const suggestion =
-      Person(id: 3, name: 'Layla Hassan', groupId: 1, groupName: 'Family', hasReciprocityHistory: true);
-  const suggestion2 =
-      Person(id: 4, name: 'Youssef Adel', groupId: 2, groupName: 'Close friends', hasReciprocityHistory: true);
+  const suggestion = Person(
+      id: 3,
+      name: 'Layla Hassan',
+      gender: Gender.female,
+      groupId: 1,
+      groupName: 'Family',
+      hasReciprocityHistory: true);
+  const suggestion2 = Person(
+      id: 4,
+      name: 'Youssef Adel',
+      gender: Gender.male,
+      groupId: 2,
+      groupName: 'Close friends',
+      hasReciprocityHistory: true);
 
   setUp(() {
     eventGuestRepository = MockEventGuestRepository();

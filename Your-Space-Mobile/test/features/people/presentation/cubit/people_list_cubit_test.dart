@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
@@ -24,8 +25,9 @@ void main() {
 
   const family = Group(id: 1, name: 'Family');
   const closeFriends = Group(id: 2, name: 'Close friends');
-  const person1 = Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family');
-  const person2 = Person(id: 2, name: 'Omar Khaled', groupId: 2, groupName: 'Close friends');
+  const person1 = Person(id: 1, name: 'Sara Adel', gender: Gender.female, groupId: 1, groupName: 'Family');
+  const person2 =
+      Person(id: 2, name: 'Omar Khaled', gender: Gender.male, groupId: 2, groupName: 'Close friends');
 
   setUp(() {
     personRepository = MockPersonRepository();

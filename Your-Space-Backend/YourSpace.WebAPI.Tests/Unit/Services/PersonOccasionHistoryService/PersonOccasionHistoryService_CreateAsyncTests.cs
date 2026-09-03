@@ -45,7 +45,7 @@ public class PersonOccasionHistoryService_CreateAsyncTests
     public async Task Forces_invite_method_null_when_invited_me_is_false_even_if_supplied()
     {
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync(new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", GroupId = 1 });
+            .ReturnsAsync(new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 });
 
         var result = await CreateSut().CreateAsync("owner-1", personId: 10,
             new CreatePersonOccasionHistoryDto { InvitedMe = false, InviteMethod = InviteMethod.WhatsApp });

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.AuthService.Dtos;
@@ -132,7 +133,7 @@ public class AuthService_DeleteAccountAsyncTests
         _historyRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonOccasionHistory>>()))
             .ReturnsAsync([new PersonOccasionHistory { PersonId = 1, InvitedMe = false }]);
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", GroupId = 1 }]);
+            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", Gender = Gender.Male, GroupId = 1 }]);
         _eventRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Event>>()))
             .ReturnsAsync([new Event { OwnerUserId = User.Id, Name = "Party" }]);
         _groupRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Group>>()))
@@ -164,7 +165,7 @@ public class AuthService_DeleteAccountAsyncTests
         _historyRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonOccasionHistory>>()))
             .ReturnsAsync([new PersonOccasionHistory { PersonId = 1, InvitedMe = false }]);
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", GroupId = 1 }]);
+            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", Gender = Gender.Male, GroupId = 1 }]);
         _eventRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Event>>()))
             .ReturnsAsync([new Event { OwnerUserId = User.Id, Name = "Party" }]);
         _groupRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Group>>()))
