@@ -276,6 +276,27 @@ namespace YourSpace.Data.Migrations
                 table: "SubGroups",
                 column: "OwnerUserId");
 
+            // People.GovernorateId is added NOT NULL with a defaultValue of 0, but Governorates is
+            // created empty in this same migration — so on any database that already has People rows
+            // (i.e. a live environment, not a fresh test/dev DB) every existing row now points at
+            // GovernorateId 0, which does not exist, and FK_People_Governorates_GovernorateId below
+            // fails validation. Give those rows a real home first: a single global, locked
+            // "Unspecified" governorate (OwnerUserId NULL, same shape GovernorateWithSpecs already
+            // treats as shared reference data), then repoint the orphaned rows at it.
+            migrationBuilder.Sql("""
+                INSERT INTO "Governorates" ("OwnerUserId", "Name", "NameAr", "IsLocked", "CreatedAt", "UpdatedAt")
+                SELECT NULL, 'Unspecified', 'غير محدد', TRUE, NOW(), NOW()
+                WHERE EXISTS (SELECT 1 FROM "People" WHERE "GovernorateId" = 0)
+                  AND NOT EXISTS (SELECT 1 FROM "Governorates" WHERE "Name" = 'Unspecified' AND "OwnerUserId" IS NULL);
+
+                UPDATE "People"
+                SET "GovernorateId" = (
+                    SELECT "Id" FROM "Governorates"
+                    WHERE "Name" = 'Unspecified' AND "OwnerUserId" IS NULL
+                    LIMIT 1)
+                WHERE "GovernorateId" = 0;
+                """);
+
             migrationBuilder.AddForeignKey(
                 name: "FK_People_Cities_CityId",
                 table: "People",
