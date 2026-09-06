@@ -29,6 +29,7 @@ class ApiConstants {
   static const String resetPassword = '/auth/reset-password';
   static const String changePassword = '/auth/change-password';
   static const String deleteAccount = '/auth/me';
+  static const String profile = '/auth/me';
 
   // Base segments only — nested paths (e.g. '$events/$eventId/guests') are
   // interpolated at the datasource call site.

@@ -44,4 +44,12 @@ abstract class AuthRepository {
   });
 
   Future<Either<Failure, Unit>> deleteAccount({required String password});
+
+  Future<Either<Failure, UserProfile>> getProfile();
+
+  Future<Either<Failure, UserProfile>> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+  });
 }

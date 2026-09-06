@@ -14,4 +14,5 @@ class AppConstants {
   static const String kRefreshTokenKey = 'REFRESH_TOKEN';
   static const String kUserKey = 'USER_DATA';
   static const String kRememberMeKey = 'REMEMBER_ME';
+  static const String kHasSeenOnboardingKey = 'HAS_SEEN_ONBOARDING';
 }

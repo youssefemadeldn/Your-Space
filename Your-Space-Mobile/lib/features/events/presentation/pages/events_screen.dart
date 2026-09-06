@@ -9,8 +9,7 @@ import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/event_details_args.dart';
 import 'package:your_space_mobile/core/router/args/event_form_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
-import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
-import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
+import 'package:your_space_mobile/core/theme/app_text_styles.dart';
 import 'package:your_space_mobile/core/widgets/app_card.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
 import 'package:your_space_mobile/core/widgets/app_list_tile.dart';
@@ -28,25 +27,36 @@ class EventsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar(title: 'events.list.title'.tr()),
       body: SafeArea(
-        child: BlocBuilder<EventsListCubit, EventsListState>(
-          builder: (context, state) => switch (state) {
-            EventsListSuccess(:final events, :final hasNextPage, :final isLoadingMore) =>
-              _EventsListBody(events: events, hasNextPage: hasNextPage, isLoadingMore: isLoadingMore),
-            EventsListError(:final message) => ErrorStateWidget(
-                message: message,
-                onRetry: () => context.read<EventsListCubit>().load(),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text('events.list.title'.tr(), style: AppTextStyles.headlineSmall),
               ),
-            _ => const AppLoadingIndicator(),
-          },
+            ),
+            Expanded(
+              child: BlocBuilder<EventsListCubit, EventsListState>(
+                builder: (context, state) => switch (state) {
+                  EventsListSuccess(:final events, :final hasNextPage, :final isLoadingMore) =>
+                    _EventsListBody(events: events, hasNextPage: hasNextPage, isLoadingMore: isLoadingMore),
+                  EventsListError(:final message) => ErrorStateWidget(
+                      message: message,
+                      onRetry: () => context.read<EventsListCubit>().load(),
+                    ),
+                  _ => const AppLoadingIndicator(),
+                },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed(AppRoutes.eventForm, extra: const EventFormArgs()),
         child: const Icon(Icons.add_rounded),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }
 }

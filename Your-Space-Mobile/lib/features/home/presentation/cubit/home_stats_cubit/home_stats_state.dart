@@ -18,15 +18,17 @@ final class HomeStatsSuccess extends HomeStatsState {
   final int groupsCount;
   final int peopleCount;
   final int eventsCount;
+  final String firstName;
 
   const HomeStatsSuccess({
     required this.groupsCount,
     required this.peopleCount,
     required this.eventsCount,
+    required this.firstName,
   });
 
   @override
-  List<Object?> get props => [groupsCount, peopleCount, eventsCount];
+  List<Object?> get props => [groupsCount, peopleCount, eventsCount, firstName];
 }
 
 final class HomeStatsError extends HomeStatsState {

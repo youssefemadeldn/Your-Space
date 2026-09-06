@@ -18,7 +18,7 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  testWidgets('renders all 4 nav icons', (tester) async {
+  testWidgets('renders all 5 nav icons', (tester) async {
     setPhoneLikeSurface(tester);
     await pumpTestHarness(tester, AppBottomNav(currentIndex: 0, onTap: (_) {}));
 
@@ -26,6 +26,7 @@ void main() {
     expect(find.byIcon(Icons.groups_rounded), findsOneWidget);
     expect(find.byIcon(Icons.people_alt_rounded), findsOneWidget);
     expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
   });
 
   testWidgets('tapping a tab invokes onTap with its index — no GoRouter required', (tester) async {
@@ -36,9 +37,9 @@ void main() {
       AppBottomNav(currentIndex: 0, onTap: (index) => tapped = index),
     );
 
-    await tester.tap(find.byIcon(Icons.event_rounded));
+    await tester.tap(find.byIcon(Icons.settings_rounded));
     await tester.pump();
 
-    expect(tapped, 3);
+    expect(tapped, 4);
   });
 }

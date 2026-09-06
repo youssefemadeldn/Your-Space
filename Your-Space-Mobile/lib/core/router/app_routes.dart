@@ -8,6 +8,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
   static const String changePassword = '/change-password';
+  static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String settings = '/settings';
 

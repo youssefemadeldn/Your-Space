@@ -7,16 +7,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_password_input.dart';
+import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dart';
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart';
+import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/delete_account_cubit/delete_account_cubit.dart';
+import 'package:your_space_mobile/features/settings/presentation/cubit/profile_form_cubit/profile_form_cubit.dart';
 import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen/settings_screen.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
+class MockGetCurrentUserProfileUseCase extends Mock implements GetCurrentUserProfileUseCase {}
+
 void main() {
+  const profile = UserProfile(
+    id: 'user-1',
+    email: 'jane@example.com',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    phoneNumber: '+201234567890',
+    gender: Gender.female,
+    roles: ['User'],
+  );
+
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
@@ -33,6 +49,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final repository = MockAuthRepository();
+    final getCurrentUserProfile = MockGetCurrentUserProfileUseCase();
+    when(() => getCurrentUserProfile()).thenAnswer((_) async => const Right(profile));
     when(() => repository.deleteAccount(password: any(named: 'password'))).thenAnswer(
       (_) async => const Left(
         ValidationFailure(
@@ -41,8 +59,11 @@ void main() {
         ),
       ),
     );
-    final cubit = DeleteAccountCubit(repository);
-    addTearDown(cubit.close);
+
+    final profileFormCubit = ProfileFormCubit(getCurrentUserProfile, repository);
+    addTearDown(profileFormCubit.close);
+    final deleteAccountCubit = DeleteAccountCubit(repository);
+    addTearDown(deleteAccountCubit.close);
 
     await tester.pumpWidget(
       EasyLocalization(
@@ -59,8 +80,11 @@ void main() {
               localizationsDelegates: context.localizationDelegates,
               supportedLocales: context.supportedLocales,
               locale: context.locale,
-              home: BlocProvider<DeleteAccountCubit>.value(
-                value: cubit,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<ProfileFormCubit>.value(value: profileFormCubit..initialize()),
+                  BlocProvider<DeleteAccountCubit>.value(value: deleteAccountCubit),
+                ],
                 child: const SettingsScreen(),
               ),
             ),
@@ -70,7 +94,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // All three rows render.
+    // The profile form prefills from the loaded profile.
+    expect(find.text('Jane'), findsOneWidget);
+
+    // All three account rows render.
     expect(find.text('Change password'), findsOneWidget);
     expect(find.text('Log out'), findsOneWidget);
     expect(find.text('Delete account'), findsOneWidget);
@@ -83,7 +110,7 @@ void main() {
     expect(find.text('Delete my account'), findsOneWidget);
 
     // A wrong password keeps the dialog open with the backend message shown inline.
-    await tester.enterText(find.byType(TextField), 'wrong-password');
+    await tester.enterText(find.byType(TextField).last, 'wrong-password');
     await tester.tap(find.text('Delete my account'));
     await tester.pumpAndSettle();
 
