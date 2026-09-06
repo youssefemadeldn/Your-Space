@@ -131,7 +131,8 @@ public class AuthControllerTests(TestWebApplicationFactory factory) : IClassFixt
         // Person ← PersonOccasionHistory. Deleting the user must tear all of this down in FK-safe
         // order without tripping the Person → Group RESTRICT constraint.
         var groupId = await CreateAndGetIdAsync(client, "/api/v1/Groups", new { name = "Family" });
-        var personId = await CreateAndGetIdAsync(client, "/api/v1/Persons", new { name = "Aunt May", gender = "Female", groupId });
+        var governorateId = await CreateAndGetIdAsync(client, "/api/v1/Governorates", new { name = "Cairo" });
+        var personId = await CreateAndGetIdAsync(client, "/api/v1/Persons", new { name = "Aunt May", gender = "Female", groupId, governorateId });
         var eventId = await CreateAndGetIdAsync(client, "/api/v1/Events", new { name = "Birthday" });
 
         var addGuestResponse = await client.PostAsJsonAsync($"/api/v1/events/{eventId}/guests", new { personIds = new[] { personId } });

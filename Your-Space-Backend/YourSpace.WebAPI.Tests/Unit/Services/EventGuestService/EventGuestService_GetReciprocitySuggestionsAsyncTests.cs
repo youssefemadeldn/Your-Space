@@ -51,7 +51,7 @@ public class EventGuestService_GetReciprocitySuggestionsAsyncTests
 
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Village Friends" };
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync([new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 1, Group = group }]);
+            .ReturnsAsync([new Person { Id = 2, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 1, GovernorateId = 1, Group = group }]);
 
         var result = await CreateSut().GetReciprocitySuggestionsAsync("owner-1", eventId: 1, groupId: null, new PaginationSpecification());
 

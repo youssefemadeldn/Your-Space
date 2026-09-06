@@ -35,7 +35,7 @@ class PersonDetailsBody extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                AppAvatar(name: person.name, size: 72.w),
+                AppAvatar(name: person.name, size: 72.w, photoUrl: person.primaryPhotoUrl),
                 SizedBox(height: 10.h),
                 Directionality(
                   textDirection: TextDirection.ltr,

@@ -19,6 +19,12 @@ public class YourSpaceDbContext(DbContextOptions<YourSpaceDbContext> options)
     public DbSet<PersonImage> PersonImages => Set<PersonImage>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
 
+    public DbSet<SubGroup> SubGroups => Set<SubGroup>();
+    public DbSet<Governorate> Governorates => Set<Governorate>();
+    public DbSet<City> Cities => Set<City>();
+    public DbSet<Neighborhood> Neighborhoods => Set<Neighborhood>();
+    public DbSet<PersonRelationship> PersonRelationships => Set<PersonRelationship>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

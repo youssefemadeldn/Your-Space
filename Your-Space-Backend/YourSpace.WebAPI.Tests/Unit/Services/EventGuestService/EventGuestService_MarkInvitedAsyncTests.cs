@@ -42,7 +42,7 @@ public class EventGuestService_MarkInvitedAsyncTests
     public async Task Sets_status_method_and_timestamp()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group };
         var guest = new EventGuest { Id = 1, EventId = 1, PersonId = 10, Person = person, Status = EventGuestStatus.NotInvited };
         _guestRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<EventGuest>>())).ReturnsAsync(guest);
 
@@ -61,7 +61,7 @@ public class EventGuestService_MarkInvitedAsyncTests
         var guest = new EventGuest
         {
             Id = 1, EventId = 1, PersonId = 10,
-            Person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" } },
+            Person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" } },
             Status = EventGuestStatus.Invited, InviteMethod = InviteMethod.WhatsApp, InvitedAt = invitedAt
         };
         _guestRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<EventGuest>>())).ReturnsAsync(guest);

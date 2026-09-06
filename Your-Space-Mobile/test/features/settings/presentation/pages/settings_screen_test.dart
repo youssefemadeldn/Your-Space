@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:your_space_mobile/core/entities/gender.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/theme/app_theme.dart';
 import 'package:your_space_mobile/core/widgets/app_password_input.dart';
@@ -21,6 +22,8 @@ import 'package:your_space_mobile/features/settings/presentation/pages/settings_
 class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockGetCurrentUserProfileUseCase extends Mock implements GetCurrentUserProfileUseCase {}
+
+class MockDataRefreshBus extends Mock implements DataRefreshBus {}
 
 void main() {
   const profile = UserProfile(
@@ -60,7 +63,7 @@ void main() {
       ),
     );
 
-    final profileFormCubit = ProfileFormCubit(getCurrentUserProfile, repository);
+    final profileFormCubit = ProfileFormCubit(getCurrentUserProfile, repository, MockDataRefreshBus());
     addTearDown(profileFormCubit.close);
     final deleteAccountCubit = DeleteAccountCubit(repository);
     addTearDown(deleteAccountCubit.close);

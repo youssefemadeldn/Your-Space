@@ -137,7 +137,7 @@ public class AuthService_DeleteAccountAsyncTests
         _historyRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonOccasionHistory>>()))
             .ReturnsAsync([new PersonOccasionHistory { PersonId = 1, InvitedMe = false }]);
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", Gender = Gender.Male, GroupId = 1 }]);
+            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", Gender = Gender.Male, GroupId = 1, GovernorateId = 1 }]);
         _eventRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Event>>()))
             .ReturnsAsync([new Event { OwnerUserId = User.Id, Name = "Party" }]);
         _groupRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Group>>()))
@@ -169,7 +169,7 @@ public class AuthService_DeleteAccountAsyncTests
         _historyRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonOccasionHistory>>()))
             .ReturnsAsync([new PersonOccasionHistory { PersonId = 1, InvitedMe = false }]);
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>()))
-            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", Gender = Gender.Male, GroupId = 1 }]);
+            .ReturnsAsync([new Person { OwnerUserId = User.Id, Name = "Contact", Gender = Gender.Male, GroupId = 1, GovernorateId = 1 }]);
         _eventRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Event>>()))
             .ReturnsAsync([new Event { OwnerUserId = User.Id, Name = "Party" }]);
         _groupRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Group>>()))

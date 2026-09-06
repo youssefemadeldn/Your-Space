@@ -41,7 +41,7 @@ public class EventGuestService_GetDetailsAsyncTests
     public async Task Returns_guest_details_including_resolved_group_name()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group };
         var guest = new EventGuest { Id = 1, EventId = 1, PersonId = 10, Person = person };
         _guestRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<EventGuest>>())).ReturnsAsync(guest);
 

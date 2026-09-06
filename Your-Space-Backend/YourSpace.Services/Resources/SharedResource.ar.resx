@@ -163,4 +163,112 @@
   <data name="Avatar.File.InvalidType" xml:space="preserve">
     <value>يجب أن تكون الصورة بصيغة JPEG أو PNG.</value>
   </data>
+  <data name="Person.SubGroupId.Invalid" xml:space="preserve">
+    <value>المجموعة الفرعية المحددة غير صالحة لهذه المجموعة.</value>
+  </data>
+  <data name="Person.GovernorateId.Invalid" xml:space="preserve">
+    <value>يجب اختيار محافظة صالحة.</value>
+  </data>
+  <data name="Person.CityId.Invalid" xml:space="preserve">
+    <value>المدينة المحددة غير صالحة لهذه المحافظة.</value>
+  </data>
+  <data name="Person.NeighborhoodId.Invalid" xml:space="preserve">
+    <value>الحي المحدد غير صالح لهذه المدينة.</value>
+  </data>
+  <data name="SubGroup.NotFound" xml:space="preserve">
+    <value>المجموعة الفرعية غير موجودة.</value>
+  </data>
+  <data name="SubGroup.GroupNotFound" xml:space="preserve">
+    <value>المجموعة المحددة غير موجودة.</value>
+  </data>
+  <data name="SubGroup.HasActivePersons" xml:space="preserve">
+    <value>لا تزال هذه المجموعة الفرعية تحتوي على أشخاص. يرجى نقلهم أو إزالتهم قبل حذفها.</value>
+  </data>
+  <data name="SubGroup.Name.Required" xml:space="preserve">
+    <value>اسم المجموعة الفرعية مطلوب.</value>
+  </data>
+  <data name="SubGroup.Name.MaxLength" xml:space="preserve">
+    <value>يجب ألا يتجاوز اسم المجموعة الفرعية 200 حرف.</value>
+  </data>
+  <data name="Governorate.NotFound" xml:space="preserve">
+    <value>المحافظة غير موجودة.</value>
+  </data>
+  <data name="Governorate.Locked" xml:space="preserve">
+    <value>هذه محافظة أساسية ولا يمكن تعديلها أو حذفها.</value>
+  </data>
+  <data name="Governorate.NotOwned" xml:space="preserve">
+    <value>يمكنك فقط تعديل أو حذف المحافظات التي أنشأتها.</value>
+  </data>
+  <data name="Governorate.HasActiveCities" xml:space="preserve">
+    <value>لا تزال هذه المحافظة تحتوي على مدن تابعة لها. يرجى إزالتها قبل حذف المحافظة.</value>
+  </data>
+  <data name="Governorate.HasActivePersons" xml:space="preserve">
+    <value>لا تزال هذه المحافظة تحتوي على أشخاص. يرجى نقلهم أو إزالتهم قبل حذف المحافظة.</value>
+  </data>
+  <data name="Governorate.Name.Required" xml:space="preserve">
+    <value>اسم المحافظة مطلوب.</value>
+  </data>
+  <data name="Governorate.Name.MaxLength" xml:space="preserve">
+    <value>يجب ألا يتجاوز اسم المحافظة 200 حرف.</value>
+  </data>
+  <data name="City.NotFound" xml:space="preserve">
+    <value>المدينة غير موجودة.</value>
+  </data>
+  <data name="City.GovernorateNotFound" xml:space="preserve">
+    <value>المحافظة المحددة غير موجودة.</value>
+  </data>
+  <data name="City.HasActiveNeighborhoods" xml:space="preserve">
+    <value>لا تزال هذه المدينة تحتوي على أحياء تابعة لها. يرجى إزالتها قبل حذف المدينة.</value>
+  </data>
+  <data name="City.HasActivePersons" xml:space="preserve">
+    <value>لا تزال هذه المدينة تحتوي على أشخاص. يرجى نقلهم أو إزالتهم قبل حذف المدينة.</value>
+  </data>
+  <data name="City.Name.Required" xml:space="preserve">
+    <value>اسم المدينة مطلوب.</value>
+  </data>
+  <data name="City.Name.MaxLength" xml:space="preserve">
+    <value>يجب ألا يتجاوز اسم المدينة 200 حرف.</value>
+  </data>
+  <data name="Neighborhood.NotFound" xml:space="preserve">
+    <value>الحي غير موجود.</value>
+  </data>
+  <data name="Neighborhood.CityNotFound" xml:space="preserve">
+    <value>المدينة المحددة غير موجودة.</value>
+  </data>
+  <data name="Neighborhood.HasActivePersons" xml:space="preserve">
+    <value>لا يزال هذا الحي يحتوي على أشخاص. يرجى نقلهم أو إزالتهم قبل حذفه.</value>
+  </data>
+  <data name="Neighborhood.Name.Required" xml:space="preserve">
+    <value>اسم الحي مطلوب.</value>
+  </data>
+  <data name="Neighborhood.Name.MaxLength" xml:space="preserve">
+    <value>يجب ألا يتجاوز اسم الحي 200 حرف.</value>
+  </data>
+  <data name="PersonRelationship.NotFound" xml:space="preserve">
+    <value>العلاقة غير موجودة.</value>
+  </data>
+  <data name="PersonRelationship.RelatedPersonNotFound" xml:space="preserve">
+    <value>الشخص المرتبط المحدد غير موجود.</value>
+  </data>
+  <data name="PersonRelationship.SelfLink" xml:space="preserve">
+    <value>لا يمكن ربط الشخص بنفسه.</value>
+  </data>
+  <data name="PersonRelationship.DuplicateParent" xml:space="preserve">
+    <value>هذا الشخص لديه بالفعل علاقة من هذا النوع.</value>
+  </data>
+  <data name="PersonRelationship.CircularChain" xml:space="preserve">
+    <value>ستؤدي هذه العلاقة إلى إنشاء سلسلة عائلية دائرية.</value>
+  </data>
+  <data name="EventGuest.SubGroupNotFound" xml:space="preserve">
+    <value>المجموعة الفرعية المحددة غير موجودة.</value>
+  </data>
+  <data name="EventGuest.GovernorateNotFound" xml:space="preserve">
+    <value>المحافظة المحددة غير موجودة.</value>
+  </data>
+  <data name="EventGuest.CityNotFound" xml:space="preserve">
+    <value>المدينة المحددة غير موجودة.</value>
+  </data>
+  <data name="EventGuest.NeighborhoodNotFound" xml:space="preserve">
+    <value>الحي المحدد غير موجود.</value>
+  </data>
 </root>

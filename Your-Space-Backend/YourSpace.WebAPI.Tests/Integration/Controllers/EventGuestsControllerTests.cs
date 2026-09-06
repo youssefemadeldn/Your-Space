@@ -8,6 +8,7 @@ using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.EventGuestService.Dtos;
 using YourSpace.Services.Services.EventService.Dtos;
+using YourSpace.Services.Services.GovernorateService.Dtos;
 using YourSpace.Services.Services.GroupService.Dtos;
 using YourSpace.Services.Services.PersonService.Dtos;
 using YourSpace.WebAPI.Tests.Common;
@@ -114,8 +115,16 @@ public class EventGuestsControllerTests(TestWebApplicationFactory factory) : ICl
 
     private static async Task<PersonDetailsDto> CreatePersonAsync(HttpClient client, string name, int groupId)
     {
-        var response = await client.PostAsJsonAsync("/api/v1/Persons", new CreatePersonDto { Name = name, GroupId = groupId, Gender = Gender.Male });
+        var governorateId = await CreateGovernorateAsync(client, $"{name}'s Governorate");
+        var response = await client.PostAsJsonAsync("/api/v1/Persons",
+            new CreatePersonDto { Name = name, GroupId = groupId, GovernorateId = governorateId, Gender = Gender.Male });
         return (await DeserializeAsync<PersonDetailsDto>(response)).Data!;
+    }
+
+    private static async Task<int> CreateGovernorateAsync(HttpClient client, string name)
+    {
+        var response = await client.PostAsJsonAsync("/api/v1/Governorates", new CreateGovernorateDto { Name = name });
+        return (await DeserializeAsync<GovernorateDetailsDto>(response)).Data!.Id;
     }
 
     private static async Task<ServiceResult<T>> DeserializeAsync<T>(HttpResponseMessage response)

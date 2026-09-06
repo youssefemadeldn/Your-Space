@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/entities/invite_method.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 
@@ -14,8 +15,10 @@ import 'event_guest_action_state.dart';
 @injectable
 class EventGuestActionCubit extends Cubit<EventGuestActionState> {
   final EventGuestRepository _eventGuestRepository;
+  final DataRefreshBus _dataRefreshBus;
 
-  EventGuestActionCubit(this._eventGuestRepository) : super(const EventGuestActionInitial());
+  EventGuestActionCubit(this._eventGuestRepository, this._dataRefreshBus)
+      : super(const EventGuestActionInitial());
 
   Future<void> markInvited(int eventId, int guestId, {required InviteMethod inviteMethod}) async {
     emit(const EventGuestActionSubmitting());
@@ -23,7 +26,10 @@ class EventGuestActionCubit extends Cubit<EventGuestActionState> {
         await _eventGuestRepository.markInvited(eventId, guestId, inviteMethod: inviteMethod);
     result.fold(
       (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
-      (_) => emit(const EventGuestActionSuccess()),
+      (_) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(const EventGuestActionSuccess());
+      },
     );
   }
 
@@ -32,7 +38,10 @@ class EventGuestActionCubit extends Cubit<EventGuestActionState> {
     final result = await _eventGuestRepository.markSkipped(eventId, guestId);
     result.fold(
       (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
-      (_) => emit(const EventGuestActionSuccess()),
+      (_) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(const EventGuestActionSuccess());
+      },
     );
   }
 
@@ -41,7 +50,10 @@ class EventGuestActionCubit extends Cubit<EventGuestActionState> {
     final result = await _eventGuestRepository.revertGuest(eventId, guestId);
     result.fold(
       (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
-      (_) => emit(const EventGuestActionSuccess()),
+      (_) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(const EventGuestActionSuccess());
+      },
     );
   }
 
@@ -50,7 +62,10 @@ class EventGuestActionCubit extends Cubit<EventGuestActionState> {
     final result = await _eventGuestRepository.removeGuest(eventId, guestId);
     result.fold(
       (failure) => emit(EventGuestActionError(core.failureToMessage(failure))),
-      (_) => emit(const EventGuestActionSuccess()),
+      (_) {
+        _dataRefreshBus.notify(DataScope.eventGuests);
+        emit(const EventGuestActionSuccess());
+      },
     );
   }
 }

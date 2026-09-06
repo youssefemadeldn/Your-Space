@@ -5,6 +5,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using PersonServiceImpl = YourSpace.Services.Services.PersonService.PersonService;
 
@@ -15,16 +16,24 @@ public class PersonService_GetDetailsAsyncTests
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Person, int>> _personRepo = new();
     private readonly Mock<IGenericRepository<PersonOccasionHistory, int>> _historyRepo = new();
+    private readonly Mock<IGenericRepository<PersonRelationship, int>> _relationshipRepo = new();
+    private readonly Mock<IGenericRepository<PersonImage, int>> _imageRepo = new();
 
     public PersonService_GetDetailsAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Person, int>()).Returns(_personRepo.Object);
         _unitOfWork.Setup(u => u.Repository<PersonOccasionHistory, int>()).Returns(_historyRepo.Object);
+        _unitOfWork.Setup(u => u.Repository<PersonRelationship, int>()).Returns(_relationshipRepo.Object);
+        _relationshipRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonRelationship>>())).ReturnsAsync([]);
+        _unitOfWork.Setup(u => u.Repository<PersonImage, int>()).Returns(_imageRepo.Object);
+        _imageRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonImage>>())).ReturnsAsync([]);
     }
 
     private PersonServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
+        Mock.Of<IR2StorageService>(),
+        R2SettingsFactory.Create(),
         LocalizerMockFactory.Create().Object,
         Mock.Of<ILogger<PersonServiceImpl>>());
 
@@ -43,7 +52,7 @@ public class PersonService_GetDetailsAsyncTests
     public async Task Sets_has_reciprocity_history_true_when_a_past_occasion_invited_the_user()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group };
         _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
 
         _historyRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonOccasionHistory>>()))

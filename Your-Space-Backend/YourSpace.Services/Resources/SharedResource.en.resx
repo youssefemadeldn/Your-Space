@@ -163,4 +163,112 @@
   <data name="Avatar.File.InvalidType" xml:space="preserve">
     <value>Photo must be a JPEG or PNG file.</value>
   </data>
+  <data name="Person.SubGroupId.Invalid" xml:space="preserve">
+    <value>The specified subgroup is invalid for this group.</value>
+  </data>
+  <data name="Person.GovernorateId.Invalid" xml:space="preserve">
+    <value>A valid governorate must be selected.</value>
+  </data>
+  <data name="Person.CityId.Invalid" xml:space="preserve">
+    <value>The specified city is invalid for this governorate.</value>
+  </data>
+  <data name="Person.NeighborhoodId.Invalid" xml:space="preserve">
+    <value>The specified neighborhood is invalid for this city.</value>
+  </data>
+  <data name="SubGroup.NotFound" xml:space="preserve">
+    <value>Subgroup not found.</value>
+  </data>
+  <data name="SubGroup.GroupNotFound" xml:space="preserve">
+    <value>The specified group was not found.</value>
+  </data>
+  <data name="SubGroup.HasActivePersons" xml:space="preserve">
+    <value>This subgroup still has people assigned to it. Reassign or remove them before deleting the subgroup.</value>
+  </data>
+  <data name="SubGroup.Name.Required" xml:space="preserve">
+    <value>Subgroup name is required.</value>
+  </data>
+  <data name="SubGroup.Name.MaxLength" xml:space="preserve">
+    <value>Subgroup name must not exceed 200 characters.</value>
+  </data>
+  <data name="Governorate.NotFound" xml:space="preserve">
+    <value>Governorate not found.</value>
+  </data>
+  <data name="Governorate.Locked" xml:space="preserve">
+    <value>This is a built-in governorate and can't be edited or deleted.</value>
+  </data>
+  <data name="Governorate.NotOwned" xml:space="preserve">
+    <value>You can only edit or delete governorates you created.</value>
+  </data>
+  <data name="Governorate.HasActiveCities" xml:space="preserve">
+    <value>This governorate still has cities under it. Remove them before deleting the governorate.</value>
+  </data>
+  <data name="Governorate.HasActivePersons" xml:space="preserve">
+    <value>This governorate still has people assigned to it. Reassign or remove them before deleting the governorate.</value>
+  </data>
+  <data name="Governorate.Name.Required" xml:space="preserve">
+    <value>Governorate name is required.</value>
+  </data>
+  <data name="Governorate.Name.MaxLength" xml:space="preserve">
+    <value>Governorate name must not exceed 200 characters.</value>
+  </data>
+  <data name="City.NotFound" xml:space="preserve">
+    <value>City not found.</value>
+  </data>
+  <data name="City.GovernorateNotFound" xml:space="preserve">
+    <value>The specified governorate was not found.</value>
+  </data>
+  <data name="City.HasActiveNeighborhoods" xml:space="preserve">
+    <value>This city still has neighborhoods under it. Remove them before deleting the city.</value>
+  </data>
+  <data name="City.HasActivePersons" xml:space="preserve">
+    <value>This city still has people assigned to it. Reassign or remove them before deleting the city.</value>
+  </data>
+  <data name="City.Name.Required" xml:space="preserve">
+    <value>City name is required.</value>
+  </data>
+  <data name="City.Name.MaxLength" xml:space="preserve">
+    <value>City name must not exceed 200 characters.</value>
+  </data>
+  <data name="Neighborhood.NotFound" xml:space="preserve">
+    <value>Neighborhood not found.</value>
+  </data>
+  <data name="Neighborhood.CityNotFound" xml:space="preserve">
+    <value>The specified city was not found.</value>
+  </data>
+  <data name="Neighborhood.HasActivePersons" xml:space="preserve">
+    <value>This neighborhood still has people assigned to it. Reassign or remove them before deleting the neighborhood.</value>
+  </data>
+  <data name="Neighborhood.Name.Required" xml:space="preserve">
+    <value>Neighborhood name is required.</value>
+  </data>
+  <data name="Neighborhood.Name.MaxLength" xml:space="preserve">
+    <value>Neighborhood name must not exceed 200 characters.</value>
+  </data>
+  <data name="PersonRelationship.NotFound" xml:space="preserve">
+    <value>Relationship not found.</value>
+  </data>
+  <data name="PersonRelationship.RelatedPersonNotFound" xml:space="preserve">
+    <value>The specified related person was not found.</value>
+  </data>
+  <data name="PersonRelationship.SelfLink" xml:space="preserve">
+    <value>A person cannot be related to themselves.</value>
+  </data>
+  <data name="PersonRelationship.DuplicateParent" xml:space="preserve">
+    <value>This person already has a relationship of that type.</value>
+  </data>
+  <data name="PersonRelationship.CircularChain" xml:space="preserve">
+    <value>This relationship would create a circular family chain.</value>
+  </data>
+  <data name="EventGuest.SubGroupNotFound" xml:space="preserve">
+    <value>The specified subgroup was not found.</value>
+  </data>
+  <data name="EventGuest.GovernorateNotFound" xml:space="preserve">
+    <value>The specified governorate was not found.</value>
+  </data>
+  <data name="EventGuest.CityNotFound" xml:space="preserve">
+    <value>The specified city was not found.</value>
+  </data>
+  <data name="EventGuest.NeighborhoodNotFound" xml:space="preserve">
+    <value>The specified neighborhood was not found.</value>
+  </data>
 </root>

@@ -41,7 +41,7 @@ public class EventGuestService_RevertAsyncTests
     public async Task Resets_an_invited_guest_back_to_not_invited()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group };
         var guest = new EventGuest
         {
             Id = 1, EventId = 1, PersonId = 10, Person = person,
@@ -61,7 +61,7 @@ public class EventGuestService_RevertAsyncTests
     public async Task Reverting_an_already_not_invited_guest_is_a_harmless_no_op()
     {
         var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
-        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, Group = group };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group };
         var guest = new EventGuest { Id = 1, EventId = 1, PersonId = 10, Person = person, Status = EventGuestStatus.NotInvited };
         _guestRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<EventGuest>>())).ReturnsAsync(guest);
 

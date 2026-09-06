@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 
 import '../failure_messages.dart';
@@ -12,8 +13,9 @@ import 'event_form_state.dart';
 @injectable
 class EventFormCubit extends Cubit<EventFormState> {
   final EventRepository _eventRepository;
+  final DataRefreshBus _dataRefreshBus;
 
-  EventFormCubit(this._eventRepository) : super(const EventFormInitial());
+  EventFormCubit(this._eventRepository, this._dataRefreshBus) : super(const EventFormInitial());
 
   Future<void> initialize(int? eventId) async {
     if (eventId == null) {
@@ -47,7 +49,10 @@ class EventFormCubit extends Cubit<EventFormState> {
           );
     result.fold(
       (failure) => emit(EventFormError(failureToMessage(failure))),
-      (event) => emit(EventFormSuccess(event)),
+      (event) {
+        _dataRefreshBus.notify(DataScope.events);
+        emit(EventFormSuccess(event));
+      },
     );
   }
 }

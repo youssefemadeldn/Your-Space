@@ -20,6 +20,10 @@ public interface IEventGuestService
 
     Task<ServiceResult<BulkAddGuestsResultDto>> AddPersonsAsync(string ownerUserId, int eventId, AddPersonsToEventDto dto);
     Task<ServiceResult<BulkAddGuestsResultDto>> AddGroupAsync(string ownerUserId, int eventId, int groupId);
+    Task<ServiceResult<BulkAddGuestsResultDto>> AddSubGroupAsync(string ownerUserId, int eventId, int subGroupId);
+    Task<ServiceResult<BulkAddGuestsResultDto>> AddGovernorateAsync(string ownerUserId, int eventId, int governorateId);
+    Task<ServiceResult<BulkAddGuestsResultDto>> AddCityAsync(string ownerUserId, int eventId, int cityId);
+    Task<ServiceResult<BulkAddGuestsResultDto>> AddNeighborhoodAsync(string ownerUserId, int eventId, int neighborhoodId);
 
     Task<ServiceResult<EventGuestDetailsDto>> MarkInvitedAsync(string ownerUserId, int eventId, int guestId, MarkGuestInvitedDto dto);
     Task<ServiceResult<EventGuestDetailsDto>> MarkSkippedAsync(string ownerUserId, int eventId, int guestId);

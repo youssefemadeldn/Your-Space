@@ -53,8 +53,8 @@ public class EventGuestService_GetProgressAsyncTests
         var villageFriends = new Group { Id = 2, OwnerUserId = "owner-1", Name = "Village Friends" }; // never touched for this event
         _groupRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Group>>())).ReturnsAsync([relatives, villageFriends]);
 
-        var personInRelatives = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1 };
-        var personInVillageFriends = new Person { Id = 11, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 2 };
+        var personInRelatives = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1 };
+        var personInVillageFriends = new Person { Id = 11, OwnerUserId = "owner-1", Name = "Sara", Gender = Gender.Female, GroupId = 2, GovernorateId = 1 };
         _personRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync([personInRelatives, personInVillageFriends]);
 
         // Only "Relatives" has an actual guest row added to this event so far.

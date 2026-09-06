@@ -6,6 +6,7 @@ using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Services.Services.PersonService.Dtos;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using PersonServiceImpl = YourSpace.Services.Services.PersonService.PersonService;
 
@@ -16,16 +17,22 @@ public class PersonService_CreateAsyncTests
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Person, int>> _personRepo = new();
     private readonly Mock<IGenericRepository<Group, int>> _groupRepo = new();
+    private readonly Mock<IGenericRepository<Governorate, int>> _governorateRepo = new();
 
     public PersonService_CreateAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Person, int>()).Returns(_personRepo.Object);
         _unitOfWork.Setup(u => u.Repository<Group, int>()).Returns(_groupRepo.Object);
+        _unitOfWork.Setup(u => u.Repository<Governorate, int>()).Returns(_governorateRepo.Object);
+        _governorateRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Governorate>>()))
+            .ReturnsAsync(new Governorate { Id = 1, OwnerUserId = null, IsLocked = true, Name = "Cairo" });
     }
 
     private PersonServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
+        Mock.Of<IR2StorageService>(),
+        R2SettingsFactory.Create(),
         LocalizerMockFactory.Create().Object,
         Mock.Of<ILogger<PersonServiceImpl>>());
 
@@ -34,7 +41,7 @@ public class PersonService_CreateAsyncTests
     {
         _groupRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Group>>())).ReturnsAsync((Group?)null);
 
-        var result = await CreateSut().CreateAsync("owner-1", new CreatePersonDto { Name = "Ahmed", Gender = Gender.Male, GroupId = 7 });
+        var result = await CreateSut().CreateAsync("owner-1", new CreatePersonDto { Name = "Ahmed", Gender = Gender.Male, GroupId = 7, GovernorateId = 1 });
 
         result.Success.Should().BeFalse();
         result.ErrorCode.Should().Be("Person.GroupNotFound");
@@ -47,7 +54,7 @@ public class PersonService_CreateAsyncTests
         var group = new Group { Id = 7, OwnerUserId = "owner-1", Name = "Village Friends" };
         _groupRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Group>>())).ReturnsAsync(group);
 
-        var result = await CreateSut().CreateAsync("owner-1", new CreatePersonDto { Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 7 });
+        var result = await CreateSut().CreateAsync("owner-1", new CreatePersonDto { Name = "Ahmed", PhoneNumber = "+201234567890", Gender = Gender.Male, GroupId = 7, GovernorateId = 1 });
 
         result.Success.Should().BeTrue();
         result.Data!.HasReciprocityHistory.Should().BeFalse();
@@ -69,7 +76,8 @@ public class PersonService_CreateAsyncTests
             PhoneNumber2 = "+201234567891",
             Notes = "Met at university.",
             Gender = Gender.Male,
-            GroupId = 7
+            GroupId = 7,
+            GovernorateId = 1
         });
 
         result.Success.Should().BeTrue();

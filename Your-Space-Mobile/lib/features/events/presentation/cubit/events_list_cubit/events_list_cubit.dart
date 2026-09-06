@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 
@@ -13,9 +14,15 @@ const _pageSize = 20;
 @injectable
 class EventsListCubit extends Cubit<EventsListState> {
   final EventRepository _eventRepository;
+  final DataRefreshBus _dataRefreshBus;
   Timer? _searchDebounce;
+  late final StreamSubscription<DataScope> _refreshSubscription;
 
-  EventsListCubit(this._eventRepository) : super(const EventsListInitial());
+  EventsListCubit(this._eventRepository, this._dataRefreshBus) : super(const EventsListInitial()) {
+    _refreshSubscription = _dataRefreshBus.stream.listen((scope) {
+      if (scope == DataScope.events || scope == DataScope.eventGuests) refresh();
+    });
+  }
 
   Future<void> load() async {
     emit(const EventsListLoading());
@@ -67,9 +74,25 @@ class EventsListCubit extends Cubit<EventsListState> {
     );
   }
 
+  /// Re-fetches page 1 with the current search, without a `Loading` flash —
+  /// triggered by [DataRefreshBus] on `events` (event fields changed) or
+  /// `eventGuests` (a guest was added/removed, changing `totalGuestCount`),
+  /// and by pull-to-refresh. Keeps the last-good list on a background
+  /// failure rather than replacing it with an error screen.
+  Future<void> refresh() async {
+    final current = state;
+    if (current is! EventsListSuccess) return;
+    final result = await _eventRepository.getEvents(search: current.search, pageIndex: 1, pageSize: _pageSize);
+    result.fold(
+      (_) {},
+      (page) => emit(current.copyWith(events: page.items, pageIndex: page.pageIndex, hasNextPage: page.hasNextPage)),
+    );
+  }
+
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
+    _refreshSubscription.cancel();
     return super.close();
   }
 }

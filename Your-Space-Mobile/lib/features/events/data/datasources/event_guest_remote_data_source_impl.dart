@@ -99,6 +99,42 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  Future<Either<Failure, BulkAddGuestsResultResponse>> addSubGroupToEvent(int eventId, int subGroupId) =>
+      _api.post<BulkAddGuestsResultResponse>(
+        path: '${_guestsPath(eventId)}/by-subgroup/$subGroupId',
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => BulkAddGuestsResultResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  Future<Either<Failure, BulkAddGuestsResultResponse>> addGovernorateToEvent(int eventId, int governorateId) =>
+      _api.post<BulkAddGuestsResultResponse>(
+        path: '${_guestsPath(eventId)}/by-governorate/$governorateId',
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => BulkAddGuestsResultResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  Future<Either<Failure, BulkAddGuestsResultResponse>> addCityToEvent(int eventId, int cityId) =>
+      _api.post<BulkAddGuestsResultResponse>(
+        path: '${_guestsPath(eventId)}/by-city/$cityId',
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => BulkAddGuestsResultResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  Future<Either<Failure, BulkAddGuestsResultResponse>> addNeighborhoodToEvent(int eventId, int neighborhoodId) =>
+      _api.post<BulkAddGuestsResultResponse>(
+        path: '${_guestsPath(eventId)}/by-neighborhood/$neighborhoodId',
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => BulkAddGuestsResultResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
   Future<Either<Failure, EventGuestResponse>> markInvited(
     int eventId,
     int guestId,

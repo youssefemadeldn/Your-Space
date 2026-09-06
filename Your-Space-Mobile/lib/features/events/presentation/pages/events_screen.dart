@@ -130,30 +130,33 @@ class _EventsListBodyState extends State<_EventsListBody> {
                   )
                 : AppCard(
                     padding: EdgeInsets.symmetric(vertical: 4.h),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: widget.events.length + (widget.isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= widget.events.length) {
-                          return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.h),
-                            child: const AppLoadingIndicator(),
+                    child: RefreshIndicator(
+                      onRefresh: () => context.read<EventsListCubit>().refresh(),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        itemCount: widget.events.length + (widget.isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= widget.events.length) {
+                            return Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.h),
+                              child: const AppLoadingIndicator(),
+                            );
+                          }
+                          final event = widget.events[index];
+                          return AppListTile(
+                            icon: Icons.event_rounded,
+                            title: event.name,
+                            subtitle: _subtitle(event),
+                            trailing:
+                                const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                            divider: index != widget.events.length - 1,
+                            onTap: () => context.pushNamed(
+                              AppRoutes.eventDetails,
+                              extra: EventDetailsArgs(eventId: event.id, eventName: event.name),
+                            ),
                           );
-                        }
-                        final event = widget.events[index];
-                        return AppListTile(
-                          icon: Icons.event_rounded,
-                          title: event.name,
-                          subtitle: _subtitle(event),
-                          trailing:
-                              const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
-                          divider: index != widget.events.length - 1,
-                          onTap: () => context.pushNamed(
-                            AppRoutes.eventDetails,
-                            extra: EventDetailsArgs(eventId: event.id, eventName: event.name),
-                          ),
-                        );
-                      },
+                        },
+                      ),
                     ),
                   ),
           ),

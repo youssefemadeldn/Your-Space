@@ -6,6 +6,10 @@ class CreatePersonRequest {
   final String? phoneNumber2;
   final Gender gender;
   final int groupId;
+  final int? subGroupId;
+  final int governorateId;
+  final int? cityId;
+  final int? neighborhoodId;
   final String? notes;
 
   const CreatePersonRequest({
@@ -14,6 +18,10 @@ class CreatePersonRequest {
     this.phoneNumber2,
     required this.gender,
     required this.groupId,
+    this.subGroupId,
+    required this.governorateId,
+    this.cityId,
+    this.neighborhoodId,
     this.notes,
   });
 
@@ -23,6 +31,10 @@ class CreatePersonRequest {
         if (phoneNumber2 != null) 'phoneNumber2': phoneNumber2,
         'gender': gender.toWire(),
         'groupId': groupId,
+        if (subGroupId != null) 'subGroupId': subGroupId,
+        'governorateId': governorateId,
+        if (cityId != null) 'cityId': cityId,
+        if (neighborhoodId != null) 'neighborhoodId': neighborhoodId,
         if (notes != null) 'notes': notes,
       };
 }

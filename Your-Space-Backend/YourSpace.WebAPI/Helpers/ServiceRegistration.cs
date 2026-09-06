@@ -5,13 +5,18 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Repositories;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService;
+using YourSpace.Services.Services.CityService;
 using YourSpace.Services.Services.EventGuestService;
 using YourSpace.Services.Services.EventService;
+using YourSpace.Services.Services.GovernorateService;
 using YourSpace.Services.Services.GroupService;
+using YourSpace.Services.Services.NeighborhoodService;
 using YourSpace.Services.Services.OtpService;
 using YourSpace.Services.Services.PersonImageService;
 using YourSpace.Services.Services.PersonOccasionHistoryService;
+using YourSpace.Services.Services.PersonRelationshipService;
 using YourSpace.Services.Services.PersonService;
+using YourSpace.Services.Services.SubGroupService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.Services.Services.UserSettingsService;
 
@@ -45,6 +50,13 @@ public static class ServiceRegistration
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IEventGuestService, EventGuestService>();
         services.AddScoped<IUserSettingsService, UserSettingsService>();
+
+        // Sprint 4 — Subgroup + Location hierarchy + Relationship engine
+        services.AddScoped<ISubGroupService, SubGroupService>();
+        services.AddScoped<IGovernorateService, GovernorateService>();
+        services.AddScoped<ICityService, CityService>();
+        services.AddScoped<INeighborhoodService, NeighborhoodService>();
+        services.AddScoped<IPersonRelationshipService, PersonRelationshipService>();
 
         // API versioning
         services.AddApiVersioning(options =>

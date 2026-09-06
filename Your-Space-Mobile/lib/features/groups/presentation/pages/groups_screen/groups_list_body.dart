@@ -2,8 +2,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:your_space_mobile/core/entities/classification_entity_kind.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/router/app_routes.dart';
+import 'package:your_space_mobile/core/router/args/classification_management_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
 import 'package:your_space_mobile/core/widgets/app_card.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
@@ -76,26 +80,45 @@ class _GroupsListBodyState extends State<GroupsListBody> {
                   )
                 : AppCard(
                     padding: EdgeInsets.symmetric(vertical: 4.h),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: widget.groups.length + (widget.isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= widget.groups.length) {
-                          return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.h),
-                            child: const AppLoadingIndicator(),
+                    child: RefreshIndicator(
+                      onRefresh: () => context.read<GroupsListCubit>().refresh(),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        itemCount: widget.groups.length + (widget.isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= widget.groups.length) {
+                            return Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.h),
+                              child: const AppLoadingIndicator(),
+                            );
+                          }
+                          final group = widget.groups[index];
+                          return AppListTile(
+                            avatarName: group.name,
+                            title: group.name,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.account_tree_outlined, color: AppColors.textSecondary),
+                                  tooltip: 'groups.list.manageSubGroups'.tr(),
+                                  onPressed: () => context.pushNamed(
+                                    AppRoutes.classificationManagement,
+                                    extra: ClassificationManagementArgs(
+                                      kind: ClassificationEntityKind.subgroup,
+                                      parentId: group.id,
+                                      parentName: group.name,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                              ],
+                            ),
+                            divider: index != widget.groups.length - 1,
+                            onTap: () => GroupFormSheet.open(context, group: group),
                           );
-                        }
-                        final group = widget.groups[index];
-                        return AppListTile(
-                          avatarName: group.name,
-                          title: group.name,
-                          trailing:
-                              const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
-                          divider: index != widget.groups.length - 1,
-                          onTap: () => GroupFormSheet.open(context, group: group),
-                        );
-                      },
+                        },
+                      ),
                     ),
                   ),
           ),
