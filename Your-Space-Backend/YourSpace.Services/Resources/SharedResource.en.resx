@@ -139,4 +139,28 @@
   <data name="EventGuest.InviteMethod.Required" xml:space="preserve">
     <value>A valid invite method is required.</value>
   </data>
+  <data name="PersonImage.NotFound" xml:space="preserve">
+    <value>Photo not found.</value>
+  </data>
+  <data name="PersonImage.MaxReached" xml:space="preserve">
+    <value>This person already has the maximum of 6 photos.</value>
+  </data>
+  <data name="PersonImage.File.Required" xml:space="preserve">
+    <value>A photo file is required.</value>
+  </data>
+  <data name="PersonImage.File.TooLarge" xml:space="preserve">
+    <value>Photo must not exceed 5MB.</value>
+  </data>
+  <data name="PersonImage.File.InvalidType" xml:space="preserve">
+    <value>Photo must be a JPEG or PNG file.</value>
+  </data>
+  <data name="Avatar.File.Required" xml:space="preserve">
+    <value>A photo file is required.</value>
+  </data>
+  <data name="Avatar.File.TooLarge" xml:space="preserve">
+    <value>Photo must not exceed 5MB.</value>
+  </data>
+  <data name="Avatar.File.InvalidType" xml:space="preserve">
+    <value>Photo must be a JPEG or PNG file.</value>
+  </data>
 </root>

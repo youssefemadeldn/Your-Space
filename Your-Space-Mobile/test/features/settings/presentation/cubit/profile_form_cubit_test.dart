@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,10 @@ void main() {
     gender: Gender.female,
     roles: ['User'],
   );
+
+  setUpAll(() {
+    registerFallbackValue(File('fallback.jpg'));
+  });
 
   setUp(() {
     getCurrentUserProfile = MockGetCurrentUserProfileUseCase();
@@ -109,5 +114,88 @@ void main() {
 
     unawaited(cubit.submit(firstName: 'Janet', lastName: 'Doe', phoneNumber: 'bad'));
     await expectation;
+  });
+
+  group('uploadAvatar', () {
+    test('does nothing when no profile has been loaded yet', () async {
+      await cubit.uploadAvatar(File('photo.jpg'));
+
+      verifyNever(() => authRepository.uploadAvatar(any()));
+    });
+
+    test('emits [AvatarUploading, AvatarSuccess] with the updated profile', () async {
+      when(() => getCurrentUserProfile()).thenAnswer((_) async => const Right(profile));
+      await cubit.initialize();
+
+      when(() => authRepository.uploadAvatar(any())).thenAnswer(
+        (_) async => const Right(UserProfile(
+          id: 'user-1',
+          email: 'jane@example.com',
+          firstName: 'Jane',
+          lastName: 'Doe',
+          gender: Gender.female,
+          avatarUrl: 'https://example.com/avatar.jpg',
+          roles: ['User'],
+        )),
+      );
+
+      final expectation = expectLater(
+        cubit.stream,
+        emitsInOrder([
+          isA<ProfileFormAvatarUploading>(),
+          isA<ProfileFormAvatarSuccess>()
+              .having((s) => s.profile.avatarUrl, 'profile.avatarUrl', 'https://example.com/avatar.jpg'),
+        ]),
+      );
+
+      unawaited(cubit.uploadAvatar(File('photo.jpg')));
+      await expectation;
+    });
+
+    test('emits an AvatarError, keeping the previously-known profile, on failure', () async {
+      when(() => getCurrentUserProfile()).thenAnswer((_) async => const Right(profile));
+      await cubit.initialize();
+      when(() => authRepository.uploadAvatar(any()))
+          .thenAnswer((_) async => const Left(ValidationFailure(message: 'File too large')));
+
+      final expectation = expectLater(
+        cubit.stream,
+        emitsInOrder([
+          isA<ProfileFormAvatarUploading>(),
+          isA<ProfileFormAvatarError>().having((s) => s.profile.firstName, 'profile.firstName', 'Jane'),
+        ]),
+      );
+
+      unawaited(cubit.uploadAvatar(File('photo.jpg')));
+      await expectation;
+    });
+  });
+
+  group('removeAvatar', () {
+    test('emits [AvatarUploading, AvatarSuccess] with avatarUrl cleared', () async {
+      when(() => getCurrentUserProfile()).thenAnswer((_) async => const Right(profile));
+      await cubit.initialize();
+      when(() => authRepository.removeAvatar()).thenAnswer(
+        (_) async => const Right(UserProfile(
+          id: 'user-1',
+          email: 'jane@example.com',
+          firstName: 'Jane',
+          lastName: 'Doe',
+          gender: Gender.female,
+          roles: ['User'],
+        )),
+      );
+
+      final expectation = expectLater(
+        cubit.stream,
+        emitsInOrder([
+          isA<ProfileFormAvatarUploading>(),
+          isA<ProfileFormAvatarSuccess>().having((s) => s.profile.avatarUrl, 'profile.avatarUrl', isNull),
+        ]),
+      );
+
+      unawaited(cubit.removeAvatar());
+      await expectation;
+    });
   });
 }

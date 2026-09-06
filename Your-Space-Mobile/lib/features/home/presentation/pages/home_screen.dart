@@ -26,12 +26,19 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: BlocBuilder<HomeStatsCubit, HomeStatsState>(
           builder: (context, state) => switch (state) {
-            HomeStatsSuccess(:final groupsCount, :final peopleCount, :final eventsCount, :final firstName) =>
+            HomeStatsSuccess(
+              :final groupsCount,
+              :final peopleCount,
+              :final eventsCount,
+              :final firstName,
+              :final avatarUrl
+            ) =>
               _HomeContent(
                 groupsCount: groupsCount,
                 peopleCount: peopleCount,
                 eventsCount: eventsCount,
                 firstName: firstName,
+                avatarUrl: avatarUrl,
               ),
             HomeStatsError(:final message) => ErrorStateWidget(
                 message: message,
@@ -60,19 +67,21 @@ class _HomeContent extends StatelessWidget {
   final int peopleCount;
   final int eventsCount;
   final String firstName;
+  final String? avatarUrl;
 
   const _HomeContent({
     required this.groupsCount,
     required this.peopleCount,
     required this.eventsCount,
     required this.firstName,
+    this.avatarUrl,
   });
 
   Widget get _header => Padding(
         padding: EdgeInsets.only(bottom: 16.h),
         child: Row(
           children: [
-            AppAvatar(name: firstName, size: 44.w),
+            AppAvatar(name: firstName, size: 44.w, photoUrl: avatarUrl),
             SizedBox(width: 12.w),
             Expanded(
               child: Column(

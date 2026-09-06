@@ -120,7 +120,16 @@
       "passwordLabel": "أدخل كلمة المرور للتأكيد",
       "confirm": "حذف حسابي",
       "doneMessage": "تم حذف حسابك نهائيًا."
-    }
+    },
+    "photoHint": "JPEG أو PNG · صورة واحدة",
+    "replacePhoto": "استبدال الصورة",
+    "removePhoto": "إزالة الصورة",
+    "takePhoto": "التقاط صورة",
+    "chooseFromGallery": "اختيار من المعرض",
+    "removePhotoConfirmTitle": "إزالة صورة الملف الشخصي؟",
+    "removePhotoConfirmMessage": "يمكنك دائمًا إضافة صورة جديدة لاحقًا.",
+    "photoUpdated": "تم تحديث الصورة",
+    "photoRemoved": "تمت إزالة الصورة"
   },
   "home": {
     "greetingMorning": "صباح الخير",

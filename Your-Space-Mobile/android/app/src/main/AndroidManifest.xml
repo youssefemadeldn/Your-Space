@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Camera capture for the profile-photo picker; gallery access on Android 13+ goes through the
+         system Photo Picker (no runtime permission needed), image_picker's own manifest merge covers
+         older Android versions. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <application
         android:label="Your Space"
         android:name="${applicationName}"

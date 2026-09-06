@@ -71,6 +71,7 @@ builder.Services.AddStackExchangeRedisCache(o =>
 builder.Services.AddApplicationServices();
 builder.Services.AddIdentityService(builder.Configuration);
 builder.Services.AddEmailService(builder.Configuration);
+builder.Services.AddR2StorageService(builder.Configuration);
 builder.Services.AddRateLimiting(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 

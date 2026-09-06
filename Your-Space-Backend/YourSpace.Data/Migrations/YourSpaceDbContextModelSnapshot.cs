@@ -162,6 +162,10 @@ namespace YourSpace.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("AvatarObjectKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
@@ -476,6 +480,42 @@ namespace YourSpace.Data.Migrations
                     b.ToTable("People");
                 });
 
+            modelBuilder.Entity("YourSpace.Data.Entities.PersonImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("PersonId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "PersonId" }, "IX_PersonImages_PersonId");
+
+                    b.HasIndex(new[] { "PersonId" }, "IX_PersonImages_PersonId_OnePrimary")
+                        .IsUnique()
+                        .HasFilter("\"IsPrimary\" = true");
+
+                    b.ToTable("PersonImages");
+                });
+
             modelBuilder.Entity("YourSpace.Data.Entities.PersonOccasionHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -712,6 +752,17 @@ namespace YourSpace.Data.Migrations
                     b.Navigation("Group");
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("YourSpace.Data.Entities.PersonImage", b =>
+                {
+                    b.HasOne("YourSpace.Data.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("YourSpace.Data.Entities.PersonOccasionHistory", b =>

@@ -1,8 +1,6 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Android emulator alias for the host machine's localhost. Swap this to your
-  // machine's LAN IP when testing on a physical device or iOS simulator.
   static const String _devBaseUrl =
       'https://yourspace.booksplatform.net/api/v1';
   static const String _prodBaseUrl =
@@ -30,6 +28,7 @@ class ApiConstants {
   static const String changePassword = '/auth/change-password';
   static const String deleteAccount = '/auth/me';
   static const String profile = '/auth/me';
+  static const String avatar = '/auth/me/avatar';
 
   // Base segments only — nested paths (e.g. '$events/$eventId/guests') are
   // interpolated at the datasource call site.

@@ -31,6 +31,7 @@ public static class MockDataSeeder
 
         await SeedGroupsAsync(context, activeUserId, lockedUserId);
         await SeedPersonsAsync(context, activeUserId, lockedUserId);
+        await SeedPersonImagesAsync(context, activeUserId);
         await SeedEventsAsync(context, activeUserId, lockedUserId);
         await SeedEventGuestsAsync(context, activeUserId);
         await SeedPersonOccasionHistoriesAsync(context, activeUserId);
@@ -257,6 +258,46 @@ public static class MockDataSeeder
         persons.Add(new Person { OwnerUserId = lockedUserId, Name = "Locked User's Friend", PhoneNumber = "+201111111111", Gender = Gender.Female, GroupId = lockedUserGroup.Id });
 
         await context.People.AddRangeAsync(persons);
+        await context.SaveChangesAsync();
+    }
+
+    // ObjectKeys here are deliberately fake — they were never actually uploaded to R2, so a presigned
+    // URL built from one will 404 if the app tries to fetch it. Seeding can't realistically call the
+    // live R2 API for fabricated Bogus rows with no real file bytes behind them; this still satisfies
+    // Rule 9's shape requirement (a normal 0-image person by omission, a 1-image person, and the 6-image
+    // boundary with exactly one primary) so pagination/UI states have something to render against.
+    private static async Task SeedPersonImagesAsync(YourSpaceDbContext context, string activeUserId)
+    {
+        if (await context.PersonImages.AnyAsync())
+        {
+            return;
+        }
+
+        var persons = await context.People
+            .Where(p => p.OwnerUserId == activeUserId && p.DeletedAt == null)
+            .OrderBy(p => p.Id)
+            .Take(2)
+            .ToListAsync();
+
+        var onePhotoPerson = persons[0];
+        var sixPhotoPerson = persons[1];
+
+        var images = new List<PersonImage>
+        {
+            new() { PersonId = onePhotoPerson.Id, ObjectKey = $"people/{onePhotoPerson.Id}/seed-fake-1.jpg", IsPrimary = true }
+        };
+
+        for (var i = 1; i <= 6; i++)
+        {
+            images.Add(new PersonImage
+            {
+                PersonId = sixPhotoPerson.Id,
+                ObjectKey = $"people/{sixPhotoPerson.Id}/seed-fake-{i}.jpg",
+                IsPrimary = i == 1 // exactly one primary — enforced by the partial unique index too
+            });
+        }
+
+        await context.PersonImages.AddRangeAsync(images);
         await context.SaveChangesAsync();
     }
 

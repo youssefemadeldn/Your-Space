@@ -32,6 +32,7 @@ const _profile = UserProfile(
   firstName: 'Jane',
   lastName: 'Doe',
   gender: Gender.female,
+  avatarUrl: 'https://example.com/avatar.jpg',
   roles: ['User'],
 );
 
@@ -80,7 +81,8 @@ void main() {
             .having((s) => s.groupsCount, 'groupsCount', 4)
             .having((s) => s.peopleCount, 'peopleCount', 10)
             .having((s) => s.eventsCount, 'eventsCount', 2)
-            .having((s) => s.firstName, 'firstName', 'Jane'),
+            .having((s) => s.firstName, 'firstName', 'Jane')
+            .having((s) => s.avatarUrl, 'avatarUrl', 'https://example.com/avatar.jpg'),
       ]),
     );
 
