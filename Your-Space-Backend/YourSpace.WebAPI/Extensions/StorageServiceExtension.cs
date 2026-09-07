@@ -12,9 +12,13 @@ public static class StorageServiceExtension
         services.Configure<R2Settings>(configuration.GetSection(R2Settings.SectionName));
 
         // IAmazonS3 is thread-safe and expensive to construct — shared app-wide, same posture as any
-        // other cross-cutting infrastructure client (CLAUDE.md DI lifetime table). Resolved lazily via
-        // the factory so it reads the already-bound R2Settings options, not raw IConfiguration again.
-        services.AddSingleton<IAmazonS3>(sp =>
+        // other cross-cutting infrastructure client (CLAUDE.md DI lifetime table). Wrapped in Lazy<T>
+        // so the client is built on the first actual storage call, NOT at DI-resolution time:
+        // R2StorageService is a constructor dependency of AuthService (avatar upload/remove), so a
+        // blank/invalid R2 config would otherwise throw while resolving every auth endpoint — login
+        // included — turning a storage misconfiguration into a total auth outage. Lazy<T> keeps the
+        // blast radius to the operations that genuinely need R2.
+        services.AddSingleton(sp => new Lazy<IAmazonS3>(() =>
         {
             var r2Settings = sp.GetRequiredService<IOptions<R2Settings>>().Value;
 
@@ -34,7 +38,7 @@ public static class StorageServiceExtension
             };
 
             return new AmazonS3Client(r2Settings.AccessKey, r2Settings.SecretKey, config);
-        });
+        }));
 
         services.AddSingleton<IR2StorageService, R2StorageService>();
 
