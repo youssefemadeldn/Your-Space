@@ -247,37 +247,20 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    // Global/seeded rows (OwnerUserId null, IsLocked true) plus one user-owned custom row — the
-    // only entity in this codebase with that dual shape (see Governorate.cs's own comment).
+    // The 27 shared/global rows (OwnerUserId null, IsLocked true) are seeded by ReferenceDataSeeder
+    // in every environment before this runs — all this adds is the dev-only edge case: one
+    // user-owned custom row, exercising the "global OR mine" visibility rule and the
+    // not-locked/fully-editable path (CLAUDE.md Rule 9).
     private static async Task SeedGovernoratesAsync(YourSpaceDbContext context, string activeUserId)
     {
-        if (await context.Governorates.AnyAsync())
+        const string customName = "Custom Region (Seed)";
+        if (await context.Governorates.AnyAsync(g => g.OwnerUserId == activeUserId && g.Name == customName))
         {
             return;
         }
 
-        (string En, string Ar)[] seeded =
-        [
-            ("Cairo", "القاهرة"), ("Giza", "الجيزة"), ("Alexandria", "الإسكندرية"),
-            ("Al Qalyubia", "القليوبية"), ("Port Said", "بورسعيد"), ("Suez", "السويس"),
-            ("Dakahlia", "الدقهلية"), ("Al Sharqia", "الشرقية"), ("Al Gharbia", "الغربية"),
-            ("Al Monufia", "المنوفية"), ("Al Beheira", "البحيرة"), ("Kafr El Sheikh", "كفر الشيخ"),
-            ("Damietta", "دمياط"), ("Ismailia", "الإسماعيلية"), ("Faiyum", "الفيوم"),
-            ("Beni Suef", "بني سويف"), ("Minya", "المنيا"), ("Assiut", "أسيوط"),
-            ("Sohag", "سوهاج"), ("Qena", "قنا"), ("Aswan", "أسوان"),
-            ("Luxor", "الأقصر"), ("Red Sea", "البحر الأحمر"), ("New Valley", "الوادي الجديد"),
-            ("Matrouh", "مطروح"), ("North Sinai", "شمال سيناء"), ("South Sinai", "جنوب سيناء")
-        ];
-
-        var governorates = seeded
-            .Select(n => new Governorate { OwnerUserId = null, IsLocked = true, Name = n.En, NameAr = n.Ar })
-            .ToList();
-
-        // Edge case — a user-owned custom governorate, exercising the "global OR mine" visibility
-        // rule and the not-locked/fully-editable path.
-        governorates.Add(new Governorate { OwnerUserId = activeUserId, IsLocked = false, Name = "Custom Region (Seed)" });
-
-        await context.Governorates.AddRangeAsync(governorates);
+        await context.Governorates.AddAsync(
+            new Governorate { OwnerUserId = activeUserId, IsLocked = false, Name = customName });
         await context.SaveChangesAsync();
     }
 

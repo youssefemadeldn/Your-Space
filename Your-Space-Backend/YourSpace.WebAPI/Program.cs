@@ -119,9 +119,12 @@ if (app.Environment.IsDevelopment()
 // which throws "Role USER does not exist" against a genuinely fresh database if the Identity roles
 // (seeded here) aren't in place first. Only surfaces on a from-scratch DB — an existing DB that's
 // already had IdentitySeeder run once masks the ordering bug, since the roles are already there.
+// ReferenceDataSeeder (global governorates) is likewise idempotent and runs in every environment;
+// it must also precede MockDataSeeder, whose SeedCities/SeedPersons resolve "Cairo"/"Giza" by name.
 await using (var seedScope = app.Services.CreateAsyncScope())
 {
     await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
+    await ReferenceDataSeeder.SeedAsync(seedScope.ServiceProvider, app.Logger);
 }
 
 if (app.Environment.IsDevelopment())
