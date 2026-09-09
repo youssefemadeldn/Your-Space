@@ -13,6 +13,7 @@
     "back": "رجوع",
     "next": "التالي",
     "done": "تم",
+    "noOptions": "لا توجد خيارات متاحة",
     "logout": "تسجيل الخروج",
     "logoutConfirmTitle": "تسجيل الخروج؟",
     "logoutConfirmMessage": "ستحتاج لتسجيل الدخول مرة أخرى في المرة القادمة.",
@@ -236,6 +237,8 @@
         "groupLabel": "المجموعة",
         "groupPlaceholder": "اختر مجموعة",
         "groupRequired": "اختر مجموعة",
+        "noGroups": "لا توجد مجموعات بعد",
+        "addGroup": "إضافة مجموعة",
         "subGroupLabel": "المجموعة الفرعية (اختياري)",
         "subGroupPlaceholder": "اختر مجموعة فرعية",
         "pickGroupFirst": "اختر مجموعة أولاً",
@@ -246,6 +249,7 @@
         "governorateLabel": "المحافظة",
         "governoratePlaceholder": "اختر محافظة",
         "governorateRequired": "اختر محافظة",
+        "noGovernorates": "لا توجد محافظات بعد",
         "addGovernorate": "إضافة محافظة",
         "cityLabel": "المدينة (اختياري)",
         "cityPlaceholder": "اختر مدينة",
@@ -268,7 +272,8 @@
         "familyMember": "فرد العائلة {index}",
         "relationTypePlaceholder": "اختر نوع العلاقة",
         "searchHint": "ابحث عن شخص",
-        "noMatches": "لا توجد نتائج"
+        "noMatches": "لا توجد نتائج",
+        "incompleteRelationship": "أكمل بيانات فرد العائلة أو احذفه — اختر نوع العلاقة والشخص معًا"
       },
       "step4": {
         "name": "ملاحظات",

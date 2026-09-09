@@ -40,11 +40,14 @@ class PersonWizardStep3Relationships extends StatelessWidget {
                 _RelationshipRowCard(
                   index: i,
                   row: state.relationshipRows[i],
-                  peopleForLookup: state.peopleForLookup,
+                  lookupResults: state.relationshipLookupResults,
+                  lookupLoading: state.relationshipLookupLoading,
                   onRemove: () => cubit.removeRelationshipRow(state.relationshipRows[i].localId),
                   onTypeChanged: (type) => cubit.updateRelationshipType(state.relationshipRows[i].localId, type),
                   onPersonSelected: (id, name) =>
                       cubit.updateRelationshipPerson(state.relationshipRows[i].localId, id, name),
+                  onQueryChanged: cubit.searchRelationshipPeople,
+                  onLookupDismissed: cubit.clearRelationshipLookup,
                 ),
                 SizedBox(height: 12.h),
               ],
@@ -82,18 +85,24 @@ class PersonWizardStep3Relationships extends StatelessWidget {
 class _RelationshipRowCard extends StatelessWidget {
   final int index;
   final DraftRelationshipRow row;
-  final List<Person> peopleForLookup;
+  final List<Person> lookupResults;
+  final bool lookupLoading;
   final VoidCallback onRemove;
   final ValueChanged<RelationType> onTypeChanged;
   final void Function(int id, String name) onPersonSelected;
+  final ValueChanged<String> onQueryChanged;
+  final VoidCallback onLookupDismissed;
 
   const _RelationshipRowCard({
     required this.index,
     required this.row,
-    required this.peopleForLookup,
+    required this.lookupResults,
+    required this.lookupLoading,
     required this.onRemove,
     required this.onTypeChanged,
     required this.onPersonSelected,
+    required this.onQueryChanged,
+    required this.onLookupDismissed,
   });
 
   @override
@@ -132,9 +141,12 @@ class _RelationshipRowCard extends StatelessWidget {
           ),
           SizedBox(height: 10.h),
           PersonSearchAutocomplete(
-            people: peopleForLookup,
+            results: lookupResults,
+            loading: lookupLoading,
             initialName: row.relatedPersonName,
+            onQueryChanged: onQueryChanged,
             onSelected: onPersonSelected,
+            onDismissed: onLookupDismissed,
           ),
         ],
       ),

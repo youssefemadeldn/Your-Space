@@ -50,7 +50,12 @@ final class PersonWizardReady extends PersonWizardState {
 
   // Step 3 — Family & Relationships
   final List<DraftRelationshipRow> relationshipRows;
-  final List<Person> peopleForLookup;
+
+  // Server-side person lookup for the Step 3 relationship rows — only one
+  // lookup field is focused at a time, so a single shared results list
+  // (cleared on blur / after a pick) is enough, no per-row keying.
+  final List<Person> relationshipLookupResults;
+  final bool relationshipLookupLoading;
 
   // Step 4 — Notes
   final String notes;
@@ -84,7 +89,8 @@ final class PersonWizardReady extends PersonWizardState {
     this.availableCities = const [],
     this.availableNeighborhoods = const [],
     this.relationshipRows = const [],
-    this.peopleForLookup = const [],
+    this.relationshipLookupResults = const [],
+    this.relationshipLookupLoading = false,
     this.notes = '',
     this.isSubmitting = false,
     this.submitError,
@@ -113,7 +119,8 @@ final class PersonWizardReady extends PersonWizardState {
     List<City>? availableCities,
     List<Neighborhood>? availableNeighborhoods,
     List<DraftRelationshipRow>? relationshipRows,
-    List<Person>? peopleForLookup,
+    List<Person>? relationshipLookupResults,
+    bool? relationshipLookupLoading,
     String? notes,
     bool? isSubmitting,
     String? submitError,
@@ -139,7 +146,8 @@ final class PersonWizardReady extends PersonWizardState {
         availableNeighborhoods:
             availableNeighborhoods ?? (clearNeighborhood ? const [] : this.availableNeighborhoods),
         relationshipRows: relationshipRows ?? this.relationshipRows,
-        peopleForLookup: peopleForLookup ?? this.peopleForLookup,
+        relationshipLookupResults: relationshipLookupResults ?? this.relationshipLookupResults,
+        relationshipLookupLoading: relationshipLookupLoading ?? this.relationshipLookupLoading,
         notes: notes ?? this.notes,
         isSubmitting: isSubmitting ?? this.isSubmitting,
         submitError: clearSubmitError ? null : (submitError ?? this.submitError),
@@ -167,7 +175,8 @@ final class PersonWizardReady extends PersonWizardState {
         availableCities,
         availableNeighborhoods,
         relationshipRows,
-        peopleForLookup,
+        relationshipLookupResults,
+        relationshipLookupLoading,
         notes,
         isSubmitting,
         submitError,

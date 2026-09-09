@@ -71,10 +71,22 @@ class _PersonWizardScreenState extends State<PersonWizardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocSelector<PersonWizardCubit, PersonWizardState, bool>(
+      selector: (state) => state is PersonWizardReady && state.isSubmitting,
+      builder: (context, isSubmitting) => PopScope(
+        // Leaving mid-submit would let submit() finish and emit onto a closed
+        // cubit; the person is created but the user is never routed to details.
+        canPop: !isSubmitting,
+        child: _buildScaffold(context, isSubmitting),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, bool isSubmitting) {
     return Scaffold(
       appBar: AppAppBar(
         title: _isEditing ? 'people.wizard.editTitle'.tr() : 'people.wizard.createTitle'.tr(),
-        onBack: () => context.pop(),
+        onBack: isSubmitting ? null : () => context.pop(),
       ),
       body: SafeArea(
         bottom: false,
@@ -109,6 +121,7 @@ class _PersonWizardScreenState extends State<PersonWizardScreen> {
                 PersonWizardStepIndicator(currentStep: _currentStep),
                 Expanded(
                   child: PageView(
+                    controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: const [
                       PersonWizardStep1BasicIdentity(),

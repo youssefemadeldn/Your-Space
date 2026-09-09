@@ -52,7 +52,6 @@ class PersonWizardFooter extends StatelessWidget {
               Expanded(
                 child: AppButton(
                   label: isLastStep ? 'people.wizard.saveCta'.tr() : 'common.next'.tr(),
-                  icon: isLastStep ? Icons.check_rounded : null,
                   loading: loading,
                   onPressed: loading ? null : onNext,
                 ),

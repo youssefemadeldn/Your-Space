@@ -13,6 +13,7 @@
     "back": "Back",
     "next": "Next",
     "done": "Done",
+    "noOptions": "No options available",
     "logout": "Log out",
     "logoutConfirmTitle": "Log out?",
     "logoutConfirmMessage": "You'll need to log in again next time.",
@@ -236,6 +237,8 @@
         "groupLabel": "Group",
         "groupPlaceholder": "Select a group",
         "groupRequired": "Select a group",
+        "noGroups": "No groups yet",
+        "addGroup": "Add group",
         "subGroupLabel": "Subgroup (optional)",
         "subGroupPlaceholder": "Select a subgroup",
         "pickGroupFirst": "Pick a group first",
@@ -246,6 +249,7 @@
         "governorateLabel": "Governorate",
         "governoratePlaceholder": "Select a governorate",
         "governorateRequired": "Select a governorate",
+        "noGovernorates": "No governorates yet",
         "addGovernorate": "Add governorate",
         "cityLabel": "City (optional)",
         "cityPlaceholder": "Select a city",
@@ -268,7 +272,8 @@
         "familyMember": "Family member {index}",
         "relationTypePlaceholder": "Select a relationship",
         "searchHint": "Search people",
-        "noMatches": "No matches"
+        "noMatches": "No matches",
+        "incompleteRelationship": "Finish or remove the family member — pick both a relationship and a person"
       },
       "step4": {
         "name": "Notes",

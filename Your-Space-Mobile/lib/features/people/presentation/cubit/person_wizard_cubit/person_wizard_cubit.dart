@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show UniqueKey;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/governorate.dart';
@@ -14,6 +16,7 @@ import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
@@ -51,6 +54,10 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   final PersonRelationshipRepository _personRelationshipRepository;
   final DataRefreshBus _dataRefreshBus;
 
+  /// Debounces the Step 3 person-lookup field — mirrors `PeopleListCubit`'s
+  /// `_searchDebounce`. Cancelled in [close].
+  Timer? _relationshipSearchDebounce;
+
   PersonWizardCubit(
     this._personRepository,
     this._groupRepository,
@@ -66,29 +73,40 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<void> initialize(int? personId) async {
     emit(const PersonWizardLoading());
 
-    final groupsResult = await _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
-    final governoratesResult = await _governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50);
-    final peopleResult = await _personRepository.getPersons(pageIndex: 1, pageSize: 200);
+    // Kick the independent fetches off together, then await — the group and
+    // governorate lists are hard prerequisites (both required in Step 2), so a
+    // failure on either surfaces as an error screen with Retry rather than an
+    // empty picker the user can't get past.
+    final groupsFuture = _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
+    final governoratesFuture = _governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50);
+    final detailsFuture = personId == null ? null : _personRepository.getPersonById(personId);
+
+    final groupsResult = await groupsFuture;
+    final governoratesResult = await governoratesFuture;
+
+    final prereqFailure = groupsResult.fold<Failure?>((f) => f, (_) => null) ??
+        governoratesResult.fold<Failure?>((f) => f, (_) => null);
+    if (prereqFailure != null) {
+      emit(PersonWizardError(core.failureToMessage(prereqFailure)));
+      return;
+    }
 
     final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
     final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
-    final allPeople = peopleResult.fold((_) => const <Person>[], (page) => page.items);
 
     if (personId == null) {
       emit(PersonWizardReady(
         availableGroups: groups,
         availableGovernorates: governorates,
-        peopleForLookup: allPeople,
       ));
       return;
     }
 
-    final detailsResult = await _personRepository.getPersonById(personId);
+    final detailsResult = await detailsFuture!;
     await detailsResult.fold(
       (failure) async => emit(PersonWizardError(core.failureToMessage(failure))),
       (details) async {
         final person = details.person;
-        final peopleForLookup = allPeople.where((p) => p.id != personId).toList();
 
         // Pre-seed the staged photo grid from the person's existing PersonImage rows.
         final imagesResult = await _personImageRepository.getImages(personId);
@@ -129,7 +147,6 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
           availableGroups: groups,
           availableGovernorates: governorates,
           relationshipRows: relationshipRows,
-          peopleForLookup: peopleForLookup,
           notes: person.notes ?? '',
           originalPhotoIds: images.map((i) => i.id).toSet(),
           originalRelationshipIds: details.relationships.map((r) => r.id).toSet(),
@@ -179,6 +196,14 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
         if (current.groupId == null) return 'people.wizard.step2.groupRequired';
         if (current.governorateId == null) return 'people.wizard.step2.governorateRequired';
         return null;
+      case 2:
+        // A row with exactly one of {relation type, person} filled is a
+        // half-entered relationship that would be silently dropped at submit.
+        final hasPartialRow = current.relationshipRows.any(
+          (r) => (r.relationType != null) != (r.relatedPersonId != null),
+        );
+        if (hasPartialRow) return 'people.wizard.step3.incompleteRelationship';
+        return null;
       default:
         return null;
     }
@@ -220,6 +245,24 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     _updateReady((r) => r.copyWith(groupId: groupId, clearSubGroup: true));
     final result = await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: 50);
     _updateReady((r) => r.copyWith(availableSubGroups: result.fold((_) => const [], (p) => p.items)));
+  }
+
+  /// Inline "+ Add new group" from the Step 2 group picker — mirrors
+  /// [addGovernorateInline]. Group is required, has no management screen
+  /// reachable from the wizard, and a zero-group account would otherwise be
+  /// stuck, so creating one here is the only way forward.
+  Future<int?> addGroupInline(String name) async {
+    final result = await _groupRepository.createGroup(name: name);
+    return result.fold((failure) => null, (group) {
+      _dataRefreshBus.notify(DataScope.groups);
+      _updateReady((r) => r.copyWith(
+            availableGroups: [...r.availableGroups, group],
+            groupId: group.id,
+            clearSubGroup: true,
+            availableSubGroups: const [],
+          ));
+      return group.id;
+    });
   }
 
   void selectSubGroup(int subGroupId) => _updateReady((r) => r.copyWith(subGroupId: subGroupId));
@@ -327,6 +370,48 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
         ),
       );
 
+  /// Debounced server-side lookup for the focused relationship row's person
+  /// field. Replaces the old fixed 200-row client snapshot so people beyond
+  /// the first page are still findable.
+  void searchRelationshipPeople(String query) {
+    _relationshipSearchDebounce?.cancel();
+    _relationshipSearchDebounce =
+        Timer(const Duration(milliseconds: 400), () => _runRelationshipSearch(query));
+  }
+
+  Future<void> _runRelationshipSearch(String query) async {
+    final current = state;
+    if (current is! PersonWizardReady) return;
+    emit(current.copyWith(relationshipLookupLoading: true));
+
+    final trimmed = query.trim();
+    final result = await _personRepository.getPersons(
+      search: trimmed.isEmpty ? null : trimmed,
+      pageIndex: 1,
+      pageSize: AppConstants.kDefaultPageSize,
+    );
+    if (isClosed) return;
+    final latest = state;
+    if (latest is! PersonWizardReady) return;
+
+    final people = result.fold((_) => const <Person>[], (page) => page.items);
+    // Edit mode: a person can't be related to itself.
+    final filtered =
+        latest.personId == null ? people : people.where((p) => p.id != latest.personId).toList();
+    emit(latest.copyWith(relationshipLookupResults: filtered, relationshipLookupLoading: false));
+  }
+
+  /// Clears the shared lookup list — called when a row's field loses focus or
+  /// a person is picked, so a stale result set never flashes under the next
+  /// row the user focuses.
+  void clearRelationshipLookup() {
+    _relationshipSearchDebounce?.cancel();
+    final current = state;
+    if (current is! PersonWizardReady) return;
+    if (current.relationshipLookupResults.isEmpty && !current.relationshipLookupLoading) return;
+    emit(current.copyWith(relationshipLookupResults: const [], relationshipLookupLoading: false));
+  }
+
   // ---- Step 4 — Notes ----
 
   void updateNotes(String value) => _updateReady((r) => r.copyWith(notes: value));
@@ -365,6 +450,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
             notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
           );
 
+    if (isClosed) return;
     final personId = personResult.fold((failure) => null, (person) => person.id);
     if (personId == null) {
       final message = personResult.fold((f) => core.failureToMessage(f), (_) => '');
@@ -377,6 +463,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
       ...await _syncRelationships(current, personId),
     ];
 
+    if (isClosed) return;
     _dataRefreshBus.notify(DataScope.people);
     if (current.didInlineAddClassification) {
       _dataRefreshBus.notify(DataScope.classification);
@@ -460,5 +547,11 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     final current = state;
     if (current is! PersonWizardReady) return;
     emit(update(current));
+  }
+
+  @override
+  Future<void> close() {
+    _relationshipSearchDebounce?.cancel();
+    return super.close();
   }
 }

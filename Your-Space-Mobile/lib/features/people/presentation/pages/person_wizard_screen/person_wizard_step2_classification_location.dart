@@ -50,6 +50,10 @@ class PersonWizardStep2ClassificationLocation extends StatelessWidget {
                 placeholder: 'people.wizard.step2.groupPlaceholder'.tr(),
                 options: groupOptions.map((o) => AppCascadingSelectOption(id: o.id, label: o.name)).toList(),
                 onSelected: cubit.selectGroup,
+                allowInlineAdd: true,
+                addNewLabel: 'people.wizard.step2.addGroup'.tr(),
+                onInlineAdd: cubit.addGroupInline,
+                emptyLabel: 'people.wizard.step2.noGroups'.tr(),
               ),
               SizedBox(height: 14.h),
               AppCascadingSelect(
@@ -90,6 +94,7 @@ class PersonWizardStep2ClassificationLocation extends StatelessWidget {
                 allowInlineAdd: true,
                 addNewLabel: 'people.wizard.step2.addGovernorate'.tr(),
                 onInlineAdd: cubit.addGovernorateInline,
+                emptyLabel: 'people.wizard.step2.noGovernorates'.tr(),
               ),
               SizedBox(height: 14.h),
               AppCascadingSelect(

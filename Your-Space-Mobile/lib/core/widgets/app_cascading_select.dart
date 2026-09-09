@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -177,20 +178,28 @@ class _CascadingSelectSheetState extends State<_CascadingSelectSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (hasOptions)
-            ...widget.options.map(
-              (option) => ListTile(
-                title: Text(option.label, style: AppTextStyles.bodyLarge),
-                trailing: option.label == widget.selectedLabel
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
-                    : null,
-                onTap: () => Navigator.of(context).pop(option.id),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                children: widget.options
+                    .map(
+                      (option) => ListTile(
+                        title: Text(option.label, style: AppTextStyles.bodyLarge),
+                        trailing: option.label == widget.selectedLabel
+                            ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                            : null,
+                        onTap: () => Navigator.of(context).pop(option.id),
+                      ),
+                    )
+                    .toList(),
               ),
             )
-          else if (widget.emptyLabel != null)
+          else
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
               child: Text(
-                widget.emptyLabel!,
+                widget.emptyLabel ?? 'common.noOptions'.tr(),
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
               ),
             ),
