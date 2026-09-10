@@ -45,8 +45,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() {
       _currentPasswordError =
           currentPassword.isEmpty ? 'auth.validation.requiredCurrentPassword'.tr() : null;
-      _newPasswordError =
-          RegexHelper.validate(RegexHelper.accountPassword, newPassword) ? null : 'auth.passwordRule'.tr();
+      _newPasswordError = switch (newPassword) {
+        _ when !RegexHelper.validate(RegexHelper.accountPassword, newPassword) => 'auth.passwordRule'.tr(),
+        _ when newPassword == currentPassword => 'auth.validation.newPasswordSameAsCurrent'.tr(),
+        _ => null,
+      };
       _confirmNewPasswordError =
           confirmNewPassword == newPassword ? null : 'auth.validation.passwordMismatch'.tr();
     });

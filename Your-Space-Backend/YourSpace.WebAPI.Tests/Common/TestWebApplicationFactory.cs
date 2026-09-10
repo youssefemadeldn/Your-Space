@@ -1,13 +1,16 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using YourSpace.Data.Contexts;
 using YourSpace.Services.Services.EmailService;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.Fakes;
 
 namespace YourSpace.WebAPI.Tests.Common;
@@ -18,6 +21,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
     public FakeEmailSender EmailSender { get; } = new();
+    public FakeR2StorageService R2Storage { get; } = new();
 
     public TestWebApplicationFactory()
     {
@@ -40,6 +44,18 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("IntegrationTest");
+
+        // The R2 bucket names the fake storage records are asserted against by name in the
+        // integration tests — pin them to the same short values every unit test uses so the
+        // assertions don't depend on whatever real bucket names appsettings.json ships.
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["R2:AvatarsBucketName"] = "avatars",
+                ["R2:PeoplePhotosBucketName"] = "people",
+            });
+        });
 
         builder.ConfigureServices(services =>
         {
@@ -71,6 +87,14 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             }
 
             services.AddSingleton<IEmailSender>(EmailSender);
+
+            var r2Storage = services.SingleOrDefault(d => d.ServiceType == typeof(IR2StorageService));
+            if (r2Storage is not null)
+            {
+                services.Remove(r2Storage);
+            }
+
+            services.AddSingleton<IR2StorageService>(R2Storage);
         });
     }
 

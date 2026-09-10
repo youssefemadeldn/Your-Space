@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Space — Add person (wizard)</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="new-screens.css">
+</head>
+<body class="kit-body">
+
+  <div class="kit-note">
+    <span class="kit-note-title">Add / edit person — 4-step wizard (new screen)</span>
+    <span class="kit-note-body">Replaces the flat single-screen "Add person" form with a linear wizard: Basic identity → Classification &amp; location → Family &amp; relationships → Notes. Same Input, Select-style trigger, Button, Chip, Avatar and IconButton chrome as the rest of the app. The step indicator, the repeater rows, the cascading Group→Subgroup and Governorate→City→Neighborhood pickers, the inline "+ Add new…" option and the person-search autocomplete are new composed patterns — see the delivery notes for details.</span>
+    <span class="kit-note-hint">Try it: fill step 1, hit Next. On step 2, pick a Group to unlock Subgroup, then a Governorate to unlock City, then a City to unlock Neighborhood — each picker has a "+ Add new" row at the bottom. On step 3, remove a row or add one. On step 4, type in Notes and watch the counter.</span>
+  </div>
+
+  <div class="kit-row">
+    <div class="kit-frame-col">
+      <span class="kit-frame-caption">Add person · interactive, all 4 steps live in this frame</span>
+
+      <div class="phone-frame on-surface">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">
+            <span class="msr">signal_cellular_alt</span>
+            <span class="msr">wifi</span>
+            <span class="msr">battery_full</span>
+          </span>
+        </div>
+
+        <div class="appbar">
+          <button class="icon-btn" id="backBtn"><span class="msr">arrow_back</span></button>
+          <span class="appbar-title">Add person</span>
+          <span class="appbar-spacer"></span>
+        </div>
+
+        <div class="stepper-wrap">
+          <span class="stepper-eyebrow" id="stepEyebrow">Step 1 of 4 · Basic identity</span>
+          <div class="stepper-track" id="stepperTrack">
+            <div class="stepper-dot current" data-dot="1">1</div>
+            <div class="stepper-line" data-line="1"></div>
+            <div class="stepper-dot" data-dot="2">2</div>
+            <div class="stepper-line" data-line="2"></div>
+            <div class="stepper-dot" data-dot="3">3</div>
+            <div class="stepper-line" data-line="3"></div>
+            <div class="stepper-dot" data-dot="4">4</div>
+          </div>
+        </div>
+
+        <div class="screen-content on-surface">
+
+          <!-- ===================== STEP 1 — Basic identity ===================== -->
+          <section class="flex-col gap-18" id="step1">
+            <label class="field">
+              <span class="field-label">Full name</span>
+              <span class="field-wrap">
+                <span class="msr">person</span>
+                <input class="field-input" id="fullName" placeholder="e.g. Sara Hosny">
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-label">Primary phone</span>
+              <span class="field-wrap">
+                <span class="msr">call</span>
+                <input class="field-input" id="phonePrimary" dir="ltr" placeholder="+201234567890">
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-label">Secondary phone</span>
+              <span class="field-wrap">
+                <span class="msr">call</span>
+                <input class="field-input" id="phoneSecondary" dir="ltr" placeholder="+201234567890">
+              </span>
+              <span class="field-hint">Optional</span>
+            </label>
+
+            <div class="flex-col gap-8">
+              <span class="field-label">Gender</span>
+              <div class="segmented" id="genderControl">
+                <button type="button" data-gender="Male" class="selected">Male</button>
+                <button type="button" data-gender="Female">Female</button>
+              </div>
+              <span class="field-hint">Required</span>
+            </div>
+
+            <div class="flex-col gap-8">
+              <div class="row-between">
+                <span class="field-label">Photos</span>
+                <span class="field-hint" id="photoCount">3 / 6</span>
+              </div>
+              <div class="photo-grid" id="photoGrid"></div>
+              <span class="field-hint">Up to 6 · JPEG or PNG. Tap a photo to make it the profile photo.</span>
+              <input type="file" accept="image/jpeg,image/png" id="photoFile" style="display:none">
+            </div>
+          </section>
+
+          <!-- ===================== STEP 2 — Classification & location ===================== -->
+          <section class="flex-col gap-18" id="step2" hidden>
+            <span class="eyebrow">Classification</span>
+            <div class="select" id="sel-group">
+              <span class="field-label">Group</span>
+              <button type="button" class="select-trigger" data-trigger="group">Choose a group</button>
+              <div class="select-panel" data-panel="group" hidden></div>
+            </div>
+            <div class="select" id="sel-subgroup">
+              <span class="field-label">Subgroup</span>
+              <button type="button" class="select-trigger disabled" data-trigger="subgroup">Choose a group first</button>
+              <div class="select-panel" data-panel="subgroup" hidden></div>
+            </div>
+
+            <span class="eyebrow" style="margin-top:4px">Location</span>
+            <div class="select" id="sel-governorate">
+              <span class="field-label">Governorate</span>
+              <button type="button" class="select-trigger" data-trigger="governorate">Choose a governorate</button>
+              <div class="select-panel" data-panel="governorate" hidden></div>
+            </div>
+            <div class="select" id="sel-city">
+              <span class="field-label">City</span>
+              <button type="button" class="select-trigger disabled" data-trigger="city">Choose a governorate first</button>
+              <div class="select-panel" data-panel="city" hidden></div>
+            </div>
+            <div class="select" id="sel-neighborhood">
+              <span class="field-label">Neighborhood</span>
+              <button type="button" class="select-trigger disabled" data-trigger="neighborhood">Choose a city first</button>
+              <div class="select-panel" data-panel="neighborhood" hidden></div>
+            </div>
+            <span class="field-hint" style="margin-top:-8px">City and neighborhood are optional</span>
+          </section>
+
+          <!-- ===================== STEP 3 — Family & relationships ===================== -->
+          <section class="flex-col gap-14" id="step3" hidden>
+            <div class="row-between">
+              <span class="eyebrow">Family &amp; relationships</span>
+            </div>
+            <div class="flex-col gap-12" id="repeaterList"></div>
+            <button type="button" class="repeater-add-tile" id="addRelationBtn">
+              <span class="msr">add</span> Add family member
+            </button>
+          </section>
+
+          <!-- ===================== STEP 4 — Notes ===================== -->
+          <section class="flex-col gap-18" id="step4" hidden>
+            <label class="field">
+              <span class="field-label">Notes</span>
+              <span class="field-wrap multiline">
+                <textarea class="field-input" id="notesInput" rows="6" maxlength="2000" placeholder="Anything worth remembering — favorite foods, how you met, gift ideas…"></textarea>
+              </span>
+              <span class="field-hint-row">
+                <span class="field-hint">Optional</span>
+                <span class="field-hint" id="notesCounter">0 / 2000</span>
+              </span>
+            </label>
+          </section>
+
+        </div>
+
+        <div class="fixed-footer">
+          <button class="btn secondary full" id="backStepBtn" style="visibility:hidden">Back</button>
+          <button class="btn primary full" id="nextStepBtn">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const TOTAL_STEPS = 4;
+  const STEP_NAMES = ['Basic identity', 'Classification & location', 'Family & relationships', 'Notes'];
+  let step = 1;
+
+  const eyebrow = document.getElementById('stepEyebrow');
+  const track = document.getElementById('stepperTrack');
+  const backStepBtn = document.getElementById('backStepBtn');
+  const nextStepBtn = document.getElementById('nextStepBtn');
+  const content = document.querySelector('.screen-content');
+
+  function renderStepper() {
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      const dot = track.querySelector('[data-dot="' + i + '"]');
+      dot.classList.remove('done', 'current');
+      if (i < step) { dot.classList.add('done'); dot.innerHTML = '<span class="msr">check</span>'; }
+      else if (i === step) { dot.classList.add('current'); dot.textContent = i; }
+      else { dot.textContent = i; }
+    }
+    for (let i = 1; i < TOTAL_STEPS; i++) {
+      const line = track.querySelector('[data-line="' + i + '"]');
+      line.classList.toggle('done', i < step);
+    }
+    eyebrow.textContent = 'Step ' + step + ' of ' + TOTAL_STEPS + ' · ' + STEP_NAMES[step - 1];
+  }
+
+  function renderFooter() {
+    backStepBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+    nextStepBtn.innerHTML = step === TOTAL_STEPS ? '<span class="msr">check</span> Save person' : 'Next';
+  }
+
+  function showStep(n) {
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      document.getElementById('step' + i).hidden = i !== n;
+    }
+    content.scrollTop = 0;
+    renderStepper();
+    renderFooter();
+  }
+
+  backStepBtn.addEventListener('click', () => { if (step > 1) { step--; showStep(step); } });
+  nextStepBtn.addEventListener('click', () => {
+    if (step < TOTAL_STEPS) { step++; showStep(step); }
+    else {
+      nextStepBtn.innerHTML = '<span class="msr">check</span> Saved';
+      setTimeout(() => { nextStepBtn.innerHTML = '<span class="msr">check</span> Save person'; }, 1200);
+    }
+  });
+  document.getElementById('backBtn').addEventListener('click', () => {});
+
+  showStep(1);
+
+  // ---------------- Step 1: Gender segmented control ----------------
+  document.getElementById('genderControl').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-gender]');
+    if (!btn) return;
+    document.querySelectorAll('#genderControl button').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+
+  // ---------------- Step 1: Photo grid (NEW composed pattern) ----------------
+  const photoTones = ['tone-0', 'tone-1', 'tone-2'];
+  let photos = [
+    { id: 1, primary: true, tone: 'tone-0', src: null },
+    { id: 2, primary: false, tone: 'tone-1', src: null },
+    { id: 3, primary: false, tone: 'tone-2', src: null }
+  ];
+  let nextPhotoId = 4;
+  const photoGrid = document.getElementById('photoGrid');
+  const photoCount = document.getElementById('photoCount');
+  const photoFile = document.getElementById('photoFile');
+
+  function renderPhotos() {
+    photoGrid.innerHTML = '';
+    photos.forEach(p => {
+      const tile = document.createElement('div');
+      tile.className = 'photo-tile';
+      tile.innerHTML =
+        (p.src ? '<img src="' + p.src + '" alt="">' : '<span class="msr person-ph">person</span>') +
+        (p.primary ? '<span class="primary-badge"><span class="msr">star</span>Primary</span>' : '') +
+        '<button type="button" class="remove-badge" data-remove="' + p.id + '"><span class="msr">close</span></button>' +
+        '<button type="button" class="make-primary-hint" data-makeprimary="' + p.id + '" title="Make profile photo"></button>';
+      if (!p.src) tile.style.background = 'var(--' + (p.tone === 'tone-0' ? 'brand-red-soft' : p.tone === 'tone-1' ? 'tint-info' : 'tint-success') + ')';
+      photoGrid.appendChild(tile);
+    });
+    if (photos.length < 6) {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'photo-add-tile';
+      add.id = 'addPhotoTile';
+      add.innerHTML = '<span class="msr">add_a_photo</span><span class="lbl">Add photo</span>';
+      photoGrid.appendChild(add);
+      add.addEventListener('click', () => photoFile.click());
+    }
+    photoCount.textContent = photos.length + ' / 6';
+  }
+
+  photoGrid.addEventListener('click', e => {
+    const rm = e.target.closest('[data-remove]');
+    if (rm) {
+      const id = Number(rm.dataset.remove);
+      const wasPrimary = photos.find(p => p.id === id)?.primary;
+      photos = photos.filter(p => p.id !== id);
+      if (wasPrimary && photos.length) photos[0].primary = true;
+      renderPhotos();
+      return;
+    }
+    const mk = e.target.closest('[data-makeprimary]');
+    if (mk) {
+      const id = Number(mk.dataset.makeprimary);
+      photos.forEach(p => p.primary = p.id === id);
+      renderPhotos();
+    }
+  });
+
+  photoFile.addEventListener('change', () => {
+    const file = photoFile.files && photoFile.files[0];
+    if (!file || photos.length >= 6) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      photos.push({ id: nextPhotoId++, primary: photos.length === 0, tone: photoTones[photos.length % 3], src: e.target.result });
+      renderPhotos();
+      photoFile.value = '';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  renderPhotos();
+
+  // ---------------- Generic Select widget (used for Group / Subgroup / Governorate / City / Neighborhood) ----------------
+  function wireSelect(key, { getOptions, allowAdd, addLabel, onChange, emptyLabel }) {
+    const root = document.getElementById('sel-' + key);
+    const trigger = root.querySelector('[data-trigger="' + key + '"]');
+    const panel = root.querySelector('[data-panel="' + key + '"]');
+    let value = null;
+
+    function close() { panel.hidden = true; trigger.classList.remove('open'); }
+    function renderPanel() {
+      const options = getOptions();
+      panel.innerHTML = '';
+      if (!options.length) {
+        const empty = document.createElement('div');
+        empty.className = 'select-panel-empty';
+        empty.textContent = emptyLabel || 'Nothing here yet';
+        panel.appendChild(empty);
+      } else {
+        options.forEach(opt => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'select-option' + (opt === value ? ' selected' : '');
+          b.textContent = opt;
+          if (opt === value) b.innerHTML += '<span class="msr">check</span>';
+          b.addEventListener('click', () => { setValue(opt); close(); });
+          panel.appendChild(b);
+        });
+      }
+      if (allowAdd) {
+        const addRow = document.createElement('button');
+        addRow.type = 'button';
+        addRow.className = 'select-add-row';
+        addRow.innerHTML = '<span class="msr">add</span>' + addLabel;
+        addRow.addEventListener('click', () => showInlineAdd());
+        panel.appendChild(addRow);
+      }
+    }
+    function showInlineAdd() {
+      const wrap = document.createElement('div');
+      wrap.className = 'select-add-inline';
+      wrap.innerHTML = '<input type="text" placeholder="' + addLabel.replace('Add new ', 'New ') + ' name">' +
+        '<button type="button" class="icon-btn soft sz-36"><span class="msr">check</span></button>';
+      panel.appendChild(wrap);
+      const input = wrap.querySelector('input');
+      const confirmBtn = wrap.querySelector('button');
+      input.focus();
+      function commit() {
+        const v = input.value.trim();
+        if (!v) return;
+        getOptions().push(v);
+        setValue(v);
+        close();
+      }
+      confirmBtn.addEventListener('click', commit);
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') commit(); });
+    }
+    function setValue(v) {
+      value = v;
+      trigger.textContent = v;
+      trigger.classList.add('filled');
+      if (onChange) onChange(v);
+    }
+    function setDisabled(disabled, placeholder) {
+      trigger.classList.toggle('disabled', disabled);
+      if (disabled) {
+        value = null;
+        trigger.textContent = placeholder;
+        trigger.classList.remove('filled');
+      }
+    }
+    trigger.addEventListener('click', () => {
+      if (trigger.classList.contains('disabled')) return;
+      const willOpen = panel.hidden;
+      document.querySelectorAll('.select-panel').forEach(p => p.hidden = true);
+      document.querySelectorAll('.select-trigger').forEach(t => t.classList.remove('open'));
+      if (willOpen) { renderPanel(); panel.hidden = false; trigger.classList.add('open'); }
+    });
+    return { setDisabled, setValue, getValue: () => value };
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.select')) {
+      document.querySelectorAll('.select-panel').forEach(p => p.hidden = true);
+      document.querySelectorAll('.select-trigger').forEach(t => t.classList.remove('open'));
+    }
+  });
+
+  // ---- data ----
+  const subgroupsByGroup = {
+    'Family': ['Immediate family', 'Extended family', 'In-laws'],
+    'Coworkers': ['Current team', 'Former colleagues'],
+    'Neighbors': [],
+    'College friends': ['Dorm mates', 'Study group']
+  };
+  const governorates = ['Cairo', 'Giza', 'Alexandria', 'Al Qalyubia', 'Port Said', 'Suez', 'Dakahlia', 'Al Sharqia', 'Al Gharbia', 'Al Monufia', 'Al Beheira', 'Kafr El Sheikh', 'Damietta', 'Ismailia', 'Faiyum', 'Beni Suef', 'Minya', 'Assiut', 'Sohag', 'Qena', 'Aswan', 'Luxor', 'Red Sea', 'New Valley', 'Matrouh', 'North Sinai', 'South Sinai'];
+  const citiesByGovernorate = {
+    'Cairo': ['Nasr City', 'Maadi', 'Heliopolis', 'Downtown Cairo'],
+    'Giza': ['Dokki', 'Mohandessin', '6th of October'],
+    'Alexandria': ['Smouha', 'Miami', 'Sidi Gaber']
+  };
+  const neighborhoodsByCity = {
+    'Nasr City': ['Zone 1', 'Zone 3', 'Abbas El Akkad'],
+    'Maadi': ['Sarayat El Maadi', 'Degla']
+  };
+
+  const groupSelect = wireSelect('group', {
+    getOptions: () => Object.keys(subgroupsByGroup),
+    allowAdd: false,
+    onChange: (v) => {
+      if (!subgroupsByGroup[v]) subgroupsByGroup[v] = [];
+      subgroupSelect.setDisabled(false);
+      document.querySelector('[data-trigger="subgroup"]').textContent = 'Choose a subgroup';
+      document.querySelector('[data-trigger="subgroup"]').classList.remove('filled');
+    }
+  });
+  const subgroupSelect = wireSelect('subgroup', {
+    getOptions: () => subgroupsByGroup[groupSelect.getValue()] || [],
+    allowAdd: true,
+    addLabel: 'Add new subgroup',
+    emptyLabel: 'No subgroups in this group yet',
+    onChange: () => {}
+  });
+  subgroupSelect.setDisabled(true, 'Choose a group first');
+
+  const governorateSelect = wireSelect('governorate', {
+    getOptions: () => governorates,
+    allowAdd: false,
+    onChange: (v) => {
+      if (!citiesByGovernorate[v]) citiesByGovernorate[v] = [];
+      citySelect.setDisabled(false);
+      document.querySelector('[data-trigger="city"]').textContent = 'Choose a city';
+      document.querySelector('[data-trigger="city"]').classList.remove('filled');
+      neighborhoodSelect.setDisabled(true, 'Choose a city first');
+    }
+  });
+  const citySelect = wireSelect('city', {
+    getOptions: () => citiesByGovernorate[governorateSelect.getValue()] || [],
+    allowAdd: true,
+    addLabel: 'Add new city',
+    emptyLabel: 'No cities added for this governorate yet',
+    onChange: (v) => {
+      if (!neighborhoodsByCity[v]) neighborhoodsByCity[v] = [];
+      neighborhoodSelect.setDisabled(false);
+      document.querySelector('[data-trigger="neighborhood"]').textContent = 'Choose a neighborhood';
+      document.querySelector('[data-trigger="neighborhood"]').classList.remove('filled');
+    }
+  });
+  citySelect.setDisabled(true, 'Choose a governorate first');
+  const neighborhoodSelect = wireSelect('neighborhood', {
+    getOptions: () => neighborhoodsByCity[citySelect.getValue()] || [],
+    allowAdd: true,
+    addLabel: 'Add new neighborhood',
+    emptyLabel: 'No neighborhoods added for this city yet',
+    onChange: () => {}
+  });
+  neighborhoodSelect.setDisabled(true, 'Choose a city first');
+
+  // ---------------- Step 3: Family & relationships repeater (NEW composed pattern) ----------------
+  const relationTypes = ['Husband', 'Wife', 'Father', 'Mother', 'Uncle (Maternal)', 'Aunt (Maternal)', 'Uncle (Paternal)', 'Aunt (Paternal)', 'Son', 'Daughter', 'Brother', 'Sister', 'Nephew', 'Niece'];
+  const existingContacts = [
+    { name: 'Sara Adel', group: 'Family' }, { name: 'Omar Fahmy', group: 'Coworkers' },
+    { name: 'Nour Hassan', group: 'Family' }, { name: 'Hana Ali', group: 'Neighbors' },
+    { name: 'Zein Omar', group: 'College friends' }, { name: 'Laila Kamel', group: 'Family' },
+    { name: 'Ahmed Samir', group: 'Family' }, { name: 'Youssef Nabil', group: 'Coworkers' },
+    { name: 'Mona Farouk', group: 'College friends' }, { name: 'Karim Adel', group: 'Neighbors' }
+  ];
+  let rows = [
+    { id: 1, relation: 'Wife', person: 'Nour Hassan' },
+    { id: 2, relation: 'Father', person: 'Ahmed Samir' },
+    { id: 3, relation: 'Sister', person: 'Laila Kamel' }
+  ];
+  let nextRowId = 4;
+  const repeaterList = document.getElementById('repeaterList');
+
+  function avatarTone(name) { return 'tone-' + ((name.charCodeAt(0) || 0) % 5); }
+  function initials(name) { return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase(); }
+
+  function renderRepeater() {
+    repeaterList.innerHTML = '';
+    rows.forEach((row, idx) => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'repeater-row';
+      rowEl.innerHTML =
+        '<div class="repeater-row-head"><span>Family member ' + (idx + 1) + '</span>' +
+        '<button type="button" class="icon-btn sz-36" data-removerow="' + row.id + '"><span class="msr">close</span></button></div>' +
+        '<div class="select" id="sel-relation-' + row.id + '">' +
+        '<button type="button" class="select-trigger' + (row.relation ? ' filled' : '') + '" data-trigger="relation-' + row.id + '">' + (row.relation || 'Relation type') + '</button>' +
+        '<div class="select-panel" data-panel="relation-' + row.id + '" hidden></div></div>' +
+        '<div class="autocomplete" data-ac="' + row.id + '">' +
+        '<span class="field-wrap"><span class="msr">search</span><input class="field-input" data-acinput="' + row.id + '" placeholder="Search your people…" value="' + (row.person || '') + '"></span>' +
+        '<div class="autocomplete-panel" data-acpanel="' + row.id + '" hidden></div></div>';
+      repeaterList.appendChild(rowEl);
+
+      wireSelect('relation-' + row.id, {
+        getOptions: () => relationTypes,
+        allowAdd: false,
+        onChange: (v) => { row.relation = v; }
+      });
+
+      const acInput = rowEl.querySelector('[data-acinput="' + row.id + '"]');
+      const acPanel = rowEl.querySelector('[data-acpanel="' + row.id + '"]');
+      function renderSuggestions() {
+        const q = acInput.value.trim().toLowerCase();
+        const matches = existingContacts.filter(c => !q || c.name.toLowerCase().includes(q));
+        acPanel.innerHTML = '';
+        if (!matches.length) {
+          acPanel.innerHTML = '<div class="autocomplete-empty">No one matches "' + acInput.value + '"</div>';
+        } else {
+          matches.slice(0, 6).forEach(c => {
+            const opt = document.createElement('button');
+            opt.type = 'button';
+            opt.className = 'autocomplete-option';
+            opt.innerHTML = '<span class="avatar ' + avatarTone(c.name) + ' sz-32">' + initials(c.name) + '</span>' +
+              '<span class="flex-col"><span class="name">' + c.name + '</span><span class="sub">' + c.group + '</span></span>';
+            opt.addEventListener('click', () => { acInput.value = c.name; row.person = c.name; acPanel.hidden = true; });
+            acPanel.appendChild(opt);
+          });
+        }
+      }
+      acInput.addEventListener('focus', () => { renderSuggestions(); acPanel.hidden = false; });
+      acInput.addEventListener('input', () => { row.person = acInput.value; renderSuggestions(); acPanel.hidden = false; });
+    });
+
+    repeaterList.querySelectorAll('[data-removerow]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        rows = rows.filter(r => r.id !== Number(btn.dataset.removerow));
+        renderRepeater();
+      });
+    });
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.autocomplete')) {
+      document.querySelectorAll('.autocomplete-panel').forEach(p => p.hidden = true);
+    }
+  });
+  document.getElementById('addRelationBtn').addEventListener('click', () => {
+    rows.push({ id: nextRowId++, relation: '', person: '' });
+    renderRepeater();
+  });
+  renderRepeater();
+
+  // ---------------- Step 4: Notes counter ----------------
+  const notesInput = document.getElementById('notesInput');
+  const notesCounter = document.getElementById('notesCounter');
+  notesInput.addEventListener('input', () => {
+    notesCounter.textContent = notesInput.value.length + ' / 2000';
+    notesCounter.classList.toggle('error', notesInput.value.length >= 2000);
+  });
+})();
+</script>
+</body>
+</html>

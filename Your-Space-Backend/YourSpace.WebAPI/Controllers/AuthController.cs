@@ -102,6 +102,41 @@ public class AuthController(IAuthService authService) : ControllerBase
         return new ResultActionResult<UserProfileDto>(result);
     }
 
+    // Irreversible: hard-deletes the account and everything it owns. Rate-limited (unlike
+    // change-password) because it takes a password and a wrong guess is a destructive-action probe.
+    [HttpDelete("me")]
+    [Authorize]
+    [EnableRateLimiting(RateLimitingExtension.AuthPolicy)]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountDto dto)
+    {
+        var result = await authService.DeleteAccountAsync(GetUserId(), dto);
+        return new ResultActionResult(result);
+    }
+
+    [HttpPut("me")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+    {
+        var result = await authService.UpdateProfileAsync(GetUserId(), dto);
+        return new ResultActionResult<UserProfileDto>(result);
+    }
+
+    [HttpPost("me/avatar")]
+    [Authorize]
+    public async Task<IActionResult> UploadAvatar([FromForm] UploadAvatarDto dto)
+    {
+        var result = await authService.UploadAvatarAsync(GetUserId(), dto);
+        return new ResultActionResult<UserProfileDto>(result);
+    }
+
+    [HttpDelete("me/avatar")]
+    [Authorize]
+    public async Task<IActionResult> RemoveAvatar()
+    {
+        var result = await authService.RemoveAvatarAsync(GetUserId());
+        return new ResultActionResult<UserProfileDto>(result);
+    }
+
     // Safe: every action calling this is behind [Authorize], and TokenService.GenerateAccessToken
     // always emits a NameIdentifier claim, so it's never actually missing here.
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;

@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart';
@@ -20,8 +21,12 @@ void main() {
   late PersonRepositoryImpl repository;
 
   setUpAll(() {
-    registerFallbackValue(const CreatePersonRequest(name: '', groupId: 0));
-    registerFallbackValue(const UpdatePersonRequest(id: 0, name: '', groupId: 0));
+    registerFallbackValue(
+      const CreatePersonRequest(name: '', gender: Gender.male, groupId: 0, governorateId: 0),
+    );
+    registerFallbackValue(
+      const UpdatePersonRequest(id: 0, name: '', gender: Gender.male, groupId: 0, governorateId: 0),
+    );
     registerFallbackValue(const AddOccasionHistoryRequest(invitedMe: false));
   });
 
@@ -35,10 +40,14 @@ void main() {
       (_) async => Right(PersonDetailsResponse(
         id: 1,
         name: 'Sara Adel',
+        gender: Gender.female,
         groupId: 1,
         groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
         hasReciprocityHistory: false,
         occasionHistory: const [],
+        relationships: const [],
         createdAt: DateTime(2026),
       )),
     );
@@ -47,7 +56,18 @@ void main() {
 
     expect(result.isRight(), isTrue);
     final details = result.getOrElse(() => throw StateError('expected Right'));
-    expect(details.person, const Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family'));
+    expect(
+      details.person,
+      const Person(
+        id: 1,
+        name: 'Sara Adel',
+        gender: Gender.female,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      ),
+    );
     expect(details.occasionHistory, isEmpty);
   });
 
@@ -65,15 +85,34 @@ void main() {
       (_) async => const Right(PersonResponse(
         id: 10,
         name: 'New Person',
+        gender: Gender.male,
         groupId: 1,
         groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
         hasReciprocityHistory: false,
       )),
     );
 
-    final result = await repository.createPerson(name: 'New Person', groupId: 1);
+    final result = await repository.createPerson(
+      name: 'New Person',
+      gender: Gender.male,
+      groupId: 1,
+      governorateId: 1,
+    );
 
-    expect(result, const Right(Person(id: 10, name: 'New Person', groupId: 1, groupName: 'Family')));
+    expect(
+      result,
+      const Right(Person(
+        id: 10,
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      )),
+    );
   });
 
   test('addOccasionHistory maps the response to an entity', () async {

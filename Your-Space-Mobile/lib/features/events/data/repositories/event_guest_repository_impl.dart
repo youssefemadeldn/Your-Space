@@ -80,6 +80,42 @@ class EventGuestRepositoryImpl implements EventGuestRepository {
   }
 
   @override
+  Future<Either<Failure, BulkAddGuestsResult>> addSubGroupToEvent({
+    required int eventId,
+    required int subGroupId,
+  }) async {
+    final result = await _remote.addSubGroupToEvent(eventId, subGroupId);
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, BulkAddGuestsResult>> addGovernorateToEvent({
+    required int eventId,
+    required int governorateId,
+  }) async {
+    final result = await _remote.addGovernorateToEvent(eventId, governorateId);
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, BulkAddGuestsResult>> addCityToEvent({
+    required int eventId,
+    required int cityId,
+  }) async {
+    final result = await _remote.addCityToEvent(eventId, cityId);
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, BulkAddGuestsResult>> addNeighborhoodToEvent({
+    required int eventId,
+    required int neighborhoodId,
+  }) async {
+    final result = await _remote.addNeighborhoodToEvent(eventId, neighborhoodId);
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
   Future<Either<Failure, EventGuest>> markInvited(
     int eventId,
     int guestId, {

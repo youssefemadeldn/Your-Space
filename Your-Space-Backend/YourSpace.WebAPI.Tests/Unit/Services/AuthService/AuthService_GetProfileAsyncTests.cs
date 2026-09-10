@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -23,6 +26,8 @@ public class AuthService_GetProfileAsyncTests
         Mock.Of<ITokenService>(),
         Mock.Of<IOtpService>(),
         Mock.Of<IEmailSender>(),
+        Mock.Of<IR2StorageService>(),
+        Options.Create(new R2Settings { AccountId = "test", AccessKey = "test", SecretKey = "test", AvatarsBucketName = "avatars", PeoplePhotosBucketName = "people" }),
         new ConfigurationBuilder().Build(),
         Mock.Of<ILogger<AuthServiceImpl>>());
 
@@ -43,7 +48,7 @@ public class AuthService_GetProfileAsyncTests
         var user = new AppUser
         {
             Id = "user-1", Email = "jane@example.com", UserName = "jane@example.com",
-            FirstName = "Jane", LastName = "Doe", PhoneNumber = "+201234567890"
+            FirstName = "Jane", LastName = "Doe", PhoneNumber = "+201234567890", Gender = Gender.Female
         };
         _userManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
         _userManager.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["User", "StandardAdmin"]);

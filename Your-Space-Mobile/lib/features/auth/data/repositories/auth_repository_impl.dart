@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import '../../domain/entities/user_profile.dart';
@@ -8,11 +11,13 @@ import '../../domain/repositories/base_auth_repository.dart';
 import '../datasources/auth_remote_data_source_impl.dart';
 import '../models/change_password_request.dart';
 import '../models/confirm_email_request.dart';
+import '../models/delete_account_request.dart';
 import '../models/forgot_password_request.dart';
 import '../models/login_request.dart';
 import '../models/register_request.dart';
 import '../models/resend_confirmation_email_request.dart';
 import '../models/reset_password_request.dart';
+import '../models/update_profile_request.dart';
 
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
@@ -28,7 +33,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String confirmPassword,
     required String firstName,
     required String lastName,
-    required String phoneNumber,
+    String? phoneNumber,
+    Gender? gender,
   }) async {
     final result = await _remote.register(RegisterRequest(
       email: email,
@@ -37,6 +43,7 @@ class AuthRepositoryImpl implements AuthRepository {
       firstName: firstName,
       lastName: lastName,
       phoneNumber: phoneNumber,
+      gender: gender,
     ));
     return result.fold(Left.new, (response) => Right(response.toEntity()));
   }
@@ -106,5 +113,49 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Right(unit);
       },
     );
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteAccount({required String password}) async {
+    final result = await _remote.deleteAccount(DeleteAccountRequest(password: password));
+    return result.fold(
+      (failure) async => Left(failure),
+      (_) async {
+        await _secureStorage.clearSession();
+        return const Right(unit);
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> getProfile() async {
+    final result = await _remote.getProfile();
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+  }) async {
+    final result = await _remote.updateProfile(UpdateProfileRequest(
+      firstName: firstName,
+      lastName: lastName,
+      phoneNumber: phoneNumber,
+    ));
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> uploadAvatar(File file) async {
+    final result = await _remote.uploadAvatar(file);
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> removeAvatar() async {
+    final result = await _remote.removeAvatar();
+    return result.fold(Left.new, (response) => Right(response.toEntity()));
   }
 }

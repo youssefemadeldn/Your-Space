@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService;
 
@@ -45,6 +46,7 @@ public static class IdentitySeeder
             Email = email,
             FirstName = configuration["SuperAdmin:FirstName"] ?? "Super",
             LastName = configuration["SuperAdmin:LastName"] ?? "Admin",
+            Gender = Gender.Female, // no business meaning for a system bootstrap account
             EmailConfirmed = true
         };
 

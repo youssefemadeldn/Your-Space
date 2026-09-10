@@ -4,10 +4,18 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
+import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/entities/subgroup.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_neighborhood_repository.dart';
+import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
@@ -17,24 +25,72 @@ class MockPersonRepository extends Mock implements PersonRepository {}
 
 class MockGroupRepository extends Mock implements GroupRepository {}
 
+class MockSubGroupRepository extends Mock implements SubGroupRepository {}
+
+class MockGovernorateRepository extends Mock implements GovernorateRepository {}
+
+class MockCityRepository extends Mock implements CityRepository {}
+
+class MockNeighborhoodRepository extends Mock implements NeighborhoodRepository {}
+
 void main() {
   late MockPersonRepository personRepository;
   late MockGroupRepository groupRepository;
+  late MockSubGroupRepository subGroupRepository;
+  late MockGovernorateRepository governorateRepository;
+  late MockCityRepository cityRepository;
+  late MockNeighborhoodRepository neighborhoodRepository;
+  late DataRefreshBus dataRefreshBus;
   late PeopleListCubit cubit;
 
   const family = Group(id: 1, name: 'Family');
   const closeFriends = Group(id: 2, name: 'Close friends');
-  const person1 = Person(id: 1, name: 'Sara Adel', groupId: 1, groupName: 'Family');
-  const person2 = Person(id: 2, name: 'Omar Khaled', groupId: 2, groupName: 'Close friends');
+  const person1 = Person(
+    id: 1,
+    name: 'Sara Adel',
+    gender: Gender.female,
+    groupId: 1,
+    groupName: 'Family',
+    governorateId: 1,
+    governorateName: 'Cairo',
+  );
+  const person2 = Person(
+    id: 2,
+    name: 'Omar Khaled',
+    gender: Gender.male,
+    groupId: 2,
+    groupName: 'Close friends',
+    governorateId: 1,
+    governorateName: 'Cairo',
+  );
 
   setUp(() {
     personRepository = MockPersonRepository();
     groupRepository = MockGroupRepository();
-    cubit = PeopleListCubit(personRepository, groupRepository);
+    subGroupRepository = MockSubGroupRepository();
+    governorateRepository = MockGovernorateRepository();
+    cityRepository = MockCityRepository();
+    neighborhoodRepository = MockNeighborhoodRepository();
+    dataRefreshBus = DataRefreshBus();
+    cubit = PeopleListCubit(
+      personRepository,
+      groupRepository,
+      subGroupRepository,
+      governorateRepository,
+      cityRepository,
+      neighborhoodRepository,
+      dataRefreshBus,
+    );
 
     when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50)).thenAnswer(
       (_) async =>
           const Right(PaginatedResult(items: [family, closeFriends], pageIndex: 1, totalPages: 1, totalItems: 2)),
+    );
+    when(() => governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: <Governorate>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
+    );
+    when(() => subGroupRepository.getSubGroups(groupId: family.id, pageIndex: 1, pageSize: 50)).thenAnswer(
+      (_) async => const Right(PaginatedResult(items: <SubGroup>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
     );
   });
 
@@ -152,5 +208,83 @@ void main() {
     expect(state.isLoadingMore, isFalse);
     expect(state.loadMoreErrorMessage, isNotNull);
     expect(state.loadMoreErrorId, 1);
+  });
+
+  group('DataRefreshBus', () {
+    // Reproduces the original bug: PeopleListCubit is a shell-branch cubit,
+    // built once by IndexedStack and never rebuilt — a person added via the
+    // sibling PersonForm route never reached it until logout/login. A bus
+    // notification must now silently pull the updated list in.
+    test('a `people` notification re-fetches page 1 preserving filter/search, no Loading flash', () async {
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const newPerson = Person(
+        id: 3,
+        name: 'Laila Fathy',
+        gender: Gender.female,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+      when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [person1, person2, newPerson], pageIndex: 1, totalPages: 1, totalItems: 3),
+        ),
+      );
+
+      final states = <dynamic>[];
+      final sub = cubit.stream.listen(states.add);
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(states, isNot(contains(isA<PeopleListLoading>())));
+      expect(cubit.state, isA<PeopleListSuccess>().having((s) => s.people, 'people', [person1, person2, newPerson]));
+    });
+
+    test('a `groups` notification refreshes only the group dropdown, leaving the people page untouched', () async {
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const newGroup = Group(id: 3, name: 'Book club');
+      when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [family, closeFriends, newGroup], pageIndex: 1, totalPages: 1, totalItems: 3),
+        ),
+      );
+
+      dataRefreshBus.notify(DataScope.groups);
+      await Future<void>.delayed(Duration.zero);
+
+      final state = cubit.state as PeopleListSuccess;
+      expect(state.groups, [family, closeFriends, newGroup]);
+      expect(state.people, [person1, person2]);
+    });
+
+    test('a failed background refresh keeps the last-good list on screen', () async {
+      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async =>
+            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+      final beforeRefresh = cubit.state;
+
+      when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 1, pageSize: 20))
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, beforeRefresh);
+    });
   });
 }

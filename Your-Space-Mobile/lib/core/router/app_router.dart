@@ -3,9 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/di/injection_container.dart';
+import 'package:your_space_mobile/core/entities/classification_entity_kind.dart';
+import 'package:your_space_mobile/core/storage/app_preferences_helper.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
+import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/city_action_cubit/city_action_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/city_list_cubit/city_list_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_action_cubit/neighborhood_action_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_list_cubit/neighborhood_list_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/subgroup_action_cubit/subgroup_action_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/cubit/subgroup_list_cubit/subgroup_list_cubit.dart';
+import 'package:your_space_mobile/features/classification/presentation/pages/classification_management_screen/city_management_screen.dart';
+import 'package:your_space_mobile/features/classification/presentation/pages/classification_management_screen/neighborhood_management_screen.dart';
+import 'package:your_space_mobile/features/classification/presentation/pages/classification_management_screen/subgroup_management_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/confirm_email_cubit/confirm_email_cubit.dart';
+import 'package:your_space_mobile/features/auth/presentation/cubit/delete_account_cubit/delete_account_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/forgot_password_cubit/forgot_password_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/login_cubit/login_cubit.dart';
 import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubit/register_cubit.dart';
@@ -14,7 +27,7 @@ import 'package:your_space_mobile/features/auth/presentation/pages/change_passwo
 import 'package:your_space_mobile/features/auth/presentation/pages/confirm_email_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/pages/forgot_password_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/pages/login_screen.dart';
-import 'package:your_space_mobile/features/auth/presentation/pages/register_screen.dart';
+import 'package:your_space_mobile/features/auth/presentation/pages/register_screen/register_screen.dart';
 import 'package:your_space_mobile/features/auth/presentation/pages/reset_password_screen.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_action_cubit/add_guests_action_cubit.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_list_cubit/add_guests_list_cubit.dart';
@@ -38,20 +51,24 @@ import 'package:your_space_mobile/features/home/presentation/pages/home_screen.d
 import 'package:your_space_mobile/features/people/presentation/cubit/add_occasion_cubit/add_occasion_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/people_list_cubit/people_list_cubit.dart';
 import 'package:your_space_mobile/features/people/presentation/cubit/person_details_cubit/person_details_cubit.dart';
-import 'package:your_space_mobile/features/people/presentation/cubit/person_form_cubit/person_form_cubit.dart';
+import 'package:your_space_mobile/features/people/presentation/cubit/person_wizard_cubit/person_wizard_cubit.dart';
+import 'package:your_space_mobile/features/onboarding/presentation/pages/onboarding_screen/onboarding_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/people_screen/people_screen.dart';
 import 'package:your_space_mobile/features/people/presentation/pages/person_details_screen/person_details_screen.dart';
-import 'package:your_space_mobile/features/people/presentation/pages/person_form_screen.dart';
+import 'package:your_space_mobile/features/people/presentation/pages/person_wizard_screen/person_wizard_screen.dart';
+import 'package:your_space_mobile/features/settings/presentation/cubit/profile_form_cubit/profile_form_cubit.dart';
+import 'package:your_space_mobile/features/settings/presentation/pages/settings_screen/settings_screen.dart';
 
 import 'app_routes.dart';
 import 'session_redirect.dart';
 import 'args/add_guests_args.dart';
+import 'args/classification_management_args.dart';
 import 'args/confirm_email_args.dart';
 import 'args/event_details_args.dart';
 import 'args/event_form_args.dart';
 import 'args/event_guests_args.dart';
 import 'args/person_details_args.dart';
-import 'args/person_form_args.dart';
+import 'args/person_wizard_args.dart';
 import 'args/reciprocity_suggestions_args.dart';
 import 'args/reset_password_args.dart';
 
@@ -67,7 +84,10 @@ class AppRouter {
       routes: [
         GoRoute(
           path: AppRoutes.splash,
-          redirect: (context, state) => resolveSplashRedirect(getIt<SecureStorageHelper>()),
+          redirect: (context, state) => resolveSplashRedirect(
+            getIt<AppPreferencesHelper>(),
+            getIt<SecureStorageHelper>(),
+          ),
         ),
         GoRoute(
           path: AppRoutes.login,
@@ -125,48 +145,135 @@ class AppRouter {
             child: const ChangePasswordScreen(),
           ),
         ),
-
-        // --- Home ---
         GoRoute(
-          path: AppRoutes.home,
-          name: AppRoutes.home,
-          builder: (context, state) => BlocProvider(
-            create: (_) => getIt<HomeStatsCubit>()..load(),
-            child: const HomeScreen(),
-          ),
+          path: AppRoutes.onboarding,
+          name: AppRoutes.onboarding,
+          builder: (context, state) => const OnboardingScreen(),
         ),
 
-        // --- Groups ---
-        GoRoute(
-          path: AppRoutes.groups,
-          name: AppRoutes.groups,
-          builder: (context, state) => MultiBlocProvider(
-            providers: [
-              BlocProvider(create: (_) => getIt<GroupsListCubit>()..load()),
-              BlocProvider(create: (_) => getIt<GroupActionCubit>()),
-            ],
-            child: const GroupsScreen(),
+        // --- Bottom-nav shell: Home / Groups / People / Events / Settings share one
+        // persistent AppBottomNav and keep each branch's own state across tab switches
+        // (StatefulShellRoute.indexedStack, not a full rebuild per navigation like a
+        // plain GoRoute would do). Every route below stays a top-level GoRoute, pushed
+        // on top of the shell exactly as before — unchanged behavior.
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => Scaffold(
+            body: navigationShell,
+            bottomNavigationBar: AppBottomNav(
+              currentIndex: navigationShell.currentIndex,
+              onTap: navigationShell.goBranch,
+            ),
           ),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.home,
+                  name: AppRoutes.home,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<HomeStatsCubit>()..load(),
+                    child: const HomeScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.groups,
+                  name: AppRoutes.groups,
+                  builder: (context, state) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (_) => getIt<GroupsListCubit>()..load()),
+                      BlocProvider(create: (_) => getIt<GroupActionCubit>()),
+                    ],
+                    child: const GroupsScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.people,
+                  name: AppRoutes.people,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<PeopleListCubit>()..load(),
+                    child: const PeopleScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.events,
+                  name: AppRoutes.events,
+                  builder: (context, state) => BlocProvider(
+                    create: (_) => getIt<EventsListCubit>()..load(),
+                    child: const EventsScreen(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.settings,
+                  name: AppRoutes.settings,
+                  builder: (context, state) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (_) => getIt<ProfileFormCubit>()..initialize()),
+                      BlocProvider(create: (_) => getIt<DeleteAccountCubit>()),
+                    ],
+                    child: const SettingsScreen(),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
 
-        // --- People ---
         GoRoute(
-          path: AppRoutes.people,
-          name: AppRoutes.people,
-          builder: (context, state) => BlocProvider(
-            create: (_) => getIt<PeopleListCubit>()..load(),
-            child: const PeopleScreen(),
-          ),
-        ),
-        GoRoute(
-          path: AppRoutes.personForm,
-          name: AppRoutes.personForm,
+          path: AppRoutes.personWizard,
+          name: AppRoutes.personWizard,
           builder: (context, state) {
-            final args = state.extra as PersonFormArgs? ?? const PersonFormArgs();
+            final args = state.extra as PersonWizardArgs? ?? const PersonWizardArgs();
             return BlocProvider(
-              create: (_) => getIt<PersonFormCubit>()..initialize(args.personId),
-              child: PersonFormScreen(args: args),
+              create: (_) => getIt<PersonWizardCubit>()..initialize(args.personId),
+              child: PersonWizardScreen(args: args),
             );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.classificationManagement,
+          name: AppRoutes.classificationManagement,
+          builder: (context, state) {
+            final args = state.extra as ClassificationManagementArgs?;
+            if (args == null) return _unknown(state);
+            return switch (args.kind) {
+              ClassificationEntityKind.subgroup => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => getIt<SubGroupListCubit>()..load(args.parentId)),
+                    BlocProvider(create: (_) => getIt<SubGroupActionCubit>()),
+                  ],
+                  child: SubgroupManagementScreen(args: args),
+                ),
+              ClassificationEntityKind.city => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => getIt<CityListCubit>()..load(args.parentId)),
+                    BlocProvider(create: (_) => getIt<CityActionCubit>()),
+                  ],
+                  child: CityManagementScreen(args: args),
+                ),
+              ClassificationEntityKind.neighborhood => MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (_) => getIt<NeighborhoodListCubit>()..load(args.parentId)),
+                    BlocProvider(create: (_) => getIt<NeighborhoodActionCubit>()),
+                  ],
+                  child: NeighborhoodManagementScreen(args: args),
+                ),
+            };
           },
         ),
         GoRoute(
@@ -185,15 +292,7 @@ class AppRouter {
           },
         ),
 
-        // --- Events ---
-        GoRoute(
-          path: AppRoutes.events,
-          name: AppRoutes.events,
-          builder: (context, state) => BlocProvider(
-            create: (_) => getIt<EventsListCubit>()..load(),
-            child: const EventsScreen(),
-          ),
-        ),
+        // --- Events (list route lives in the shell above; these stay top-level) ---
         GoRoute(
           path: AppRoutes.eventForm,
           name: AppRoutes.eventForm,

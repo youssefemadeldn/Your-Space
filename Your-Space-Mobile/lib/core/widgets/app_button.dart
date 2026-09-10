@@ -93,7 +93,15 @@ class AppButton extends StatelessWidget {
               Icon(icon, size: 20.w, color: foreground),
               SizedBox(width: 8.w),
             ],
-            Text(label, style: textStyle),
+            Flexible(
+              child: Text(
+                label,
+                style: textStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
           ];
 
     final button = Material(

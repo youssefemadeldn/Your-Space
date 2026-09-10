@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -34,6 +37,8 @@ public class AuthService_RegisterAsyncTests
         _tokenService.Object,
         _otpService.Object,
         _emailSender.Object,
+        Mock.Of<IR2StorageService>(),
+        Options.Create(new R2Settings { AccountId = "test", AccessKey = "test", SecretKey = "test", AvatarsBucketName = "avatars", PeoplePhotosBucketName = "people" }),
         _configuration,
         Mock.Of<ILogger<AuthServiceImpl>>());
 
@@ -44,7 +49,8 @@ public class AuthService_RegisterAsyncTests
         ConfirmPassword = "Str0ng!Pass",
         FirstName = "Jane",
         LastName = "Doe",
-        PhoneNumber = "+201234567890"
+        PhoneNumber = "+201234567890",
+        Gender = Gender.Female
     };
 
     [Fact]
@@ -56,7 +62,8 @@ public class AuthService_RegisterAsyncTests
             Email = dto.Email,
             UserName = dto.Email,
             FirstName = "Existing",
-            LastName = "User"
+            LastName = "User",
+            Gender = Gender.Female
         });
 
         var result = await CreateSut().RegisterAsync(dto);
@@ -102,6 +109,24 @@ public class AuthService_RegisterAsyncTests
         _userManager.Verify(m => m.AddToRoleAsync(It.IsAny<AppUser>(), "User"), Times.Once);
         _otpService.Verify(o => o.GenerateEmailConfirmationCodeAsync(It.IsAny<string>()), Times.Once);
         _emailSender.Verify(e => e.SendEmailAsync(dto.Email, It.IsAny<string>(), It.Is<string>(body => body.Contains("123456"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task Gender_flows_from_register_dto_through_the_created_user_into_the_returned_profile()
+    {
+        var dto = ValidDto();
+        _userManager.Setup(m => m.FindByEmailAsync(dto.Email)).ReturnsAsync((AppUser?)null);
+        _userManager.Setup(m => m.CreateAsync(It.Is<AppUser>(u => u.Gender == dto.Gender), dto.Password))
+            .ReturnsAsync(IdentityResult.Success);
+        _userManager.Setup(m => m.AddToRoleAsync(It.IsAny<AppUser>(), "User"))
+            .ReturnsAsync(IdentityResult.Success);
+        _userManager.Setup(m => m.GetRolesAsync(It.IsAny<AppUser>()))
+            .ReturnsAsync(["User"]);
+
+        var result = await CreateSut().RegisterAsync(dto);
+
+        result.Success.Should().BeTrue();
+        result.Data!.Gender.Should().Be(dto.Gender);
     }
 
     [Fact]

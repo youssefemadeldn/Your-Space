@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/group.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_cubit.dart';
@@ -12,13 +13,17 @@ import 'package:your_space_mobile/features/groups/presentation/cubit/group_actio
 
 class MockGroupRepository extends Mock implements GroupRepository {}
 
+class MockDataRefreshBus extends Mock implements DataRefreshBus {}
+
 void main() {
   late MockGroupRepository repository;
+  late MockDataRefreshBus dataRefreshBus;
   late GroupActionCubit cubit;
 
   setUp(() {
     repository = MockGroupRepository();
-    cubit = GroupActionCubit(repository);
+    dataRefreshBus = MockDataRefreshBus();
+    cubit = GroupActionCubit(repository, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -37,6 +42,7 @@ void main() {
 
     unawaited(cubit.createGroup(name: 'Book club'));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.groups)).called(1);
   });
 
   test('updateGroup emits [Submitting, Success] with the renamed group', () async {
@@ -56,6 +62,7 @@ void main() {
 
     unawaited(cubit.updateGroup(id: 1, name: 'The Family'));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.groups)).called(1);
   });
 
   test('createGroup emits [Submitting, Error] on failure', () async {

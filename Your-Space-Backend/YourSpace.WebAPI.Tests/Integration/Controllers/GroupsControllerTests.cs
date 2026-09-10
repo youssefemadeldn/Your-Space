@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Services.Helper;
@@ -11,7 +12,7 @@ namespace YourSpace.WebAPI.Tests.Integration.Controllers;
 
 public class GroupsControllerTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
     [Fact]
     public async Task Create_get_update_and_delete_group_happy_path_succeeds()

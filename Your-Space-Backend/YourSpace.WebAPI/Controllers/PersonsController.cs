@@ -19,9 +19,16 @@ namespace YourSpace.WebAPI.Controllers;
 public class PersonsController(IPersonService personService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? groupId, [FromQuery] string? search, [FromQuery] PaginationSpecification pagination)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int? groupId,
+        [FromQuery] int? subGroupId,
+        [FromQuery] int? governorateId,
+        [FromQuery] int? cityId,
+        [FromQuery] int? neighborhoodId,
+        [FromQuery] string? search,
+        [FromQuery] PaginationSpecification pagination)
     {
-        var result = await personService.GetAllAsync(GetUserId(), groupId, search, pagination);
+        var result = await personService.GetAllAsync(GetUserId(), groupId, subGroupId, governorateId, cityId, neighborhoodId, search, pagination);
         return new ResultActionResult<PaginatedResultDto<PersonProfileDto>>(result);
     }
 

@@ -1,12 +1,10 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Android emulator alias for the host machine's localhost. Swap this to your
-  // machine's LAN IP when testing on a physical device or iOS simulator.
   static const String _devBaseUrl =
-      'http://bcd1i88mdmvzb563lwx1vnas.49.13.218.137.sslip.io/api/v1';
+      'https://yourspace.booksplatform.net/api/v1';
   static const String _prodBaseUrl =
-      'http://bcd1i88mdmvzb563lwx1vnas.49.13.218.137.sslip.io/api/v1';
+      'https://yourspace.booksplatform.net/api/v1';
 
   static String get baseUrl =>
       const String.fromEnvironment('ENVIRONMENT', defaultValue: 'dev') == 'prod'
@@ -28,10 +26,22 @@ class ApiConstants {
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
   static const String changePassword = '/auth/change-password';
+  static const String deleteAccount = '/auth/me';
+  static const String profile = '/auth/me';
+  static const String avatar = '/auth/me/avatar';
 
   // Base segments only — nested paths (e.g. '$events/$eventId/guests') are
   // interpolated at the datasource call site.
   static const String groups = '/groups';
   static const String persons = '/persons';
   static const String events = '/events';
+
+  // Sprint 4 — Subgroup + Location hierarchy + Relationship engine. All
+  // nested under their parent (e.g. '$groups/$groupId/$subgroupsSegment').
+  static const String subgroupsSegment = 'subgroups';
+  static const String governorates = '/governorates';
+  static const String citiesSegment = 'cities';
+  static const String neighborhoodsSegment = 'neighborhoods';
+  static const String personImagesSegment = 'images';
+  static const String personRelationshipsSegment = 'relationships';
 }

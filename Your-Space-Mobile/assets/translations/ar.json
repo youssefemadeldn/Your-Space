@@ -9,6 +9,11 @@
     "saveChanges": "حفظ التغييرات",
     "create": "إنشاء",
     "edit": "تعديل",
+    "delete": "حذف",
+    "back": "رجوع",
+    "next": "التالي",
+    "done": "تم",
+    "noOptions": "لا توجد خيارات متاحة",
     "logout": "تسجيل الخروج",
     "logoutConfirmTitle": "تسجيل الخروج؟",
     "logoutConfirmMessage": "ستحتاج لتسجيل الدخول مرة أخرى في المرة القادمة.",
@@ -16,19 +21,27 @@
       "whatsApp": "واتساب",
       "phoneCall": "مكالمة هاتفية",
       "physical": "شخصيًا"
+    },
+    "gender": {
+      "male": "ذكر",
+      "female": "أنثى"
     }
   },
   "nav": {
     "home": "الرئيسية",
     "groups": "المجموعات",
     "people": "الأشخاص",
-    "events": "المناسبات"
+    "events": "المناسبات",
+    "settings": "الإعدادات"
   },
   "auth": {
     "firstName": "الاسم الأول",
     "lastName": "اسم العائلة",
     "email": "البريد الإلكتروني",
     "phone": "رقم الهاتف",
+    "phoneOptional": "رقم الهاتف (اختياري)",
+    "gender": "الجنس",
+    "genderOptional": "الجنس (اختياري)",
     "password": "كلمة المرور",
     "confirmPassword": "تأكيد كلمة المرور",
     "newPassword": "كلمة المرور الجديدة",
@@ -83,13 +96,51 @@
       "invalidEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
       "invalidPhone": "أدخل رقم هاتف صحيحًا، مثل ‎+201234567890",
       "passwordMismatch": "كلمتا المرور غير متطابقتين",
+      "newPasswordSameAsCurrent": "اختر كلمة مرور مختلفة عن كلمتك الحالية",
       "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
-      "requiredCurrentPassword": "أدخل كلمة المرور الحالية"
+      "requiredCurrentPassword": "أدخل كلمة المرور الحالية",
+      "requiredGender": "اختر الجنس"
     }
   },
+  "onboarding": {
+    "skip": "تخطي",
+    "next": "التالي",
+    "getStarted": "ابدأ الآن",
+    "page1Title": "أشخاصك، منظّمون",
+    "page1Body": "احتفظ بكل صديق وفرد من العائلة وشخص تعرفه منظّمًا داخل مجموعات — وأصبح الآن داخل مجموعات فرعية أيضًا — لتعرف دائمًا من هو من، بالضبط عندما تحتاج ذلك.",
+    "page2Title": "خطّط مناسباتك دون فوضى",
+    "page2Body": "أنشئ مناسبة، وأضف الضيوف واحدًا تلو الآخر أو ادعُ مجموعة كاملة دفعة واحدة، وتابع بدقة من تمت دعوته، ومن لا يزال في الانتظار، ومن قررت تخطيه.",
+    "page3Title": "لا تنسَ أبدًا من دعاك",
+    "page3Body": "تتابع مساحتك بهدوء من دعاك إلى مناسباته الخاصة — لتعرف بالضبط، عند التخطيط لمناسبتك القادمة، من يجب أن تدعوه بالمقابل."
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "savedMessage": "تم تحديث الملف الشخصي",
+    "changePassword": "تغيير كلمة المرور",
+    "logout": "تسجيل الخروج",
+    "deleteAccount": "حذف الحساب",
+    "deleteAccountDialog": {
+      "title": "حذف الحساب؟",
+      "warning": "سيؤدي هذا إلى حذف حسابك وجميع مجموعاتك والأشخاص والمناسبات نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+      "passwordLabel": "أدخل كلمة المرور للتأكيد",
+      "confirm": "حذف حسابي",
+      "doneMessage": "تم حذف حسابك نهائيًا."
+    },
+    "photoHint": "JPEG أو PNG · صورة واحدة",
+    "replacePhoto": "استبدال الصورة",
+    "removePhoto": "إزالة الصورة",
+    "takePhoto": "التقاط صورة",
+    "chooseFromGallery": "اختيار من المعرض",
+    "removePhotoConfirmTitle": "إزالة صورة الملف الشخصي؟",
+    "removePhotoConfirmMessage": "يمكنك دائمًا إضافة صورة جديدة لاحقًا.",
+    "photoUpdated": "تم تحديث الصورة",
+    "photoRemoved": "تمت إزالة الصورة"
+  },
   "home": {
-    "title": "مساحتك",
-    "greeting": "أهلاً بعودتك",
+    "greetingMorning": "صباح الخير",
+    "greetingAfternoon": "مساء الخير",
+    "greetingEvening": "مساء الخير",
+    "hiName": "أهلاً {name}",
     "groupsLabel": "المجموعات",
     "peopleLabel": "الأشخاص",
     "eventsLabel": "المناسبات",
@@ -102,7 +153,8 @@
       "title": "المجموعات",
       "searchHint": "ابحث عن مجموعة",
       "emptyTitle": "لا توجد مجموعات بعد",
-      "emptyAction": "إضافة مجموعة"
+      "emptyAction": "إضافة مجموعة",
+      "manageSubGroups": "إدارة المجموعات الفرعية"
     },
     "form": {
       "createTitle": "مجموعة جديدة",
@@ -123,18 +175,6 @@
       "emptyAction": "إضافة شخص",
       "reciprocityBadge": "دعاك من قبل"
     },
-    "form": {
-      "createTitle": "إضافة شخص",
-      "editTitle": "تعديل الشخص",
-      "nameLabel": "الاسم",
-      "nameRequired": "أدخل الاسم",
-      "phoneLabel": "الهاتف (اختياري)",
-      "groupLabel": "المجموعة",
-      "saveCta": "حفظ الشخص",
-      "savedMessage": "تم حفظ الشخص",
-      "noGroupsCallout": "كل شخص ينتمي إلى مجموعة — أنشئ مجموعة أولاً لإضافة أشخاص.",
-      "createGroupCta": "إنشاء مجموعة"
-    },
     "details": {
       "occasionsTitle": "المناسبات",
       "addOccasion": "إضافة مناسبة",
@@ -142,7 +182,8 @@
       "emptyTitle": "لا يوجد شيء مسجّل مع {name} بعد",
       "emptyAction": "إضافة مناسبة",
       "occasionUnnamed": "مناسبة",
-      "notFound": "الشخص غير موجود"
+      "notFound": "الشخص غير موجود",
+      "notesTitle": "ملاحظات"
     },
     "occasion": {
       "addTitle": "إضافة مناسبة",
@@ -152,6 +193,117 @@
       "dateLabel": "التاريخ",
       "dateFutureHint": "لا يمكن أن يكون في المستقبل",
       "notesLabel": "ملاحظات"
+    },
+    "filters": {
+      "title": "الفلاتر",
+      "clearAll": "مسح الكل",
+      "subGroupLabel": "المجموعة الفرعية",
+      "pickGroupFirst": "اختر مجموعة أولاً",
+      "noSubGroups": "لا توجد مجموعات فرعية بعد",
+      "locationLabel": "الموقع",
+      "governorateLabel": "المحافظة",
+      "allGovernorates": "كل المحافظات",
+      "cityLabel": "المدينة",
+      "allCities": "كل المدن",
+      "pickGovernorateFirst": "اختر محافظة أولاً",
+      "noCities": "لا توجد مدن بعد",
+      "neighborhoodLabel": "الحي",
+      "allNeighborhoods": "كل الأحياء",
+      "pickCityFirst": "اختر مدينة أولاً",
+      "noNeighborhoods": "لا توجد أحياء بعد"
+    },
+    "wizard": {
+      "createTitle": "إضافة شخص",
+      "editTitle": "تعديل الشخص",
+      "saveCta": "حفظ الشخص",
+      "stepEyebrow": "الخطوة {step} من {total} · {name}",
+      "step1": {
+        "name": "البيانات الأساسية",
+        "nameLabel": "الاسم",
+        "nameRequired": "أدخل الاسم",
+        "phoneLabel": "رقم الهاتف 1",
+        "phone2Label": "رقم الهاتف 2",
+        "optional": "اختياري",
+        "genderLabel": "الجنس",
+        "genderRequired": "اختر الجنس",
+        "photosLabel": "الصور",
+        "photosHint": "أضف حتى 6 صور. اضغط على صورة لجعلها الصورة الأساسية.",
+        "addPhoto": "إضافة صورة",
+        "primaryBadge": "أساسية"
+      },
+      "step2": {
+        "name": "التصنيف والموقع",
+        "classificationSection": "التصنيف",
+        "groupLabel": "المجموعة",
+        "groupPlaceholder": "اختر مجموعة",
+        "groupRequired": "اختر مجموعة",
+        "noGroups": "لا توجد مجموعات بعد",
+        "addGroup": "إضافة مجموعة",
+        "subGroupLabel": "المجموعة الفرعية (اختياري)",
+        "subGroupPlaceholder": "اختر مجموعة فرعية",
+        "pickGroupFirst": "اختر مجموعة أولاً",
+        "noSubGroups": "لا توجد مجموعات فرعية بعد",
+        "addSubGroup": "إضافة مجموعة فرعية",
+        "manageSubGroups": "إدارة المجموعات الفرعية",
+        "locationSection": "الموقع",
+        "governorateLabel": "المحافظة",
+        "governoratePlaceholder": "اختر محافظة",
+        "governorateRequired": "اختر محافظة",
+        "noGovernorates": "لا توجد محافظات بعد",
+        "addGovernorate": "إضافة محافظة",
+        "cityLabel": "المدينة (اختياري)",
+        "cityPlaceholder": "اختر مدينة",
+        "pickGovernorateFirst": "اختر محافظة أولاً",
+        "noCities": "لا توجد مدن بعد",
+        "addCity": "إضافة مدينة",
+        "manageCities": "إدارة المدن",
+        "neighborhoodLabel": "الحي (اختياري)",
+        "neighborhoodPlaceholder": "اختر حيًا",
+        "pickCityFirst": "اختر مدينة أولاً",
+        "noNeighborhoods": "لا توجد أحياء بعد",
+        "addNeighborhood": "إضافة حي",
+        "manageNeighborhoods": "إدارة الأحياء",
+        "locationHint": "المحافظة فقط مطلوبة — المدينة والحي يساعدان على تحديد الموقع لاحقًا."
+      },
+      "step3": {
+        "name": "العائلة والعلاقات",
+        "sectionTitle": "العائلة والعلاقات",
+        "addFamilyMember": "إضافة فرد من العائلة",
+        "familyMember": "فرد العائلة {index}",
+        "relationTypePlaceholder": "اختر نوع العلاقة",
+        "searchHint": "ابحث عن شخص",
+        "noMatches": "لا توجد نتائج",
+        "incompleteRelationship": "أكمل بيانات فرد العائلة أو احذفه — اختر نوع العلاقة والشخص معًا"
+      },
+      "step4": {
+        "name": "ملاحظات",
+        "notesLabel": "ملاحظات",
+        "notesHint": "أي شيء يستحق أن تتذكره عن هذا الشخص"
+      },
+      "submit": {
+        "savedMessage": "تم حفظ الشخص",
+        "photoUploadFailed": "فشل رفع إحدى الصور",
+        "photoRemoveFailed": "فشلت إزالة إحدى الصور",
+        "photoPrimaryFailed": "تعذّر تعيين الصورة الأساسية",
+        "relationshipSaveFailed": "فشل حفظ إحدى العلاقات",
+        "relationshipRemoveFailed": "فشلت إزالة إحدى العلاقات"
+      }
+    },
+    "relationType": {
+      "husband": "زوج",
+      "wife": "زوجة",
+      "father": "أب",
+      "mother": "أم",
+      "uncleMaternal": "خال",
+      "auntMaternal": "خالة",
+      "unclePaternal": "عم",
+      "auntPaternal": "عمة",
+      "son": "ابن",
+      "daughter": "ابنة",
+      "brother": "أخ",
+      "sister": "أخت",
+      "nephew": "ابن الأخ/الأخت",
+      "niece": "ابنة الأخ/الأخت"
     }
   },
   "events": {
@@ -203,6 +355,10 @@
       "title": "إضافة ضيوف · {eventName}",
       "peopleTab": "الأشخاص",
       "byGroupTab": "حسب المجموعة",
+      "bySubGroupTab": "حسب المجموعة الفرعية",
+      "byGovernorateTab": "حسب المحافظة",
+      "byCityTab": "حسب المدينة",
+      "byNeighborhoodTab": "حسب الحي",
       "addNPeople": "إضافة {count} أشخاص",
       "addGroupCta": "إضافة المجموعة",
       "groupPeopleCount": "{count} أشخاص",
@@ -212,6 +368,59 @@
       "title": "اقتراحات المجاملة · {eventName}",
       "emptyTitle": "لا يوجد أحد جديد لاقتراحه الآن.",
       "addAsGuestCta": "إضافة كضيف"
+    }
+  },
+  "classification": {
+    "subgroup": {
+      "screenTitle": "المجموعات الفرعية",
+      "parentLabel": "المجموعة",
+      "searchHint": "ابحث عن مجموعة فرعية",
+      "emptyTitle": "لا توجد مجموعات فرعية بعد",
+      "emptyBody": "أنشئ مجموعة فرعية لتنظيم الأشخاص داخل هذه المجموعة بشكل أدق.",
+      "addLabel": "إضافة مجموعة فرعية",
+      "createTitle": "مجموعة فرعية جديدة",
+      "editTitle": "تعديل المجموعة الفرعية",
+      "namePlaceholder": "اسم المجموعة الفرعية",
+      "createCta": "إنشاء المجموعة الفرعية",
+      "savedMessage": "تم حفظ المجموعة الفرعية",
+      "deleteTitle": "حذف المجموعة الفرعية؟",
+      "deleteBody": "لا يمكن التراجع عن هذا الإجراء.",
+      "deletedMessage": "تم حذف المجموعة الفرعية",
+      "personCaption": "{count} أشخاص"
+    },
+    "city": {
+      "screenTitle": "المدن",
+      "parentLabel": "المحافظة",
+      "searchHint": "ابحث عن مدينة",
+      "emptyTitle": "لا توجد مدن بعد",
+      "emptyBody": "أنشئ مدينة لتنظيم الأحياء داخل هذه المحافظة.",
+      "addLabel": "إضافة مدينة",
+      "createTitle": "مدينة جديدة",
+      "editTitle": "تعديل المدينة",
+      "namePlaceholder": "اسم المدينة",
+      "createCta": "إنشاء المدينة",
+      "savedMessage": "تم حفظ المدينة",
+      "deleteTitle": "حذف المدينة؟",
+      "deleteBody": "لا يمكن التراجع عن هذا الإجراء.",
+      "deletedMessage": "تم حذف المدينة",
+      "neighborhoodCaption": "{count} أحياء"
+    },
+    "neighborhood": {
+      "screenTitle": "الأحياء",
+      "parentLabel": "المدينة",
+      "searchHint": "ابحث عن حي",
+      "emptyTitle": "لا توجد أحياء بعد",
+      "emptyBody": "أنشئ حيًا لتحديد المواقع داخل هذه المدينة.",
+      "addLabel": "إضافة حي",
+      "createTitle": "حي جديد",
+      "editTitle": "تعديل الحي",
+      "namePlaceholder": "اسم الحي",
+      "createCta": "إنشاء الحي",
+      "savedMessage": "تم حفظ الحي",
+      "deleteTitle": "حذف الحي؟",
+      "deleteBody": "لا يمكن التراجع عن هذا الإجراء.",
+      "deletedMessage": "تم حذف الحي",
+      "personCaption": "{count} أشخاص"
     }
   }
 }

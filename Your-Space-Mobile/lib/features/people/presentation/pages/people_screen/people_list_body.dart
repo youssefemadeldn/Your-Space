@@ -8,8 +8,9 @@ import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/person_details_args.dart';
-import 'package:your_space_mobile/core/router/args/person_form_args.dart';
+import 'package:your_space_mobile/core/router/args/person_wizard_args.dart';
 import 'package:your_space_mobile/core/theme/app_colors.dart';
+import 'package:your_space_mobile/core/widgets/app_avatar.dart';
 import 'package:your_space_mobile/core/widgets/app_badge.dart';
 import 'package:your_space_mobile/core/widgets/app_chip.dart';
 import 'package:your_space_mobile/core/widgets/app_input.dart';
@@ -18,6 +19,8 @@ import 'package:your_space_mobile/core/widgets/app_profile_row.dart';
 import 'package:your_space_mobile/core/widgets/empty_state_widget.dart';
 
 import '../../cubit/people_list_cubit/people_list_cubit.dart';
+import '../../cubit/people_list_cubit/people_list_state.dart';
+import 'people_filter_sheet.dart';
 
 class PeopleListBody extends StatefulWidget {
   final List<Person> people;
@@ -69,10 +72,54 @@ class _PeopleListBodyState extends State<PeopleListBody> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppInput(
-            hintText: 'people.list.searchHint'.tr(),
-            prefixIcon: Icons.search_rounded,
-            onChanged: (value) => context.read<PeopleListCubit>().search(value),
+          Row(
+            children: [
+              Expanded(
+                child: AppInput(
+                  hintText: 'people.list.searchHint'.tr(),
+                  prefixIcon: Icons.search_rounded,
+                  onChanged: (value) => context.read<PeopleListCubit>().search(value),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              BlocBuilder<PeopleListCubit, PeopleListState>(
+                builder: (context, state) {
+                  final hasSubGroupOrLocationFilter = state is PeopleListSuccess &&
+                      (state.selectedSubGroupId != null ||
+                          state.selectedGovernorateId != null ||
+                          state.selectedCityId != null ||
+                          state.selectedNeighborhoodId != null);
+                  return Container(
+                    height: 52.h,
+                    width: 52.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.inputFill,
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary),
+                          tooltip: 'people.filters.title'.tr(),
+                          onPressed: () => PeopleFilterSheet.open(context),
+                        ),
+                        if (hasSubGroupOrLocationFilter)
+                          PositionedDirectional(
+                            top: 10.h,
+                            end: 10.w,
+                            child: Container(
+                              width: 8.w,
+                              height: 8.w,
+                              decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           SizedBox(height: 12.h),
           SizedBox(
@@ -108,32 +155,36 @@ class _PeopleListBodyState extends State<PeopleListBody> {
                     title: 'people.list.emptyTitle'.tr(),
                     actionLabel: 'people.list.emptyAction'.tr(),
                     onAction: () =>
-                        context.pushNamed(AppRoutes.personForm, extra: const PersonFormArgs()),
+                        context.pushNamed(AppRoutes.personWizard, extra: const PersonWizardArgs()),
                   )
-                : ListView.builder(
-                    controller: _scrollController,
-                    itemCount: widget.people.length + (widget.isLoadingMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= widget.people.length) {
-                        return Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                          child: const AppLoadingIndicator(),
+                : RefreshIndicator(
+                    onRefresh: () => context.read<PeopleListCubit>().refresh(),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: widget.people.length + (widget.isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= widget.people.length) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            child: const AppLoadingIndicator(),
+                          );
+                        }
+                        final person = widget.people[index];
+                        return AppProfileRow(
+                          name: person.name,
+                          groupName: person.groupName,
+                          phoneNumber: person.phoneNumber,
+                          leading: AppAvatar(name: person.name, photoUrl: person.primaryPhotoUrl),
+                          trailing: person.hasReciprocityHistory
+                              ? AppBadge(label: 'people.list.reciprocityBadge'.tr(), tone: AppBadgeTone.info)
+                              : const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+                          onTap: () => context.pushNamed(
+                            AppRoutes.personDetails,
+                            extra: PersonDetailsArgs(personId: person.id, personName: person.name),
+                          ),
                         );
-                      }
-                      final person = widget.people[index];
-                      return AppProfileRow(
-                        name: person.name,
-                        groupName: person.groupName,
-                        phoneNumber: person.phoneNumber,
-                        trailing: person.hasReciprocityHistory
-                            ? AppBadge(label: 'people.list.reciprocityBadge'.tr(), tone: AppBadgeTone.info)
-                            : const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
-                        onTap: () => context.pushNamed(
-                          AppRoutes.personDetails,
-                          extra: PersonDetailsArgs(personId: person.id, personName: person.name),
-                        ),
-                      );
-                    },
+                      },
+                    ),
                   ),
           ),
         ],

@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using YourSpace.Data.Entities;
+using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Services.Services.AuthService.Dtos;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.OtpService;
+using YourSpace.Services.Services.StorageService;
 using YourSpace.Services.Services.TokenService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using FluentAssertions;
@@ -26,6 +29,8 @@ public class AuthService_ResendConfirmationEmailAsyncTests
         Mock.Of<ITokenService>(),
         _otpService.Object,
         _emailSender.Object,
+        Mock.Of<IR2StorageService>(),
+        Options.Create(new R2Settings { AccountId = "test", AccessKey = "test", SecretKey = "test", AvatarsBucketName = "avatars", PeoplePhotosBucketName = "people" }),
         new ConfigurationBuilder().Build(),
         Mock.Of<ILogger<AuthServiceImpl>>());
 
@@ -43,7 +48,7 @@ public class AuthService_ResendConfirmationEmailAsyncTests
     [Fact]
     public async Task Does_not_send_when_email_already_confirmed()
     {
-        var user = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B" };
+        var user = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B", Gender = Gender.Female };
         _userManager.Setup(m => m.FindByEmailAsync("a@b.com")).ReturnsAsync(user);
         _userManager.Setup(m => m.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
 
@@ -55,7 +60,7 @@ public class AuthService_ResendConfirmationEmailAsyncTests
     [Fact]
     public async Task Sends_new_code_when_unconfirmed_account_exists()
     {
-        var user = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B" };
+        var user = new AppUser { Id = "user-1", Email = "a@b.com", UserName = "a@b.com", FirstName = "A", LastName = "B", Gender = Gender.Female };
         _userManager.Setup(m => m.FindByEmailAsync("a@b.com")).ReturnsAsync(user);
         _userManager.Setup(m => m.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
         _otpService.Setup(o => o.GenerateEmailConfirmationCodeAsync(user.Id)).ReturnsAsync("654321");

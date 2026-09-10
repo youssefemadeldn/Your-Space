@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/event_form_cubit/event_form_cubit.dart';
@@ -11,13 +12,17 @@ import 'package:your_space_mobile/features/events/presentation/cubit/event_form_
 
 class MockEventRepository extends Mock implements EventRepository {}
 
+class MockDataRefreshBus extends Mock implements DataRefreshBus {}
+
 void main() {
   late MockEventRepository repository;
+  late MockDataRefreshBus dataRefreshBus;
   late EventFormCubit cubit;
 
   setUp(() {
     repository = MockEventRepository();
-    cubit = EventFormCubit(repository);
+    dataRefreshBus = MockDataRefreshBus();
+    cubit = EventFormCubit(repository, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -62,6 +67,7 @@ void main() {
 
     unawaited(cubit.submit(name: 'New Event'));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.events)).called(1);
   });
 
   test('submit with an eventId updates the existing event', () async {
@@ -83,5 +89,6 @@ void main() {
 
     unawaited(cubit.submit(eventId: 1, name: 'Renamed Event'));
     await expectation;
+    verify(() => dataRefreshBus.notify(DataScope.events)).called(1);
   });
 }

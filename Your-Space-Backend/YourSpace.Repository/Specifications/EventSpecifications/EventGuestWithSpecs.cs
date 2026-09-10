@@ -53,6 +53,11 @@ public class EventGuestWithSpecs : BaseSpecification<EventGuest>
     public static EventGuestWithSpecs ForEvents(List<int> eventIds, string ownerUserId)
         => new(eg => eventIds.Contains(eg.EventId) && eg.Event.OwnerUserId == ownerUserId);
 
+    // Every guest row the user owns via any of their events, unpaginated — feeds a full account
+    // deletion (these join rows are removed before their parent People/Events).
+    public static EventGuestWithSpecs ForOwner(string ownerUserId)
+        => new(eg => eg.Event.OwnerUserId == ownerUserId);
+
     private static Expression<Func<EventGuest, bool>> BuildListPredicate(int eventId, string ownerUserId, int? groupId, EventGuestStatus? status)
         => eg => eg.EventId == eventId
             && eg.Event.OwnerUserId == ownerUserId

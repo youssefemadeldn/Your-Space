@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Space — Subgroup management</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="new-screens.css">
+</head>
+<body class="kit-body">
+
+  <div class="kit-note">
+    <span class="kit-note-title">Subgroup management — new screen</span>
+    <span class="kit-note-body">A plain list+CRUD screen for the subgroups that belong to one Group — reached from that Group's detail screen. Same Card, ListTile, Input, Button, IconButton, EmptyState and bottom-sheet/Dialog pattern as Create/Edit group in the existing app kit. This is the first of three structurally identical siblings — City management and Neighborhood management reuse the exact same pattern (see management-screens.js).</span>
+    <span class="kit-note-hint">Try it: search, edit or delete a row, or use the + button to add a subgroup. Delete "Neighbors" (the empty group) if you want to see the empty state.</span>
+  </div>
+
+  <div class="kit-row">
+    <div class="kit-frame-col">
+      <span class="kit-frame-caption">Subgroups in Family · interactive</span>
+      <div class="phone-frame">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">
+            <span class="msr">signal_cellular_alt</span>
+            <span class="msr">wifi</span>
+            <span class="msr">battery_full</span>
+          </span>
+        </div>
+
+        <div class="appbar">
+          <button class="icon-btn"><span class="msr">arrow_back</span></button>
+          <span class="appbar-title" id="appbarTitle">Subgroups</span>
+          <span class="appbar-spacer"></span>
+        </div>
+        <div class="context-strip" id="contextStrip"></div>
+
+        <div class="screen-content" style="padding-top:0">
+          <span class="field-wrap">
+            <span class="msr">search</span>
+            <input class="field-input" id="searchInput" placeholder="Search">
+          </span>
+
+          <div class="card p-6" id="listCard"></div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-state-icon"><span class="msr" id="emptyStateIcon">folder_off</span></div>
+            <div class="empty-state-title" id="emptyStateTitle"></div>
+            <div class="empty-state-body" id="emptyStateBody"></div>
+            <button class="btn primary" id="emptyAddBtn" style="margin-top:12px"><span class="msr">add</span></button>
+          </div>
+        </div>
+
+        <button class="icon-btn primary sz-56 fab" id="addFab" style="right:20px;bottom:20px"><span class="msr">add</span></button>
+
+        <div class="sheet-scrim" id="sheetScrim" hidden></div>
+        <div class="sheet" id="sheet" hidden>
+          <span class="sheet-handle"></span>
+          <span class="sheet-title" id="sheetTitle">New subgroup</span>
+          <label class="field">
+            <span class="field-label">Name</span>
+            <span class="field-wrap">
+              <input class="field-input" id="nameInput" placeholder="e.g. Immediate family">
+            </span>
+            <span class="field-hint" id="nameHint">0 / 200</span>
+          </label>
+          <div class="sheet-actions">
+            <button class="btn secondary" id="sheetCancelBtn">Cancel</button>
+            <button class="btn primary" id="sheetSaveBtn">Create subgroup</button>
+          </div>
+        </div>
+
+        <div class="dialog-scrim" id="dialogScrim" hidden>
+          <div class="dialog-card">
+            <div class="dialog-title">Delete this subgroup?</div>
+            <div class="dialog-body" id="dialogBody"></div>
+            <div class="dialog-actions">
+              <button class="btn text sm" id="dialogCancelBtn">Cancel</button>
+              <button class="btn sm" id="dialogConfirmBtn" style="background:var(--color-error);box-shadow:none;color:#fff">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="management-screens.js"></script>
+<script>
+  initManagementScreen({
+    entitySingular: 'Subgroup',
+    entityPlural: 'Subgroups',
+    parentLabel: 'Group',
+    parentName: 'Family',
+    parentIcon: 'family_restroom',
+    itemIcon: 'folder',
+    namePlaceholder: 'e.g. Immediate family',
+    searchPlaceholder: 'Search subgroups',
+    emptyTitle: 'No subgroups in Family yet',
+    emptyBody: 'Subgroups let you split a big group further — like Immediate family vs. Extended family. Add your first one.',
+    items: [
+      { id: 1, name: 'Immediate family', caption: '6 people' },
+      { id: 2, name: 'Extended family', caption: '14 people' },
+      { id: 3, name: 'In-laws', caption: '4 people' },
+      { id: 4, name: 'Cousins', caption: '0 people' }
+    ]
+  });
+</script>
+</body>
+</html>

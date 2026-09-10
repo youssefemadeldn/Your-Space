@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Space — Neighborhood management</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="new-screens.css">
+</head>
+<body class="kit-body">
+
+  <div class="kit-note">
+    <span class="kit-note-title">Neighborhood management — new screen</span>
+    <span class="kit-note-body">The third sibling of the list+CRUD pattern — same layout as Subgroup and City management, scoped to one City instead. Reached from the City picker's "+ Add new neighborhood" in the Person wizard, or from a city detail screen. Identical Card / ListTile / bottom-sheet / Dialog chrome, only the labels and seed data differ (see management-screens.js).</span>
+    <span class="kit-note-hint">Try it: search, edit or delete a row, or use the + button to add a neighborhood.</span>
+  </div>
+
+  <div class="kit-row">
+    <div class="kit-frame-col">
+      <span class="kit-frame-caption">Neighborhoods in Nasr City · interactive</span>
+      <div class="phone-frame">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">
+            <span class="msr">signal_cellular_alt</span>
+            <span class="msr">wifi</span>
+            <span class="msr">battery_full</span>
+          </span>
+        </div>
+
+        <div class="appbar">
+          <button class="icon-btn"><span class="msr">arrow_back</span></button>
+          <span class="appbar-title" id="appbarTitle">Neighborhoods</span>
+          <span class="appbar-spacer"></span>
+        </div>
+        <div class="context-strip" id="contextStrip"></div>
+
+        <div class="screen-content" style="padding-top:0">
+          <span class="field-wrap">
+            <span class="msr">search</span>
+            <input class="field-input" id="searchInput" placeholder="Search">
+          </span>
+
+          <div class="card p-6" id="listCard"></div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-state-icon"><span class="msr" id="emptyStateIcon">signpost</span></div>
+            <div class="empty-state-title" id="emptyStateTitle"></div>
+            <div class="empty-state-body" id="emptyStateBody"></div>
+            <button class="btn primary" id="emptyAddBtn" style="margin-top:12px"><span class="msr">add</span></button>
+          </div>
+        </div>
+
+        <button class="icon-btn primary sz-56 fab" id="addFab" style="right:20px;bottom:20px"><span class="msr">add</span></button>
+
+        <div class="sheet-scrim" id="sheetScrim" hidden></div>
+        <div class="sheet" id="sheet" hidden>
+          <span class="sheet-handle"></span>
+          <span class="sheet-title" id="sheetTitle">New neighborhood</span>
+          <label class="field">
+            <span class="field-label">Name</span>
+            <span class="field-wrap">
+              <input class="field-input" id="nameInput" placeholder="e.g. Zone 3">
+            </span>
+            <span class="field-hint" id="nameHint">0 / 200</span>
+          </label>
+          <div class="sheet-actions">
+            <button class="btn secondary" id="sheetCancelBtn">Cancel</button>
+            <button class="btn primary" id="sheetSaveBtn">Create neighborhood</button>
+          </div>
+        </div>
+
+        <div class="dialog-scrim" id="dialogScrim" hidden>
+          <div class="dialog-card">
+            <div class="dialog-title">Delete this neighborhood?</div>
+            <div class="dialog-body" id="dialogBody"></div>
+            <div class="dialog-actions">
+              <button class="btn text sm" id="dialogCancelBtn">Cancel</button>
+              <button class="btn sm" id="dialogConfirmBtn" style="background:var(--color-error);box-shadow:none;color:#fff">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="management-screens.js"></script>
+<script>
+  initManagementScreen({
+    entitySingular: 'Neighborhood',
+    entityPlural: 'Neighborhoods',
+    parentLabel: 'City',
+    parentName: 'Nasr City',
+    parentIcon: 'location_city',
+    itemIcon: 'signpost',
+    namePlaceholder: 'e.g. Zone 3',
+    searchPlaceholder: 'Search neighborhoods',
+    emptyTitle: 'No neighborhoods in Nasr City yet',
+    emptyBody: 'Neighborhoods are the most specific pin — handy once a city has grown a few people in it. Add your first one.',
+    items: [
+      { id: 1, name: 'Zone 1', caption: '5 people' },
+      { id: 2, name: 'Zone 3', caption: '8 people' },
+      { id: 3, name: 'Abbas El Akkad', caption: '2 people' }
+    ]
+  });
+</script>
+</body>
+</html>

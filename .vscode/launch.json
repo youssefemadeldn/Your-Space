@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "your_space_mobile (dev)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "Your-Space-Mobile",
+      "program": "lib/main.dart",
+      "args": ["--dart-define=ENVIRONMENT=dev"]
+    },
+    {
+      "name": "your_space_mobile (prod)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "Your-Space-Mobile",
+      "program": "lib/main.dart",
+      "args": ["--dart-define=ENVIRONMENT=prod"]
+    }
+  ]
+}

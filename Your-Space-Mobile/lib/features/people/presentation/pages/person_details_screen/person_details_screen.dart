@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:your_space_mobile/core/router/app_routes.dart';
 import 'package:your_space_mobile/core/router/args/person_details_args.dart';
-import 'package:your_space_mobile/core/router/args/person_form_args.dart';
+import 'package:your_space_mobile/core/router/args/person_wizard_args.dart';
 import 'package:your_space_mobile/core/widgets/app_app_bar.dart';
 import 'package:your_space_mobile/core/widgets/app_loading_indicator.dart';
 import 'package:your_space_mobile/core/widgets/error_state_widget.dart';
@@ -27,8 +27,8 @@ class PersonDetailsScreen extends StatelessWidget {
         trailing: IconButton(
           icon: const Icon(Icons.edit_outlined),
           onPressed: () => context.pushNamed(
-            AppRoutes.personForm,
-            extra: PersonFormArgs(personId: args.personId),
+            AppRoutes.personWizard,
+            extra: PersonWizardArgs(personId: args.personId),
           ),
         ),
       ),

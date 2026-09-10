@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/invite_method.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
@@ -22,12 +23,20 @@ class PersonRepositoryImpl implements PersonRepository {
   @override
   Future<Either<Failure, PaginatedResult<Person>>> getPersons({
     int? groupId,
+    int? subGroupId,
+    int? governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? search,
     required int pageIndex,
     required int pageSize,
   }) async {
     final result = await _remote.getPersons(
       groupId: groupId,
+      subGroupId: subGroupId,
+      governorateId: governorateId,
+      cityId: cityId,
+      neighborhoodId: neighborhoodId,
       search: search,
       pageIndex: pageIndex,
       pageSize: pageSize,
@@ -45,10 +54,28 @@ class PersonRepositoryImpl implements PersonRepository {
   Future<Either<Failure, Person>> createPerson({
     required String name,
     String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
     required int groupId,
+    int? subGroupId,
+    required int governorateId,
+    int? cityId,
+    int? neighborhoodId,
+    String? notes,
   }) async {
     final result = await _remote.createPerson(
-      CreatePersonRequest(name: name, phoneNumber: phoneNumber, groupId: groupId),
+      CreatePersonRequest(
+        name: name,
+        phoneNumber: phoneNumber,
+        phoneNumber2: phoneNumber2,
+        gender: gender,
+        groupId: groupId,
+        subGroupId: subGroupId,
+        governorateId: governorateId,
+        cityId: cityId,
+        neighborhoodId: neighborhoodId,
+        notes: notes,
+      ),
     );
     return result.fold(Left.new, (response) => Right(response.toEntity()));
   }
@@ -58,10 +85,29 @@ class PersonRepositoryImpl implements PersonRepository {
     required int id,
     required String name,
     String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
     required int groupId,
+    int? subGroupId,
+    required int governorateId,
+    int? cityId,
+    int? neighborhoodId,
+    String? notes,
   }) async {
     final result = await _remote.updatePerson(
-      UpdatePersonRequest(id: id, name: name, phoneNumber: phoneNumber, groupId: groupId),
+      UpdatePersonRequest(
+        id: id,
+        name: name,
+        phoneNumber: phoneNumber,
+        phoneNumber2: phoneNumber2,
+        gender: gender,
+        groupId: groupId,
+        subGroupId: subGroupId,
+        governorateId: governorateId,
+        cityId: cityId,
+        neighborhoodId: neighborhoodId,
+        notes: notes,
+      ),
     );
     return result.fold(Left.new, (response) => Right(response.toEntity()));
   }

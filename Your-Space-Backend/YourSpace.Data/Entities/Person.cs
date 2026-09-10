@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using YourSpace.Data.Enums;
+
 namespace YourSpace.Data.Entities;
 
 // Deliberately shared/core — not owned by any one feature. Other future features can reference
@@ -18,7 +20,25 @@ public class Person
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
 
+    [MaxLength(20)]
+    public string? PhoneNumber2 { get; set; }
+
+    public required Gender Gender { get; set; }
+
     public required int GroupId { get; set; }
+
+    // Second classification tier, scoped to GroupId — auto-cleared by PersonService whenever
+    // GroupId changes and a new SubGroupId isn't explicitly provided in the same call.
+    public int? SubGroupId { get; set; }
+
+    // Location hierarchy (Governorate -> City -> Neighborhood), fully independent of Group/SubGroup.
+    // Governorate is required; City/Neighborhood are optional but validated against their parent.
+    public required int GovernorateId { get; set; }
+    public int? CityId { get; set; }
+    public int? NeighborhoodId { get; set; }
+
+    [MaxLength(2000)]
+    public string? Notes { get; set; }
 
     public DateTime? DeletedAt { get; set; }
 
@@ -27,4 +47,8 @@ public class Person
 
     public AppUser Owner { get; set; } = null!;
     public Group Group { get; set; } = null!;
+    public SubGroup? SubGroup { get; set; }
+    public Governorate Governorate { get; set; } = null!;
+    public City? City { get; set; }
+    public Neighborhood? Neighborhood { get; set; }
 }

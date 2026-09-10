@@ -71,6 +71,7 @@ builder.Services.AddStackExchangeRedisCache(o =>
 builder.Services.AddApplicationServices();
 builder.Services.AddIdentityService(builder.Configuration);
 builder.Services.AddEmailService(builder.Configuration);
+builder.Services.AddR2StorageService(builder.Configuration);
 builder.Services.AddRateLimiting(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 
@@ -96,13 +97,35 @@ forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
-app.Logger.LogInformation("Applying database migrations");
-using (var migrationScope = app.Services.CreateScope())
+// Development always auto-migrates. Deployed environments opt in per-instance with
+// RUN_MIGRATIONS_ON_STARTUP=true (set only on the single instance that should own migration —
+// see Dockerfile and dotnet_scaffold_prompt.md edge case 9). Production without the flag still
+// applies migrations via the explicit `dotnet ef database update` deploy step. Left ungated,
+// MigrateAsync() also runs under the SQLite-backed integration-test host, where EF Core's
+// PendingModelChangesWarning trips on the Npgsql-scaffolded snapshot.
+if (app.Environment.IsDevelopment()
+    || builder.Configuration.GetValue<bool>("RUN_MIGRATIONS_ON_STARTUP"))
 {
+    app.Logger.LogInformation("Applying database migrations");
+    using var migrationScope = app.Services.CreateScope();
     var migrationDbContext = migrationScope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
     await migrationDbContext.Database.MigrateAsync();
+    app.Logger.LogInformation("Database migrations applied successfully");
 }
-app.Logger.LogInformation("Database migrations applied successfully");
+
+// IdentitySeeder resolves IUnitOfWork, which is IAsyncDisposable-only (see UnitOfWork.DisposeAsync) —
+// a synchronous `using` scope throws on dispose trying to dispose it synchronously. Must run before
+// MockDataSeeder below — MockDataSeeder.SeedDevUsersAsync calls UserManager.AddToRoleAsync(RoleNames.User),
+// which throws "Role USER does not exist" against a genuinely fresh database if the Identity roles
+// (seeded here) aren't in place first. Only surfaces on a from-scratch DB — an existing DB that's
+// already had IdentitySeeder run once masks the ordering bug, since the roles are already there.
+// ReferenceDataSeeder (global governorates) is likewise idempotent and runs in every environment;
+// it must also precede MockDataSeeder, whose SeedCities/SeedPersons resolve "Cairo"/"Giza" by name.
+await using (var seedScope = app.Services.CreateAsyncScope())
+{
+    await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
+    await ReferenceDataSeeder.SeedAsync(seedScope.ServiceProvider, app.Logger);
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -120,13 +143,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-}
-
-// IdentitySeeder resolves IUnitOfWork, which is IAsyncDisposable-only (see UnitOfWork.DisposeAsync) —
-// a synchronous `using` scope throws on dispose trying to dispose it synchronously.
-await using (var seedScope = app.Services.CreateAsyncScope())
-{
-    await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
 }
 
 app.UseHttpsRedirection();

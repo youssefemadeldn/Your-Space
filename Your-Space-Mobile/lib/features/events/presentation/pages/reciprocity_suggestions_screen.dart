@@ -175,7 +175,8 @@ class _ReciprocitySuggestionsBodyState extends State<_ReciprocitySuggestionsBody
                             label: 'events.reciprocity.addAsGuestCta'.tr(),
                             variant: AppButtonVariant.soft,
                             size: AppButtonSize.sm,
-                            loading: state is AddGuestsActionSubmitting,
+                            loading: state is AddGuestsActionSubmitting &&
+                                (state.personIds?.contains(person.id) ?? false),
                             onPressed: () => context.read<AddGuestsActionCubit>().addPersons(
                                   eventId: widget.eventId,
                                   personIds: [person.id],

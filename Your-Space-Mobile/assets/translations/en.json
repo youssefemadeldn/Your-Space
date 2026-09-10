@@ -9,6 +9,11 @@
     "saveChanges": "Save changes",
     "create": "Create",
     "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "noOptions": "No options available",
     "logout": "Log out",
     "logoutConfirmTitle": "Log out?",
     "logoutConfirmMessage": "You'll need to log in again next time.",
@@ -16,19 +21,27 @@
       "whatsApp": "WhatsApp",
       "phoneCall": "Phone call",
       "physical": "In person"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female"
     }
   },
   "nav": {
     "home": "Home",
     "groups": "Groups",
     "people": "People",
-    "events": "Events"
+    "events": "Events",
+    "settings": "Settings"
   },
   "auth": {
     "firstName": "First name",
     "lastName": "Last name",
     "email": "Email",
     "phone": "Phone number",
+    "phoneOptional": "Phone number (optional)",
+    "gender": "Gender",
+    "genderOptional": "Gender (optional)",
     "password": "Password",
     "confirmPassword": "Confirm password",
     "newPassword": "New password",
@@ -83,13 +96,51 @@
       "invalidEmail": "Enter a valid email",
       "invalidPhone": "Enter a valid phone number, e.g. +201234567890",
       "passwordMismatch": "Passwords don't match",
+      "newPasswordSameAsCurrent": "Choose a password different from your current one",
       "otpIncomplete": "Enter the 6-digit code",
-      "requiredCurrentPassword": "Enter your current password"
+      "requiredCurrentPassword": "Enter your current password",
+      "requiredGender": "Select a gender"
     }
   },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get started",
+    "page1Title": "Your People, Organized",
+    "page1Body": "Keep every friend, family member, and contact organized into groups — and now subgroups — so you always know who's who, right when you need them.",
+    "page2Title": "Plan Events Without the Chaos",
+    "page2Body": "Create an event, add guests one by one or invite a whole group at once, and track exactly who's invited, who's still pending, and who you've decided to skip.",
+    "page3Title": "Never Forget Who Invited You",
+    "page3Body": "Your Space quietly tracks who's invited you to their own occasions — so when it's time to plan your next event, you'll know exactly who to invite back."
+  },
+  "settings": {
+    "title": "Settings",
+    "savedMessage": "Profile updated",
+    "changePassword": "Change password",
+    "logout": "Log out",
+    "deleteAccount": "Delete account",
+    "deleteAccountDialog": {
+      "title": "Delete account?",
+      "warning": "This permanently deletes your account and all your groups, people and events. This can’t be undone.",
+      "passwordLabel": "Enter your password to confirm",
+      "confirm": "Delete my account",
+      "doneMessage": "Your account has been permanently deleted."
+    },
+    "photoHint": "JPEG or PNG · one photo",
+    "replacePhoto": "Replace photo",
+    "removePhoto": "Remove photo",
+    "takePhoto": "Take a photo",
+    "chooseFromGallery": "Choose from gallery",
+    "removePhotoConfirmTitle": "Remove profile photo?",
+    "removePhotoConfirmMessage": "You can always add a new one later.",
+    "photoUpdated": "Photo updated",
+    "photoRemoved": "Photo removed"
+  },
   "home": {
-    "title": "Your Space",
-    "greeting": "Welcome back",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "hiName": "Hi {name}",
     "groupsLabel": "Groups",
     "peopleLabel": "People",
     "eventsLabel": "Events",
@@ -102,7 +153,8 @@
       "title": "Groups",
       "searchHint": "Search groups",
       "emptyTitle": "No groups yet",
-      "emptyAction": "Add group"
+      "emptyAction": "Add group",
+      "manageSubGroups": "Manage subgroups"
     },
     "form": {
       "createTitle": "New group",
@@ -123,18 +175,6 @@
       "emptyAction": "Add person",
       "reciprocityBadge": "Invited you"
     },
-    "form": {
-      "createTitle": "Add person",
-      "editTitle": "Edit person",
-      "nameLabel": "Name",
-      "nameRequired": "Enter a name",
-      "phoneLabel": "Phone (optional)",
-      "groupLabel": "Group",
-      "saveCta": "Save person",
-      "savedMessage": "Person saved",
-      "noGroupsCallout": "Everyone belongs to a group — create one first to add people.",
-      "createGroupCta": "Create a group"
-    },
     "details": {
       "occasionsTitle": "Occasions",
       "addOccasion": "Add occasion",
@@ -142,7 +182,8 @@
       "emptyTitle": "Nothing logged with {name} yet",
       "emptyAction": "Add occasion",
       "occasionUnnamed": "Occasion",
-      "notFound": "Person not found"
+      "notFound": "Person not found",
+      "notesTitle": "Notes"
     },
     "occasion": {
       "addTitle": "Add occasion",
@@ -152,6 +193,117 @@
       "dateLabel": "Date",
       "dateFutureHint": "Can't be in the future",
       "notesLabel": "Notes"
+    },
+    "filters": {
+      "title": "Filters",
+      "clearAll": "Clear all",
+      "subGroupLabel": "Subgroup",
+      "pickGroupFirst": "Pick a group first",
+      "noSubGroups": "No subgroups yet",
+      "locationLabel": "Location",
+      "governorateLabel": "Governorate",
+      "allGovernorates": "All governorates",
+      "cityLabel": "City",
+      "allCities": "All cities",
+      "pickGovernorateFirst": "Pick a governorate first",
+      "noCities": "No cities yet",
+      "neighborhoodLabel": "Neighborhood",
+      "allNeighborhoods": "All neighborhoods",
+      "pickCityFirst": "Pick a city first",
+      "noNeighborhoods": "No neighborhoods yet"
+    },
+    "wizard": {
+      "createTitle": "Add person",
+      "editTitle": "Edit person",
+      "saveCta": "Save person",
+      "stepEyebrow": "Step {step} of {total} · {name}",
+      "step1": {
+        "name": "Basic Identity",
+        "nameLabel": "Name",
+        "nameRequired": "Enter a name",
+        "phoneLabel": "Phone 1",
+        "phone2Label": "Phone 2",
+        "optional": "Optional",
+        "genderLabel": "Gender",
+        "genderRequired": "Select a gender",
+        "photosLabel": "Photos",
+        "photosHint": "Add up to 6 photos. Tap a photo to make it the primary one.",
+        "addPhoto": "Add photo",
+        "primaryBadge": "Primary"
+      },
+      "step2": {
+        "name": "Classification & Location",
+        "classificationSection": "Classification",
+        "groupLabel": "Group",
+        "groupPlaceholder": "Select a group",
+        "groupRequired": "Select a group",
+        "noGroups": "No groups yet",
+        "addGroup": "Add group",
+        "subGroupLabel": "Subgroup (optional)",
+        "subGroupPlaceholder": "Select a subgroup",
+        "pickGroupFirst": "Pick a group first",
+        "noSubGroups": "No subgroups yet",
+        "addSubGroup": "Add subgroup",
+        "manageSubGroups": "Manage subgroups",
+        "locationSection": "Location",
+        "governorateLabel": "Governorate",
+        "governoratePlaceholder": "Select a governorate",
+        "governorateRequired": "Select a governorate",
+        "noGovernorates": "No governorates yet",
+        "addGovernorate": "Add governorate",
+        "cityLabel": "City (optional)",
+        "cityPlaceholder": "Select a city",
+        "pickGovernorateFirst": "Pick a governorate first",
+        "noCities": "No cities yet",
+        "addCity": "Add city",
+        "manageCities": "Manage cities",
+        "neighborhoodLabel": "Neighborhood (optional)",
+        "neighborhoodPlaceholder": "Select a neighborhood",
+        "pickCityFirst": "Pick a city first",
+        "noNeighborhoods": "No neighborhoods yet",
+        "addNeighborhood": "Add neighborhood",
+        "manageNeighborhoods": "Manage neighborhoods",
+        "locationHint": "Only the governorate is required — city and neighborhood help narrow things down later."
+      },
+      "step3": {
+        "name": "Family & Relationships",
+        "sectionTitle": "Family & relationships",
+        "addFamilyMember": "Add family member",
+        "familyMember": "Family member {index}",
+        "relationTypePlaceholder": "Select a relationship",
+        "searchHint": "Search people",
+        "noMatches": "No matches",
+        "incompleteRelationship": "Finish or remove the family member — pick both a relationship and a person"
+      },
+      "step4": {
+        "name": "Notes",
+        "notesLabel": "Notes",
+        "notesHint": "Anything worth remembering about this person"
+      },
+      "submit": {
+        "savedMessage": "Person saved",
+        "photoUploadFailed": "One of the photos failed to upload",
+        "photoRemoveFailed": "One of the photos failed to remove",
+        "photoPrimaryFailed": "Couldn't set the primary photo",
+        "relationshipSaveFailed": "One of the relationships failed to save",
+        "relationshipRemoveFailed": "One of the relationships failed to remove"
+      }
+    },
+    "relationType": {
+      "husband": "Husband",
+      "wife": "Wife",
+      "father": "Father",
+      "mother": "Mother",
+      "uncleMaternal": "Uncle (maternal)",
+      "auntMaternal": "Aunt (maternal)",
+      "unclePaternal": "Uncle (paternal)",
+      "auntPaternal": "Aunt (paternal)",
+      "son": "Son",
+      "daughter": "Daughter",
+      "brother": "Brother",
+      "sister": "Sister",
+      "nephew": "Nephew",
+      "niece": "Niece"
     }
   },
   "events": {
@@ -203,6 +355,10 @@
       "title": "Add guests · {eventName}",
       "peopleTab": "People",
       "byGroupTab": "By group",
+      "bySubGroupTab": "By subgroup",
+      "byGovernorateTab": "By governorate",
+      "byCityTab": "By city",
+      "byNeighborhoodTab": "By neighborhood",
       "addNPeople": "Add {count} people",
       "addGroupCta": "Add group",
       "groupPeopleCount": "{count} people",
@@ -212,6 +368,59 @@
       "title": "Reciprocity suggestions · {eventName}",
       "emptyTitle": "No one new to suggest right now.",
       "addAsGuestCta": "Add as guest"
+    }
+  },
+  "classification": {
+    "subgroup": {
+      "screenTitle": "Subgroups",
+      "parentLabel": "Group",
+      "searchHint": "Search subgroups",
+      "emptyTitle": "No subgroups yet",
+      "emptyBody": "Create a subgroup to organize people within this group further.",
+      "addLabel": "Add subgroup",
+      "createTitle": "New subgroup",
+      "editTitle": "Edit subgroup",
+      "namePlaceholder": "Subgroup name",
+      "createCta": "Create subgroup",
+      "savedMessage": "Subgroup saved",
+      "deleteTitle": "Delete subgroup?",
+      "deleteBody": "This can't be undone.",
+      "deletedMessage": "Subgroup deleted",
+      "personCaption": "{count} people"
+    },
+    "city": {
+      "screenTitle": "Cities",
+      "parentLabel": "Governorate",
+      "searchHint": "Search cities",
+      "emptyTitle": "No cities yet",
+      "emptyBody": "Create a city to organize neighborhoods within this governorate.",
+      "addLabel": "Add city",
+      "createTitle": "New city",
+      "editTitle": "Edit city",
+      "namePlaceholder": "City name",
+      "createCta": "Create city",
+      "savedMessage": "City saved",
+      "deleteTitle": "Delete city?",
+      "deleteBody": "This can't be undone.",
+      "deletedMessage": "City deleted",
+      "neighborhoodCaption": "{count} neighborhoods"
+    },
+    "neighborhood": {
+      "screenTitle": "Neighborhoods",
+      "parentLabel": "City",
+      "searchHint": "Search neighborhoods",
+      "emptyTitle": "No neighborhoods yet",
+      "emptyBody": "Create a neighborhood to pin down locations within this city.",
+      "addLabel": "Add neighborhood",
+      "createTitle": "New neighborhood",
+      "editTitle": "Edit neighborhood",
+      "namePlaceholder": "Neighborhood name",
+      "createCta": "Create neighborhood",
+      "savedMessage": "Neighborhood saved",
+      "deleteTitle": "Delete neighborhood?",
+      "deleteBody": "This can't be undone.",
+      "deletedMessage": "Neighborhood deleted",
+      "personCaption": "{count} people"
     }
   }
 }

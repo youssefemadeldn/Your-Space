@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 
+import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import '../entities/user_profile.dart';
 
@@ -10,7 +13,8 @@ abstract class AuthRepository {
     required String confirmPassword,
     required String firstName,
     required String lastName,
-    required String phoneNumber,
+    String? phoneNumber,
+    Gender? gender,
   });
 
   Future<Either<Failure, UserProfile>> login({
@@ -40,4 +44,18 @@ abstract class AuthRepository {
     required String newPassword,
     required String confirmNewPassword,
   });
+
+  Future<Either<Failure, Unit>> deleteAccount({required String password});
+
+  Future<Either<Failure, UserProfile>> getProfile();
+
+  Future<Either<Failure, UserProfile>> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+  });
+
+  Future<Either<Failure, UserProfile>> uploadAvatar(File file);
+
+  Future<Either<Failure, UserProfile>> removeAvatar();
 }

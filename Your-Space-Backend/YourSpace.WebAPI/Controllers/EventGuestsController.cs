@@ -64,6 +64,34 @@ public class EventGuestsController(IEventGuestService eventGuestService) : Contr
         return new ResultActionResult<BulkAddGuestsResultDto>(result);
     }
 
+    [HttpPost("by-subgroup/{subGroupId:int}")]
+    public async Task<IActionResult> AddSubGroup(int eventId, int subGroupId)
+    {
+        var result = await eventGuestService.AddSubGroupAsync(GetUserId(), eventId, subGroupId);
+        return new ResultActionResult<BulkAddGuestsResultDto>(result);
+    }
+
+    [HttpPost("by-governorate/{governorateId:int}")]
+    public async Task<IActionResult> AddGovernorate(int eventId, int governorateId)
+    {
+        var result = await eventGuestService.AddGovernorateAsync(GetUserId(), eventId, governorateId);
+        return new ResultActionResult<BulkAddGuestsResultDto>(result);
+    }
+
+    [HttpPost("by-city/{cityId:int}")]
+    public async Task<IActionResult> AddCity(int eventId, int cityId)
+    {
+        var result = await eventGuestService.AddCityAsync(GetUserId(), eventId, cityId);
+        return new ResultActionResult<BulkAddGuestsResultDto>(result);
+    }
+
+    [HttpPost("by-neighborhood/{neighborhoodId:int}")]
+    public async Task<IActionResult> AddNeighborhood(int eventId, int neighborhoodId)
+    {
+        var result = await eventGuestService.AddNeighborhoodAsync(GetUserId(), eventId, neighborhoodId);
+        return new ResultActionResult<BulkAddGuestsResultDto>(result);
+    }
+
     [HttpPost("{guestId:int}/invite")]
     public async Task<IActionResult> MarkInvited(int eventId, int guestId, [FromBody] MarkGuestInvitedDto dto)
     {

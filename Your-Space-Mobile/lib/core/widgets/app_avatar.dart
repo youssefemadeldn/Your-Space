@@ -1,17 +1,21 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// Initials-on-tint only — no photo support. Matches the design system's
-/// explicit "no real photos, initials-on-tint" decision (no backend DTO
-/// exposes an avatar URL for Group/Person/Event either).
+/// Initials-on-tint by default; renders [photoUrl] via [CachedNetworkImage] when provided,
+/// falling back to initials on null/empty/load-error (including a presigned URL past its
+/// expiry — a graceful fallback, not a broken-image icon). Reverses this widget's earlier
+/// "no real photos" decision now that Person/AppUser can carry a real profile photo — see
+/// Sprint 3 (Photos + Cloudflare R2).
 class AppAvatar extends StatelessWidget {
   final String name;
   final double? size;
+  final String? photoUrl;
 
-  const AppAvatar({super.key, required this.name, this.size});
+  const AppAvatar({super.key, required this.name, this.size, this.photoUrl});
 
   static const _backgrounds = [
     AppColors.brandRedSoft,
@@ -45,8 +49,25 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedSize = size ?? 44.w;
-    final index = _toneIndex;
 
+    if (photoUrl != null && photoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: photoUrl!,
+          width: resolvedSize,
+          height: resolvedSize,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => _initialsCircle(resolvedSize),
+          errorWidget: (context, url, error) => _initialsCircle(resolvedSize),
+        ),
+      );
+    }
+
+    return _initialsCircle(resolvedSize);
+  }
+
+  Widget _initialsCircle(double resolvedSize) {
+    final index = _toneIndex;
     return CircleAvatar(
       radius: resolvedSize / 2,
       backgroundColor: _backgrounds[index],

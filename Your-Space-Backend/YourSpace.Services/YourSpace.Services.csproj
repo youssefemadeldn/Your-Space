@@ -6,11 +6,21 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.10" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.21.0" />
+  </ItemGroup>
+
+  <!-- Grants access to ASP.NET Core's reference assemblies (IFormFile, etc.) without changing this
+       project's SDK type. This project stays plain Microsoft.NET.Sdk (not Sdk.Web) — the standalone
+       Microsoft.AspNetCore.Http.Abstractions NuGet package is legacy for .NET 5+ and risks duplicate-
+       assembly conflicts against what YourSpace.WebAPI already loads from the shared framework at
+       runtime; FrameworkReference is the supported fix. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <PropertyGroup>

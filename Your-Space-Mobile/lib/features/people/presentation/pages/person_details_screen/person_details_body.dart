@@ -35,7 +35,7 @@ class PersonDetailsBody extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                AppAvatar(name: person.name, size: 72.w),
+                AppAvatar(name: person.name, size: 72.w, photoUrl: person.primaryPhotoUrl),
                 SizedBox(height: 10.h),
                 Directionality(
                   textDirection: TextDirection.ltr,
@@ -51,6 +51,13 @@ class PersonDetailsBody extends StatelessWidget {
                       Directionality(
                         textDirection: TextDirection.ltr,
                         child: Text(person.phoneNumber!, style: AppTextStyles.bodySmall),
+                      ),
+                    ],
+                    if (person.phoneNumber2 != null) ...[
+                      SizedBox(width: 8.w),
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(person.phoneNumber2!, style: AppTextStyles.bodySmall),
                       ),
                     ],
                   ],
@@ -75,6 +82,12 @@ class PersonDetailsBody extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+          if (person.notes != null && person.notes!.isNotEmpty) ...[
+            SizedBox(height: 16.h),
+            Text('people.details.notesTitle'.tr(), style: AppTextStyles.titleMedium),
+            SizedBox(height: 6.h),
+            Text(person.notes!, style: AppTextStyles.bodySmall),
           ],
           SizedBox(height: 20.h),
           Row(

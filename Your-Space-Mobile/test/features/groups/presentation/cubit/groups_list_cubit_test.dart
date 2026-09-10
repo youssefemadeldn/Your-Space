@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
+import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list_cubit/groups_list_cubit.dart';
@@ -15,6 +16,7 @@ class MockGroupRepository extends Mock implements GroupRepository {}
 
 void main() {
   late MockGroupRepository repository;
+  late DataRefreshBus dataRefreshBus;
   late GroupsListCubit cubit;
 
   const group1 = Group(id: 1, name: 'Family');
@@ -22,7 +24,8 @@ void main() {
 
   setUp(() {
     repository = MockGroupRepository();
-    cubit = GroupsListCubit(repository);
+    dataRefreshBus = DataRefreshBus();
+    cubit = GroupsListCubit(repository, dataRefreshBus);
   });
 
   tearDown(() => cubit.close());
@@ -158,5 +161,64 @@ void main() {
     expect(state.isLoadingMore, isFalse);
     expect(state.loadMoreErrorMessage, isNotNull);
     expect(state.loadMoreErrorId, 1);
+  });
+
+  group('DataRefreshBus', () {
+    // Reproduces the original bug: GroupsListCubit is a shell-branch cubit,
+    // built once by IndexedStack and never rebuilt — a group created via the
+    // FAB sheet never reached it until logout/login. A bus notification must
+    // now silently pull the updated list in.
+    test('a `groups` notification re-fetches page 1 preserving search, no Loading flash', () async {
+      when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+
+      const newGroup = Group(id: 3, name: 'Book club');
+      when(() => repository.getGroups(search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(
+          PaginatedResult(items: [group1, group2, newGroup], pageIndex: 1, totalPages: 1, totalItems: 3),
+        ),
+      );
+
+      final states = <dynamic>[];
+      final sub = cubit.stream.listen(states.add);
+
+      dataRefreshBus.notify(DataScope.groups);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(states, isNot(contains(isA<GroupsListLoading>())));
+      expect(cubit.state, isA<GroupsListSuccess>().having((s) => s.groups, 'groups', [group1, group2, newGroup]));
+    });
+
+    test('a failed background refresh keeps the last-good list on screen', () async {
+      when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+      final beforeRefresh = cubit.state;
+
+      when(() => repository.getGroups(search: null, pageIndex: 1, pageSize: 20))
+          .thenAnswer((_) async => const Left(NetworkFailure()));
+
+      dataRefreshBus.notify(DataScope.groups);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, beforeRefresh);
+    });
+
+    test('a `people` notification is ignored (Groups does not depend on person data)', () async {
+      when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
+        (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
+      );
+      await cubit.load();
+      final beforeNotify = cubit.state;
+
+      dataRefreshBus.notify(DataScope.people);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, beforeNotify);
+    });
   });
 }

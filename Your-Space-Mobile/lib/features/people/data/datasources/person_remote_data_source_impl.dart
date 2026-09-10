@@ -21,6 +21,10 @@ class PersonRemoteDataSourceImpl {
 
   Future<Either<Failure, PaginatedResponse<PersonResponse>>> getPersons({
     int? groupId,
+    int? subGroupId,
+    int? governorateId,
+    int? cityId,
+    int? neighborhoodId,
     String? search,
     required int pageIndex,
     required int pageSize,
@@ -29,6 +33,10 @@ class PersonRemoteDataSourceImpl {
         path: ApiConstants.persons,
         queryParameters: {
           'groupId': ?groupId,
+          'subGroupId': ?subGroupId,
+          'governorateId': ?governorateId,
+          'cityId': ?cityId,
+          'neighborhoodId': ?neighborhoodId,
           'search': ?search,
           'pageIndex': pageIndex,
           'pageSize': pageSize,

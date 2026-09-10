@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Space — Settings</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="new-screens.css">
+</head>
+<body class="kit-body">
+
+  <div class="kit-note">
+    <span class="kit-note-title">Settings — new screen</span>
+    <span class="kit-note-body">Reached from a 5th bottom-nav tab alongside Home / Groups / People / Events. Edit profile (name, phone, single profile photo with upload / replace / remove) and a Logout action. Same Button, Input, Card, ListTile, Avatar, IconButton, Dialog and BottomNav as the rest of the app — nothing restyled, just new composition.</span>
+    <span class="kit-note-hint">Try it: tap the camera badge on the avatar to replace the photo (uses a real file picker + preview), or tap "Remove photo" to fall back to initials. Tap "Log out" to see the destructive confirm dialog.</span>
+  </div>
+
+  <div class="kit-row">
+
+    <div class="kit-frame-col">
+      <span class="kit-frame-caption">Settings · default</span>
+      <div class="phone-frame">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">
+            <span class="msr">signal_cellular_alt</span>
+            <span class="msr">wifi</span>
+            <span class="msr">battery_full</span>
+          </span>
+        </div>
+
+        <div class="appbar">
+          <span class="appbar-spacer"></span>
+          <span class="appbar-title">Settings</span>
+          <span class="appbar-spacer"></span>
+        </div>
+
+        <div class="screen-content">
+
+          <span class="eyebrow">Profile</span>
+          <div class="card flex-col gap-16" style="align-items:center;padding:24px 20px">
+            <div style="position:relative">
+              <div class="avatar tone-1 sz-72" id="avatarCircle">JN</div>
+              <img id="avatarImg" alt="Your profile photo" style="display:none;width:72px;height:72px;border-radius:50%;object-fit:cover;position:absolute;inset:0">
+              <button class="icon-btn soft sz-32" style="position:absolute;right:-4px;bottom:-4px;box-shadow:var(--shadow-soft)" id="cameraBtn" title="Change photo">
+                <span class="msr">photo_camera</span>
+              </button>
+              <input type="file" accept="image/jpeg,image/png" id="avatarFile" style="display:none">
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+              <button class="btn soft sm" id="replaceBtn"><span class="msr">edit</span>Replace photo</button>
+              <button class="btn error-text sm" id="removeBtn"><span class="msr">delete</span>Remove photo</button>
+            </div>
+            <span class="field-hint" id="photoHint" style="text-align:center">JPEG or PNG · one photo</span>
+          </div>
+
+          <div class="card flex-col gap-18">
+            <label class="field">
+              <span class="field-label">Full name</span>
+              <span class="field-wrap">
+                <span class="msr">person</span>
+                <input class="field-input" id="nameInput" value="Joe Nasser" placeholder="e.g. Sara Hosny">
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-label">Phone number</span>
+              <span class="field-wrap">
+                <span class="msr">call</span>
+                <input class="field-input" id="phoneInput" dir="ltr" value="+20 100 123 4567" placeholder="+201234567890">
+              </span>
+              <span class="field-hint">Used to sign you back in — keep it current</span>
+            </label>
+          </div>
+
+          <span class="eyebrow">Account</span>
+          <div class="card p-6">
+            <button class="list-tile" style="width:100%;background:transparent;border:none;cursor:pointer;text-align:left" id="logoutRow">
+              <span class="list-tile-icon" style="background:var(--tint-error)"><span class="msr" style="color:var(--color-error)">logout</span></span>
+              <div class="list-tile-body">
+                <div class="list-tile-title" style="color:var(--color-error)">Log out</div>
+                <div class="list-tile-subtitle">You'll need your phone number to sign back in</div>
+              </div>
+              <span class="list-tile-trailing"><span class="msr" style="color:var(--text-hint)">chevron_right</span></span>
+            </button>
+          </div>
+
+        </div>
+
+        <div class="fixed-footer">
+          <button class="btn primary full" id="saveBtn">Save changes</button>
+        </div>
+
+        <div class="bottom-nav">
+          <button><span class="nav-icon-wrap"><span class="msr">home</span></span><span class="nav-label">Home</span></button>
+          <button><span class="nav-icon-wrap"><span class="msr">group</span></span><span class="nav-label">Groups</span></button>
+          <button><span class="nav-icon-wrap"><span class="msr">person</span></span><span class="nav-label">People</span></button>
+          <button><span class="nav-icon-wrap"><span class="msr">event</span></span><span class="nav-label">Events</span></button>
+          <button class="active"><span class="nav-icon-wrap"><span class="msr">settings</span></span><span class="nav-label">Settings</span></button>
+        </div>
+
+        <div class="dialog-scrim" id="logoutDialog" hidden>
+          <div class="dialog-card">
+            <div class="dialog-title">Log out of Your Space?</div>
+            <div class="dialog-body">You can always sign back in with your phone number — nothing about your groups, people or events will be lost.</div>
+            <div class="dialog-actions">
+              <button class="btn text sm" id="cancelLogout">Cancel</button>
+              <button class="btn sm" style="background:var(--color-error);box-shadow:none;color:#fff" id="confirmLogout">Log out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  const avatarCircle = document.getElementById('avatarCircle');
+  const avatarImg = document.getElementById('avatarImg');
+  const avatarFile = document.getElementById('avatarFile');
+  const photoHint = document.getElementById('photoHint');
+
+  function openFilePicker() { avatarFile.click(); }
+  document.getElementById('cameraBtn').addEventListener('click', openFilePicker);
+  document.getElementById('replaceBtn').addEventListener('click', openFilePicker);
+
+  avatarFile.addEventListener('change', () => {
+    const file = avatarFile.files && avatarFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      avatarImg.src = e.target.result;
+      avatarImg.style.display = 'block';
+      avatarCircle.style.visibility = 'hidden';
+      photoHint.textContent = file.name + ' · tap the camera to change it again';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('removeBtn').addEventListener('click', () => {
+    avatarImg.style.display = 'none';
+    avatarImg.removeAttribute('src');
+    avatarCircle.style.visibility = 'visible';
+    avatarFile.value = '';
+    photoHint.textContent = 'JPEG or PNG · one photo';
+  });
+
+  const logoutDialog = document.getElementById('logoutDialog');
+  document.getElementById('logoutRow').addEventListener('click', () => logoutDialog.hidden = false);
+  document.getElementById('cancelLogout').addEventListener('click', () => logoutDialog.hidden = true);
+  document.getElementById('confirmLogout').addEventListener('click', () => logoutDialog.hidden = true);
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    const btn = document.getElementById('saveBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Saved';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+</script>
+</body>
+</html>
