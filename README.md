@@ -5,6 +5,7 @@
 ![Monorepo](https://img.shields.io/badge/repo-monorepo-blue)
 ![Backend](https://img.shields.io/badge/backend-.NET%2010%20%2F%20ASP.NET%20Core-512BD4)
 ![Mobile](https://img.shields.io/badge/mobile-Flutter%203.44.8-02569B)
+![App version](https://img.shields.io/badge/app-v5.0.1%2B10-brightgreen)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-336791)
 ![License](https://img.shields.io/badge/license-unlicensed-lightgrey)
 
@@ -49,9 +50,11 @@ Your-Space/
 ├── CLAUDE.md                  # Cross-project rules: never blend one project's
 │                               # conventions into the other; each folder is
 │                               # independently governed by its own CLAUDE.md
-├── doc/
-│   └── context/                # Point-in-time engineering audits (dated — see
-│                                # "Documentation & handoffs" below for caveats)
+├── doc/                        # Repo-wide docs — see "Documentation & handoffs" below
+│   ├── context/                   dated point-in-time engineering audits (stale on specifics)
+│   ├── handoffs/                  dated cross-project handoff notes
+│   ├── release-notes/             one folder per shipped version, through v5.0.1+10
+│   └── reports/                   one-off audits (e.g. account-deletion)
 ├── Your-Space-Backend/         # ASP.NET Core solution — see its own README.md
 │   ├── YourSpace.Data/            entities, EF Core configurations, migrations
 │   ├── YourSpace.Repository/       generic repository + UnitOfWork + specifications
@@ -64,7 +67,8 @@ Your-Space/
 └── Your-Space-Mobile/          # Flutter app — see its own README.md
     ├── lib/
     │   ├── core/                    shared infrastructure (DI, networking, routing, theme)
-    │   └── features/                 auth, home, groups, people, events (feature-first, Clean Architecture)
+    │   └── features/                 auth, onboarding, home, groups, people, classification,
+    │                                 events, settings (feature-first, Clean Architecture)
     ├── test/                        mirrors lib/ structure
     ├── assets/translations/          en.json, ar.json (easy_localization)
     ├── doc/handoffs/                 dated engineering handoff notes
@@ -92,12 +96,15 @@ Full dependency lists with every package and version live in each project's own 
 The full-stack feature set, as actually implemented (backend controllers + mobile screens/cubits — not aspirational):
 
 - **Authentication** — register, login, JWT access + rotating refresh tokens, email confirmation via OTP, forgot/reset password, change password. Mobile handles token refresh transparently (`AuthInterceptor`); backend enforces per-IP rate limiting on all auth endpoints.
-- **Groups** — CRUD for contact circles, searchable and paginated.
-- **People** — CRUD for personal contacts, each assigned to a Group.
+- **Onboarding** — first-run onboarding carousel before the app lands on Home.
+- **Groups & sub-groups** — CRUD for contact circles, plus nested sub-groups within a group (`groups/{id}/subgroups`), searchable and paginated.
+- **People** — CRUD for personal contacts, each assigned to a Group, via a multi-step person wizard (basic identity → classification & location → relationships → notes). Includes server-side person search and multiple profile photos per person (`persons/{id}/images`).
+- **Person relationships** — link people to one another with a typed relationship (`persons/{id}/relationships`), editable inline in the wizard.
+- **Location reference data** — a Governorate → City → Neighborhood hierarchy (`governorates`, `governorates/{id}/cities`, `cities/{id}/neighborhoods`), used to tag a person's location and to slice guest lists by area.
 - **Events** — CRUD for occasions being planned, with a live guest-count breakdown (not invited / invited / skipped).
-- **Guest-List / Invitation Planner** — bulk-add People or a whole Group to an Event, per-guest status transitions (invite / skip / revert), and a progress summary per event.
+- **Guest-List / Invitation Planner** — bulk-add to an Event by People, Group, Sub-group, Governorate, City, or Neighborhood; per-guest status transitions (invite / skip / revert); and a progress summary per event.
 - **Reciprocity** — a per-person log of past occasions where *they* invited the user, plus a "reciprocity suggestions" endpoint/screen surfacing contacts who've invited the user before but haven't been added to the current event yet.
-- **User settings** — per-user preference flags (e.g. toggling reciprocity suggestions).
+- **User settings & profile** — per-user preference flags (e.g. toggling reciprocity suggestions), profile edit (name, avatar), and account deletion.
 - **Role-based access control** — `User` / `StandardAdmin` / `SuperAdmin` hierarchy on the backend, with a bootstrap SuperAdmin seeder.
 - **Bilingual (EN/AR) throughout** — every user-facing entity field and every response/validation message on the backend has an Arabic counterpart resolved server-side; the mobile app mirrors this with `easy_localization` and RTL-aware layout primitives end to end.
 
@@ -151,7 +158,7 @@ The two communicate over a single contract: a versioned (`/api/v1/...`) JSON RES
 
 ## API surface
 
-Base path: `/api/v1/...`, Bearer JWT auth, EN/AR via `Accept-Language`. Endpoint groups: `auth`, `groups`, `persons`, `events` (+ nested `events/{id}/guests`), `persons/{id}/occasion-history`, `usersettings`. Full endpoint-by-endpoint tables (methods, routes, DTOs): [Backend API overview](Your-Space-Backend/README.md#api-overview).
+Base path: `/api/v{version}/...` (currently v1), Bearer JWT auth, EN/AR via `Accept-Language`. Endpoint groups: `auth`, `groups` (+ nested `groups/{id}/subgroups`), `persons` (+ nested `persons/{id}/images`, `persons/{id}/relationships`, `persons/{id}/occasion-history`), `events` (+ nested `events/{id}/guests`), `governorates` (+ nested `governorates/{id}/cities` and `cities/{id}/neighborhoods`), `usersettings`. Full endpoint-by-endpoint tables (methods, routes, DTOs): [Backend API overview](Your-Space-Backend/README.md#api-overview).
 
 ## Environment & secrets
 
@@ -162,9 +169,9 @@ Neither project commits real secrets. The backend uses `dotnet user-secrets` loc
 | Project | Framework | What's covered |
 |---|---|---|
 | Backend | xUnit + `NetArchTest` | Unit tests per service method, `WebApplicationFactory` integration tests per controller, architecture/layering assertions |
-| Mobile | `flutter_test` + `mocktail` | 48 test files mirroring `lib/`: router, storage, widgets, and per-feature repository/cubit/screen tests |
+| Mobile | `flutter_test` + `mocktail` | 53 test files mirroring `lib/`: router, storage, widgets, and per-feature repository/cubit/screen tests |
 
-Run each project's suite from inside its own folder — `dotnet test` (backend) / `flutter test` (mobile). Details: [Backend testing](Your-Space-Backend/README.md#testing) / [Mobile testing](Your-Space-Mobile/README.md#testing).
+Run each project's suite from inside its own folder — `dotnet test` (backend) / `flutter test` (mobile). File counts above are `find … -name` counts as of this writing (97 files under `Your-Space-Backend/YourSpace.WebAPI.Tests/`, 53 `*_test.dart` under `Your-Space-Mobile/test/`) and drift over time — treat them as indicative. Details: [Backend testing](Your-Space-Backend/README.md#testing) / [Mobile testing](Your-Space-Mobile/README.md#testing).
 
 ## CI/CD
 
@@ -172,7 +179,14 @@ Run each project's suite from inside its own folder — `dotnet test` (backend) 
 
 ## Documentation & handoffs
 
-Each project keeps dated engineering handoff notes under its own `doc/handoffs/<NNN-feature-name>/`, written at the time a feature landed. The root `doc/context/` folder holds two point-in-time, deeply-verified engineering audits (`project-status.md`, `next-feature-status.md`) — useful for historical context on *why* things are shaped the way they are, but **dated 2026-07-27/28 and already stale on specific claims** (e.g. they describe the mobile app as having no feature code yet, which is no longer true — `lib/features/` is now fully built out per [Mobile features](Your-Space-Mobile/README.md#features)). Treat anything time-sensitive in `doc/` as a historical snapshot, not current state — the two project READMEs and the code itself are the source of truth.
+The repo-root `doc/` folder collects docs that span both projects:
+
+- **`doc/context/`** — two point-in-time, deeply-verified engineering audits (`project-status.md`, `next-feature-status.md`), useful for historical context on *why* things are shaped the way they are, but **dated 2026-07-27/28 and already stale on specific claims** (e.g. they describe the mobile app as having no feature code yet, which is no longer true — `lib/features/` is now fully built out per [Mobile features](Your-Space-Mobile/README.md#features)).
+- **`doc/handoffs/`** — dated cross-project handoff notes (`001-post-launch-feedback/`, `001-sprint-branches-merge/`), written when a body of work changed hands.
+- **`doc/release-notes/`** — one numbered folder per shipped mobile version, `001_v1.0.0+4` through `007_v5.0.1+10`, each holding the Play Store release note (EN + AR) for that version.
+- **`doc/reports/`** — one-off audits (currently `account-deletion-audit-2026-09-01.md`).
+
+Each project *also* keeps its own dated handoff notes under `Your-Space-Backend/doc/handoffs/` and `Your-Space-Mobile/doc/handoffs/`, written at the time a feature landed. Treat anything time-sensitive in any `doc/` folder as a historical snapshot, not current state — the two project READMEs and the code itself are the source of truth.
 
 ## Contributing
 
