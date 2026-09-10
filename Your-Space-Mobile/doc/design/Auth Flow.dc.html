@@ -113,7 +113,7 @@
               <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.lastName }}" value="{{ reg.last }}" on-change="{{ regSetLast }}" error="{{ err.regLast }}" hint-size="100%,84px"></x-import>
             </div>
             <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" placeholder="you@example.com" icon="mail" type="email" dir="ltr" value="{{ reg.email }}" on-change="{{ regSetEmail }}" error="{{ err.regEmail }}" hint-size="100%,84px"></x-import>
-            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phone }}" placeholder="+201234567890" icon="call" type="tel" dir="ltr" value="{{ reg.phone }}" on-change="{{ regSetPhone }}" error="{{ err.regPhone }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phoneOptional }}" placeholder="+201234567890" icon="call" type="tel" dir="ltr" value="{{ reg.phone }}" on-change="{{ regSetPhone }}" error="{{ err.regPhone }}" hint-size="100%,84px"></x-import>
             <div style="display:flex;flex-direction:column;gap:6px">
               <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
               <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.regPw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
@@ -162,7 +162,7 @@
               <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.lastName }}" value="Ahmed" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
             </div>
             <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" icon="mail" type="email" dir="ltr" value="sara@example.com" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
-            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phone }}" icon="call" type="tel" dir="ltr" value="+201234567890" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phoneOptional }}" icon="call" type="tel" dir="ltr" value="+201234567890" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
             <div style="display:flex;flex-direction:column;gap:6px">
               <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
               <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:1.5px solid transparent;padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box">
@@ -186,6 +186,62 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">2c · Register — with gender field (current build)</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 16px;overflow-y:auto">
+          <div dir="ltr" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:28px 0 6px"><img src="assets/logo.svg" width="44" height="44" alt="Your Space mark"><span style="font:800 24px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></div>
+          <div style="display:flex;flex-direction:column;gap:2px;text-align:center;padding:10px 0 22px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.regTitle }}</span>
+            <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.regBody }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.firstName }}" value="{{ reg.first }}" on-change="{{ regSetFirst }}" error="{{ err.regFirst }}" hint-size="100%,84px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.lastName }}" value="{{ reg.last }}" on-change="{{ regSetLast }}" error="{{ err.regLast }}" hint-size="100%,84px"></x-import>
+            </div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.email }}" placeholder="you@example.com" icon="mail" type="email" dir="ltr" value="{{ reg.email }}" on-change="{{ regSetEmail }}" error="{{ err.regEmail }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phoneOptional }}" placeholder="+201234567890" icon="call" type="tel" dir="ltr" value="{{ reg.phone }}" on-change="{{ regSetPhone }}" error="{{ err.regPhone }}" hint-size="100%,84px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.genderOptional }}</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" icon="male" selected="{{ regGenderIsMale }}" on-click="{{ regSetMale }}" hint-size="104px,36px"><span style="white-space:nowrap">{{ t.genderMale }}</span></x-import>
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" icon="female" selected="{{ regGenderIsFemale }}" on-click="{{ regSetFemale }}" hint-size="104px,36px"><span style="white-space:nowrap">{{ t.genderFemale }}</span></x-import>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.password }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.regPw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.regPw.iconColor }}">lock</span>
+                <input type="{{ f.regPw.type }}" placeholder="••••••••" value="{{ f.regPw.v }}" data-k="regPw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="regPw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.regPw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.regPw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.regPw.error }}</span></sc-if>
+              <sc-if value="{{ f.regPw.showHint }}" hint-placeholder-val="{{ true }}"><span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.pwRule }}</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.confirmPassword }}</span>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--input-fill);border-radius:var(--radius-input);border:{{ f.regCpw.border }};padding-inline-start:16px;padding-inline-end:6px;min-height:52px;box-sizing:border-box;transition:border-color .15s">
+                <span class="msr" style="font-size:20px;color:{{ f.regCpw.iconColor }}">lock</span>
+                <input type="{{ f.regCpw.type }}" placeholder="••••••••" value="{{ f.regCpw.v }}" data-k="regCpw" onChange="{{ pwChange }}" onFocus="{{ pwFocus }}" onBlur="{{ pwBlur }}" style="flex:1;border:none;outline:none;background:transparent;font:var(--text-body-md);font-family:var(--font-body);color:var(--text-primary);padding:0;min-width:0">
+                <button type="button" data-k="regCpw" onClick="{{ pwToggle }}" aria-label="Show or hide password" style="width:44px;height:44px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><span class="msr" style="font-size:22px;color:var(--text-hint);pointer-events:none">{{ f.regCpw.eye }}</span></button>
+              </div>
+              <sc-if value="{{ f.regCpw.hasError }}" hint-placeholder-val="{{ false }}"><span style="font:var(--text-body-sm);color:var(--color-error)">{{ f.regCpw.error }}</span></sc-if>
+            </div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;padding-bottom:20px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ regSubmit }}" hint-size="100%,52px">
+                <sc-if value="{{ busyReg }}" hint-placeholder-val="{{ false }}"><span style="width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ys-spin .8s linear infinite;display:inline-block"></span></sc-if>
+                <sc-if value="{{ notBusyReg }}" hint-placeholder-val="{{ true }}">{{ t.createAccount }}</sc-if>
+              </x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,40px"><span style="color:var(--text-secondary);font-weight:400">{{ t.haveAccount }}</span> {{ t.logIn }}</x-import>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ net.reg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="error" message="{{ t.netMsg }}" action-label="{{ t.retry }}" on-action="{{ regSubmit }}" hint-size="100%,52px"></x-import></div></sc-if>
+        <sc-if value="{{ done.reg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:20px;z-index:5"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Snackbar" tone="dark" message="{{ t.regDoneMsg }}" hint-size="100%,52px"></x-import></div></sc-if>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -217,6 +273,7 @@
             <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 12px;text-align:center">
               <span style="width:72px;height:72px;border-radius:50%;background:var(--tint-success);display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:34px;color:var(--color-success)">check</span></span>
               <span style="font:var(--text-title-md);color:var(--text-primary)">{{ t.otpDoneTitle }}</span>
+              <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.otpDoneMsg }}</span>
               <div style="border:1.5px dashed var(--divider);border-radius:14px;padding:12px 16px;font:var(--text-body-sm);color:var(--text-hint);max-width:300px" dir="ltr">→ Routes to Home (verified accounts) — outside this flow.</div>
             </div>
           </sc-if>
@@ -399,7 +456,7 @@
 &quot;simulateNetworkError&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
 class Component extends DCLogic {
   state = {
-    reg:{first:'',last:'',email:'',phone:''}, fpEmail:'',
+    reg:{first:'',last:'',email:'',phone:'',gender:null}, fpEmail:'',
     login:{email:''}, remember:false, loginView:'form',
     pw:{loginPw:'',regPw:'',regCpw:'',rpPw:'',rpCpw:'',cpCur:'',cpPw:'',cpCpw:''},
     show:{}, err:{}, focus:null,
@@ -412,34 +469,34 @@ class Component extends DCLogic {
   strings(){
     const ar=(this.props.language??'English')==='Arabic';
     return ar?{
-      firstName:'الاسم الأول',lastName:'اسم العائلة',email:'البريد الإلكتروني',phone:'رقم الهاتف',
+      firstName:'الاسم الأول',lastName:'اسم العائلة',email:'البريد الإلكتروني',phone:'رقم الهاتف',phoneOptional:'رقم الهاتف (اختياري)',genderOptional:'الجنس (اختياري)',genderMale:'ذكر',genderFemale:'أنثى',
       password:'كلمة المرور',confirmPassword:'تأكيد كلمة المرور',newPassword:'كلمة المرور الجديدة',confirmNewPassword:'تأكيد كلمة المرور الجديدة',currentPassword:'كلمة المرور الحالية',
       pwRule:'٨ أحرف على الأقل، وتشمل حرفًا كبيرًا وصغيرًا ورقمًا ورمزًا',
       regTitle:'أنشئ حسابك',regBody:'خطط مناسباتك وتابع أهلك وأصحابك في مكان واحد',createAccount:'إنشاء حساب',haveAccount:'لديك حساب بالفعل؟',logIn:'تسجيل الدخول',
-      otpTitle:'أكّد بريدك الإلكتروني',otpBody:'أدخل الرمز المكوّن من ٦ أرقام الذي أرسلناه إلى',verify:'تأكيد',resend:'إعادة إرسال الرمز',resendIn:'إعادة الإرسال بعد',otpDoneTitle:'تم تأكيد بريدك',
+      otpTitle:'أكّد بريدك الإلكتروني',otpBody:'أدخل الرمز المكوّن من ٦ أرقام الذي أرسلناه إلى',verify:'تأكيد',resend:'إعادة إرسال الرمز',resendIn:'إعادة الإرسال بعد',otpDoneTitle:'تم تأكيد بريدك',otpDoneMsg:'تم تأكيد بريدك. يمكنك تسجيل الدخول الآن.',
       fpTitle:'نسيت كلمة المرور؟',fpBody:'أدخل بريدك الإلكتروني وسنرسل لك رمز إعادة التعيين',sendReset:'إرسال رمز إعادة التعيين',fpSent:'إذا كان هذا البريد مسجلاً لدينا، فرمز إعادة التعيين في طريقه إليك. تفقد بريدك.',
       rpTitle:'أعد تعيين كلمة المرور',rpBody:'أدخل الرمز الذي أرسلناه واختر كلمة مرور جديدة',resetPw:'إعادة تعيين كلمة المرور',
       cpTitle:'تغيير كلمة المرور',updatePw:'تحديث كلمة المرور',
-      reqFirst:'أدخل اسمك الأول',reqLast:'أدخل اسم العائلة',badEmail:'أدخل بريدًا إلكترونيًا صحيحًا',badPhone:'أدخل رقم هاتف صحيحًا، مثل ‎+201234567890',pwMismatch:'كلمتا المرور غير متطابقتين',emailExists:'يوجد حساب بهذا البريد الإلكتروني بالفعل',
+      reqFirst:'أدخل اسمك الأول',reqLast:'أدخل اسم العائلة',badEmail:'أدخل بريدًا إلكترونيًا صحيحًا',badPhone:'أدخل رقم هاتف صحيحًا، مثل ‎+201234567890',pwMismatch:'كلمتا المرور غير متطابقتين',pwSameAsCurrent:'اختر كلمة مرور مختلفة عن كلمتك الحالية',emailExists:'يوجد حساب بهذا البريد الإلكتروني بالفعل',
       otpIncomplete:'أدخل الرمز المكوّن من ٦ أرقام',otpWrong:'رمز غير صحيح — تبقى {n} محاولات',otpLocked:'محاولات كثيرة. اطلب رمزًا جديدًا.',otpBad:'الرمز غير صحيح أو منتهي الصلاحية',curWrong:'كلمة المرور الحالية غير صحيحة',
       netMsg:'حدث خطأ ما. تحقق من اتصالك وحاول مرة أخرى.',retry:'إعادة المحاولة',
-      regDoneMsg:'تم إنشاء حسابك! التالي: تأكيد بريدك الإلكتروني.',rpDoneMsg:'تمت إعادة تعيين كلمة المرور — سجّل الدخول بكلمتك الجديدة.',cpDoneMsg:'تم تحديث كلمة المرور.',
+      regDoneMsg:'تم إنشاء حسابك! التالي: تأكيد بريدك الإلكتروني.',rpDoneMsg:'تمت إعادة تعيين كلمة المرور — سجّل الدخول بكلمتك الجديدة.',cpDoneMsg:'تم تحديث كلمة المرور. يرجى تسجيل الدخول مرة أخرى.',
       remember:'تذكرني',forgot:'نسيت كلمة المرور؟',noAccount:'ليس لديك حساب؟',signUp:'أنشئ حسابًا',
       loginError:'البريد الإلكتروني أو كلمة المرور غير صحيحة',loginDoneMsg:'أهلاً بعودتك! هنا تُفتح الشاشة الرئيسية.',
       unvTitle:'أكّد بريدك الإلكتروني',unvBody:'حسابك لم يتم تأكيده بعد.',backLogin:'العودة لتسجيل الدخول'
     }:{
-      firstName:'First name',lastName:'Last name',email:'Email',phone:'Phone number',
+      firstName:'First name',lastName:'Last name',email:'Email',phone:'Phone number',phoneOptional:'Phone number (optional)',genderOptional:'Gender (optional)',genderMale:'Male',genderFemale:'Female',
       password:'Password',confirmPassword:'Confirm password',newPassword:'New password',confirmNewPassword:'Confirm new password',currentPassword:'Current password',
       pwRule:'At least 8 characters, with an uppercase and lowercase letter, a number and a symbol',
       regTitle:'Create your account',regBody:'Plan events and keep up with your people',createAccount:'Create account',haveAccount:'Already have an account?',logIn:'Log in',
-      otpTitle:'Confirm your email',otpBody:'Enter the 6-digit code we sent to',verify:'Verify',resend:'Resend code',resendIn:'Resend code in',otpDoneTitle:'Email confirmed',
+      otpTitle:'Confirm your email',otpBody:'Enter the 6-digit code we sent to',verify:'Verify',resend:'Resend code',resendIn:'Resend code in',otpDoneTitle:'Email confirmed',otpDoneMsg:'Email confirmed. Please log in.',
       fpTitle:'Forgot your password?',fpBody:"Enter your email and we'll send you a reset code",sendReset:'Send reset code',fpSent:"If that email is registered, a reset code is on its way. Check your inbox.",
       rpTitle:'Reset your password',rpBody:'Enter the code we sent and choose a new password',resetPw:'Reset password',
       cpTitle:'Change password',updatePw:'Update password',
-      reqFirst:'Enter your first name',reqLast:'Enter your last name',badEmail:'Enter a valid email',badPhone:'Enter a valid phone number, e.g. +201234567890',pwMismatch:"Passwords don't match",emailExists:'An account with this email already exists',
+      reqFirst:'Enter your first name',reqLast:'Enter your last name',badEmail:'Enter a valid email',badPhone:'Enter a valid phone number, e.g. +201234567890',pwMismatch:"Passwords don't match",pwSameAsCurrent:'Choose a password different from your current one',emailExists:'An account with this email already exists',
       otpIncomplete:'Enter the 6-digit code',otpWrong:'Incorrect code — {n} attempts left',otpLocked:'Too many attempts. Request a new code.',otpBad:'Incorrect or expired code',curWrong:'Your current password is incorrect',
       netMsg:'Something went wrong. Check your connection and try again.',retry:'Retry',
-      regDoneMsg:'Account created! Next: confirm your email.',rpDoneMsg:'Password reset — log in with your new password.',cpDoneMsg:'Password updated.',
+      regDoneMsg:'Account created! Next: confirm your email.',rpDoneMsg:'Password reset — log in with your new password.',cpDoneMsg:'Password updated. Please log in again.',
       remember:'Remember me',forgot:'Forgot password?',noAccount:"Don't have an account?",signUp:'Sign up',
       loginError:'Incorrect email or password',loginDoneMsg:'Welcome back! This is where Home would load.',
       unvTitle:'Confirm your email',unvBody:"Your account isn't verified yet.",backLogin:'Back to log in'
@@ -519,7 +576,7 @@ class Component extends DCLogic {
   cpSubmit(){
     const T=this.strings(),{pw}=this.state,e={};
     e.cpCur=pw.cpCur?null:T.curWrong;
-    e.cpPw=this.strong(pw.cpPw)?null:T.pwRule;
+    e.cpPw=!this.strong(pw.cpPw)?T.pwRule:(pw.cpCur&&pw.cpPw===pw.cpCur?T.pwSameAsCurrent:null);
     e.cpCpw=(pw.cpCpw&&pw.cpCpw===pw.cpPw)?null:T.pwMismatch;
     this.setErrs(e);
     if(Object.values(e).some(Boolean)) return;
@@ -572,6 +629,9 @@ class Component extends DCLogic {
       regSetLast:v=>this.setState(st=>({reg:{...st.reg,last:v},err:{...st.err,regLast:null}})),
       regSetEmail:v=>this.setState(st=>({reg:{...st.reg,email:v},err:{...st.err,regEmail:null}})),
       regSetPhone:v=>this.setState(st=>({reg:{...st.reg,phone:v},err:{...st.err,regPhone:null}})),
+      regGenderIsMale:s.reg.gender==='male', regGenderIsFemale:s.reg.gender==='female',
+      regSetMale:()=>this.setState(st=>({reg:{...st.reg,gender:'male'}})),
+      regSetFemale:()=>this.setState(st=>({reg:{...st.reg,gender:'female'}})),
       fpSetEmail:v=>this.setState(st=>({fpEmail:v,err:{...st.err,fpEmail:null}})),
       pwChange:e=>{const k=e.currentTarget.dataset.k,v=e.currentTarget.value;this.setState(st=>({pw:{...st.pw,[k]:v},err:{...st.err,[k]:null,...(k==='loginPw'?{login:null}:{})}}));},
       pwFocus:e=>this.setState({focus:e.currentTarget.dataset.k}),

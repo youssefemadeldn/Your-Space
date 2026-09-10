@@ -428,6 +428,186 @@
   </div>
 
   <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">3 (current build) · Add / edit person — 4-step wizard, replaces the single sheet above</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Step 1 · Basic identity + photos</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addPerson }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:4px 16px 14px;background:var(--surface);display:flex;flex-direction:column;gap:10px">
+            <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.wizStepEyebrow1 }}</span>
+            <div style="display:flex;align-items:center">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">1</span>
+              <span style="flex:1;height:2px;background:var(--divider)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--input-fill);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">2</span>
+              <span style="flex:1;height:2px;background:var(--divider)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--input-fill);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">3</span>
+              <span style="flex:1;height:2px;background:var(--divider)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--input-fill);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">4</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.wizName }}" placeholder="{{ t.namePh }}" icon="person" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.wizPhone1 }}" placeholder="+201234567890" icon="call" type="tel" dir="ltr" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.wizPhone2 }}" placeholder="+201234567890" icon="call" type="tel" dir="ltr" hint="{{ t.optional }}" on-change="{{ noop }}" hint-size="100%,100px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font:var(--text-label-lg);color:var(--text-primary)">{{ t.wizGender }}</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" icon="male" on-click="{{ noop }}" hint-size="104px,36px"><span style="white-space:nowrap">{{ t.genderMale }}</span></x-import>
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" icon="female" on-click="{{ noop }}" hint-size="104px,36px"><span style="white-space:nowrap">{{ t.genderFemale }}</span></x-import>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font:var(--text-title-md);color:var(--text-primary)">{{ t.wizPhotos }}</span>
+              <span dir="ltr" style="font:var(--text-body-md);color:var(--text-secondary)">0 / 6</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <div style="aspect-ratio:1;border-radius:16px;background:var(--input-fill);border:1.5px dashed var(--brand-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                <span class="msr" style="font-size:22px;color:var(--brand-primary)">add_a_photo</span>
+                <span style="font:var(--text-label-sm);color:var(--brand-primary)">{{ t.wizAddPhoto }}</span>
+              </div>
+            </div>
+            <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ t.wizPhotosHint }}</span>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1;visibility:hidden"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" hint-size="100%,52px">{{ t.back }}</x-import></div>
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.next }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Step 2 · Classification &amp; location · cascading selects</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addPerson }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:4px 16px 14px;background:var(--surface);display:flex;flex-direction:column;gap:10px">
+            <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.wizStepEyebrow2 }}</span>
+            <div style="display:flex;align-items:center">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:15px">check</span></span>
+              <span style="flex:1;height:2px;background:var(--brand-primary)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0;box-shadow:0 0 0 4px var(--brand-red-soft)">2</span>
+              <span style="flex:1;height:2px;background:var(--divider)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--input-fill);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">3</span>
+              <span style="flex:1;height:2px;background:var(--divider)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--input-fill);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">4</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <span style="font:var(--text-label-lg);color:var(--text-secondary)">{{ t.wizClassification }}</span>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.wizGroup }}" placeholder="{{ t.wizGroupPh }}" options="{{ groupOptions }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.wizSubGroup }}" placeholder="{{ t.wizPickGroupFirst }}" options="{{ groupOptions }}" disabled="{{ true }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <span style="font:var(--text-label-lg);color:var(--text-secondary);margin-top:6px">{{ t.wizLocationSection }}</span>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.wizGovernorate }}" placeholder="{{ t.wizGovernoratePh }}" options="{{ groupOptions }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.wizCity }}" placeholder="{{ t.wizPickGovFirst }}" options="{{ groupOptions }}" disabled="{{ true }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.wizNeighborhood }}" placeholder="{{ t.wizPickCityFirst }}" options="{{ groupOptions }}" disabled="{{ true }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ t.wizLocationHint }}</span>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.back }}</x-import></div>
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.next }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Step 3 · Family &amp; relationships · repeatable rows</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addPerson }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:4px 16px 14px;background:var(--surface);display:flex;flex-direction:column;gap:10px">
+            <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.wizStepEyebrow3 }}</span>
+            <div style="display:flex;align-items:center">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:15px">check</span></span>
+              <span style="flex:1;height:2px;background:var(--brand-primary)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:15px">check</span></span>
+              <span style="flex:1;height:2px;background:var(--brand-primary)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0;box-shadow:0 0 0 4px var(--brand-red-soft)">3</span>
+              <span style="flex:1;height:2px;background:var(--divider)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--input-fill);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0">4</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <span style="font:var(--text-label-lg);color:var(--text-secondary)">{{ t.wizRelSection }}</span>
+            <div style="background:var(--input-fill);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.wizFamilyMember1 }}</span>
+                <span class="msr" style="font-size:18px;color:var(--text-secondary)">close</span>
+              </div>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" placeholder="{{ t.wizRelTypePh }}" options="{{ relationTypes }}" on-change="{{ noop }}" hint-size="100%,52px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ t.searchPeople }}" icon="search" on-change="{{ noop }}" hint-size="100%,52px"></x-import>
+            </div>
+            <div style="border:1.5px solid var(--brand-primary);border-radius:20px;padding:15px;display:flex;align-items:center;justify-content:center;gap:6px">
+              <span class="msr" style="font-size:20px;color:var(--brand-primary)">add</span>
+              <span style="font:var(--text-title-md);color:var(--brand-primary)">{{ t.wizAddFamily }}</span>
+            </div>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.back }}</x-import></div>
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.next }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Step 4 · Notes · final step, CTA becomes Save person</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addPerson }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:4px 16px 14px;background:var(--surface);display:flex;flex-direction:column;gap:10px">
+            <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.wizStepEyebrow4 }}</span>
+            <div style="display:flex;align-items:center">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:15px">check</span></span>
+              <span style="flex:1;height:2px;background:var(--brand-primary)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:15px">check</span></span>
+              <span style="flex:1;height:2px;background:var(--brand-primary)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:15px">check</span></span>
+              <span style="flex:1;height:2px;background:var(--brand-primary)"></span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--brand-primary);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px var(--font-micro);flex-shrink:0;box-shadow:0 0 0 4px var(--brand-red-soft)">4</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:14px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.notes }}" placeholder="{{ t.wizNotesHint }}" multiline="{{ true }}" hint="{{ t.optional }}" on-change="{{ noop }}" hint-size="100%,160px"></x-import>
+          </div>
+          <div style="padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -4px 24px rgba(0,0,0,.06);display:flex;gap:12px">
+            <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.back }}</x-import></div>
+            <div style="flex:1.4"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.savePerson }}</x-import></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">People list · filters sheet (subgroup + location)</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.people }}" hint-size="100%,56px"></x-import>
+          <div style="flex:1;background:var(--surface)"></div>
+          <div style="position:absolute;inset:0;background:rgba(11,11,11,.42);z-index:4"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-radius:28px 28px 0 0;box-shadow:var(--shadow-soft-lg);padding:12px 20px 24px;display:flex;flex-direction:column;gap:14px">
+            <span style="width:40px;height:4px;border-radius:2px;background:var(--divider);align-self:center"></span>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font:var(--text-title-lg);color:var(--text-primary)">{{ t.filtersTitle }}</span>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" on-click="{{ noop }}" hint-size="90px,40px">{{ t.filtersClearAll }}</x-import>
+            </div>
+            <span style="font:var(--text-label-lg);color:var(--text-secondary)">{{ t.filtersSubGroup }}</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Chip" on-click="{{ noop }}" hint-size="120px,36px"><span style="white-space:nowrap">{{ t.wizPickGroupFirst }}</span></x-import>
+            </div>
+            <span style="font:var(--text-label-lg);color:var(--text-secondary)">{{ t.filtersLocation }}</span>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.wizGovernorate }}" placeholder="{{ t.filtersAllGov }}" options="{{ groupOptions }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.filtersCity }}" placeholder="{{ t.wizPickGovFirst }}" options="{{ groupOptions }}" disabled="{{ true }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Select" label="{{ t.filtersNb }}" placeholder="{{ t.wizPickCityFirst }}" options="{{ groupOptions }}" disabled="{{ true }}" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.done }}</x-import>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
     <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">4 · Person details &amp; occasion history</span>
     <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
 
@@ -581,16 +761,16 @@ class Component extends DCLogic {
       eventsSub:'خطّط لمناسبة وتابع دعواتك',
       statGroups:'مجموعات', statPeople:'أشخاص',
       emptyHomeTitle:'ابدأ بمجموعة واحدة',
-      emptyHomeBody:'العائلة، العمل، الجيران — المجموعة مجرد طريقة لتجمع الناس معًا. أنشئ أول مجموعة وابدأ بإضافة من تدعوهم.',
-      emptyHomeCta:'أنشئ أول مجموعة',
-      searchGroups:'ابحث في المجموعات',
+      emptyHomeBody:'تساعدك المجموعات على تنظيم من هو من — العائلة، الأصدقاء، العمل، الجيران.',
+      emptyHomeCta:'أنشئ مجموعتك الأولى',
+      searchGroups:'ابحث عن مجموعة',
       g1:'العائلة المقرّبة', g2:'عائلة ماما', g3:'الجيران', g4:'أصدقاء الجامعة', g5:'العمل', g6:'كورة نهاية الأسبوع',
       groupsEmptyTitle:'لا توجد مجموعات بعد',
       groupsEmptyBody:'المجموعات تجمع الناس في حياتك — العائلة المقرّبة، العمل، الجيران. أضف أول مجموعة وكل ما بعدها يصبح أسهل.',
       addGroup:'إضافة مجموعة',
       searchPeople:'ابحث عن شخص', chipAll:'الكل', allGroups:'كل المجموعات',
-      invitedYou:'تمت دعوتك',
-      peopleEmptyTitle:'لا أحد في الجيران بعد',
+      invitedYou:'دعاك من قبل',
+      peopleEmptyTitle:'لا يوجد أحد في هذه المجموعة بعد',
       peopleEmptyBody:'أضف من تودّ دعوتهم من هذه المجموعة — يمكنك نقلهم إلى مجموعة أخرى في أي وقت.',
       addPerson:'إضافة شخص',
       newGroup:'مجموعة جديدة', editGroup:'تعديل المجموعة', groupName:'اسم المجموعة', groupNamePh:'مثال: العائلة المقرّبة',
@@ -600,17 +780,33 @@ class Component extends DCLogic {
       noGroupsMsg:'كل شخص ينتمي إلى مجموعة، ولا توجد لديك مجموعة بعد. أنشئ مجموعة أولًا — لن يستغرق الأمر سوى لحظة.',
       createAGroup:'إنشاء مجموعة',
       occasions:'المناسبات', addOccasion:'إضافة مناسبة', addOccTitle:'إضافة مناسبة',
-      recipTitle:'تمت دعوتك من Sara من قبل', recipBody:'من الجيد تذكّر ذلك عند التخطيط لمناسبتك القادمة.',
+      recipTitle:'لقد دعاك Sara من قبل', recipBody:'من الجيد تذكّر ذلك عند التخطيط لمناسبتك القادمة.',
       invitedWhatsApp:'تمت دعوتك · واتساب', invitedInPerson:'تمت دعوتك · شخصيًا', notInvited:'لم تتم دعوتك',
       occ1:'حفل الخطوبة · 14 مارس 2026', occ1Notes:'وصلت الدعوة في مجموعة العائلة، وتم السؤال مرتين إن كنا سنحضر.',
       occ2:'غداء العيد · 30 مارس 2025', occ3:'حفل زفاف في العائلة · 8 نوفمبر 2024', occ3Notes:'زفاف صغير للعائلة فقط، ولا مشكلة في ذلك.',
-      emptyOccTitle:'لا شيء مسجّل مع Omar بعد', emptyOccBody:'عندما تتم دعوتك من Omar إلى مناسبة — أو لا تتم — سجّلها هنا. هذا ما يخبرك بمن تدين له بدعوة.',
+      emptyOccTitle:'لا يوجد شيء مسجّل مع Omar بعد', emptyOccBody:'عندما تتم دعوتك من Omar إلى مناسبة — أو لا تتم — سجّلها هنا. هذا ما يخبرك بمن تدين له بدعوة.',
       invitedQ:'هل تمت دعوتك من Sara؟', methodQ:'كيف تمت الدعوة؟', toggleOffHint:'شغّل هذا الخيار لتحديد كيف تمت الدعوة.',
-      whatsapp:'واتساب', phoneCall:'اتصال هاتفي', inPerson:'شخصيًا',
-      occasion:'المناسبة', occPh:'مثال: حفل خطوبة', occVal:'حفل الخطوبة', occPh2:'مثال: حفل زفاف في العائلة',
+      whatsapp:'واتساب', phoneCall:'مكالمة هاتفية', inPerson:'شخصيًا',
+      occasion:'اسم المناسبة', occPh:'مثال: حفل خطوبة', occVal:'حفل الخطوبة', occPh2:'مثال: حفل زفاف في العائلة',
       hint20:'20 / 200 · اختياري', hint0:'0 / 200 · اختياري',
-      whenQ:'متى كانت؟', pickDate:'اختر تاريخًا', dateVal:'14 مارس 2026', dateHint:'اختياري · لا يمكن أن يكون في المستقبل',
-      notes:'ملاحظات', notesPh:'أي شيء تودّ تذكّره', optional:'اختياري', save:'حفظ'
+      whenQ:'التاريخ', pickDate:'اختر تاريخًا', dateVal:'14 مارس 2026', dateHint:'لا يمكن أن يكون في المستقبل',
+      notes:'ملاحظات', notesPh:'أي شيء تودّ تذكّره', optional:'اختياري', save:'حفظ',
+      back:'رجوع', next:'التالي', done:'تم',
+      wizStepEyebrow1:'الخطوة ١ من ٤ · البيانات الأساسية', wizStepEyebrow2:'الخطوة ٢ من ٤ · التصنيف والموقع', wizStepEyebrow3:'الخطوة ٣ من ٤ · العائلة والعلاقات', wizStepEyebrow4:'الخطوة ٤ من ٤ · ملاحظات',
+      wizName:'الاسم', wizPhone1:'رقم الهاتف ١', wizPhone2:'رقم الهاتف ٢',
+      wizGender:'الجنس', genderMale:'ذكر', genderFemale:'أنثى',
+      wizPhotos:'الصور', wizPhotosHint:'أضف حتى ٦ صور. اضغط على صورة لجعلها الصورة الأساسية.', wizAddPhoto:'إضافة صورة', wizPrimary:'أساسية',
+      wizClassification:'التصنيف', wizLocationSection:'الموقع',
+      wizGroup:'المجموعة', wizGroupPh:'اختر مجموعة', wizAddGroup:'إضافة مجموعة',
+      wizSubGroup:'المجموعة الفرعية (اختياري)', wizPickGroupFirst:'اختر مجموعة أولاً',
+      wizGovernorate:'المحافظة', wizGovernoratePh:'اختر محافظة',
+      wizCity:'المدينة (اختياري)', wizPickGovFirst:'اختر محافظة أولاً',
+      wizNeighborhood:'الحي (اختياري)', wizPickCityFirst:'اختر مدينة أولاً',
+      wizLocationHint:'المحافظة فقط مطلوبة — المدينة والحي يساعدان على تحديد الموقع لاحقًا.',
+      wizRelSection:'العائلة والعلاقات', wizFamilyMember1:'فرد العائلة ١', wizRelTypePh:'اختر نوع العلاقة', wizAddFamily:'إضافة فرد من العائلة',
+      wizNotesHint:'أي شيء يستحق أن تتذكره عن هذا الشخص',
+      filtersTitle:'الفلاتر', filtersClearAll:'مسح الكل', filtersLocation:'الموقع', filtersSubGroup:'المجموعة الفرعية', filtersCity:'المدينة', filtersNb:'الحي',
+      filtersAllGov:'كل المحافظات', filtersAllCities:'كل المدن', filtersAllNb:'كل الأحياء'
     } : {
       hi:'Hi Nour', hiSubFull:"Here's everyone you're keeping close.", hiSubEmpty:"Let's get your people in one place.",
       home:'Home', groups:'Groups', people:'People', events:'Events', soon:'Soon',
@@ -618,7 +814,7 @@ class Component extends DCLogic {
       eventsSub:'Plan an occasion and track your invites',
       statGroups:'Groups', statPeople:'People',
       emptyHomeTitle:'Start with one group',
-      emptyHomeBody:"Family, work, the neighbours — a group is just a way to keep people together. Make your first one and you can start adding the people you'd invite.",
+      emptyHomeBody:"Groups help you organize who's who — family, friends, work, neighbors.",
       emptyHomeCta:'Create your first group',
       searchGroups:'Search groups',
       g1:'Close family', g2:"Mum's side", g3:'Neighbours', g4:'University friends', g5:'Work', g6:'Weekend football',
@@ -627,7 +823,7 @@ class Component extends DCLogic {
       addGroup:'Add group',
       searchPeople:'Search people', chipAll:'All', allGroups:'All groups',
       invitedYou:'Invited you',
-      peopleEmptyTitle:'Nobody in Neighbours yet',
+      peopleEmptyTitle:'Nobody in this group yet',
       peopleEmptyBody:"Add the people you'd want to invite from this group — you can always move them to another group later.",
       addPerson:'Add person',
       newGroup:'New group', editGroup:'Edit group', groupName:'Group name', groupNamePh:'e.g. Close family',
@@ -636,7 +832,7 @@ class Component extends DCLogic {
       phoneHintOpt:'Optional · international format', group:'Group', chooseGroup:'Choose a group',
       noGroupsMsg:"Everyone belongs to a group, and you don't have one yet. Make a group first — it takes a second.",
       createAGroup:'Create a group',
-      occasions:'Occasions', addOccasion:'Add occasion', addOccTitle:'Add an occasion',
+      occasions:'Occasions', addOccasion:'Add occasion', addOccTitle:'Add occasion',
       recipTitle:'You have been invited by Sara before', recipBody:"Worth remembering next time you're planning something.",
       invitedWhatsApp:'You were invited · WhatsApp', invitedInPerson:'You were invited · In person', notInvited:'You were not invited',
       occ1:'Engagement party · 14 Mar 2026', occ1Notes:'The invite came in the family group, asked twice if we were coming.',
@@ -645,10 +841,26 @@ class Component extends DCLogic {
       emptyOccBody:"When you're invited to something by Omar — or you're not — jot it down here. It's what tells you who you owe an invite.",
       invitedQ:'Were you invited by Sara?', methodQ:'How was the invite sent?', toggleOffHint:'Turn this on to say how the invite was sent.',
       whatsapp:'WhatsApp', phoneCall:'Phone call', inPerson:'In person',
-      occasion:'Occasion', occPh:'e.g. Engagement party', occVal:'Engagement party', occPh2:'e.g. A wedding in the family',
+      occasion:'Occasion name', occPh:'e.g. Engagement party', occVal:'Engagement party', occPh2:'e.g. A wedding in the family',
       hint20:'20 / 200 · optional', hint0:'0 / 200 · optional',
-      whenQ:'When was it?', pickDate:'Pick a date', dateVal:'14 Mar 2026', dateHint:"Optional · can't be in the future",
-      notes:'Notes', notesPh:"Anything you'd want to remember", optional:'Optional', save:'Save'
+      whenQ:'Date', pickDate:'Pick a date', dateVal:'14 Mar 2026', dateHint:"Can't be in the future",
+      notes:'Notes', notesPh:"Anything you'd want to remember", optional:'Optional', save:'Save',
+      back:'Back', next:'Next', done:'Done',
+      wizStepEyebrow1:'Step 1 of 4 · Basic Identity', wizStepEyebrow2:'Step 2 of 4 · Classification & Location', wizStepEyebrow3:'Step 3 of 4 · Family & Relationships', wizStepEyebrow4:'Step 4 of 4 · Notes',
+      wizName:'Name', wizPhone1:'Phone 1', wizPhone2:'Phone 2',
+      wizGender:'Gender', genderMale:'Male', genderFemale:'Female',
+      wizPhotos:'Photos', wizPhotosHint:'Add up to 6 photos. Tap a photo to make it the primary one.', wizAddPhoto:'Add photo', wizPrimary:'Primary',
+      wizClassification:'Classification', wizLocationSection:'Location',
+      wizGroup:'Group', wizGroupPh:'Select a group', wizAddGroup:'Add group',
+      wizSubGroup:'Subgroup (optional)', wizPickGroupFirst:'Pick a group first',
+      wizGovernorate:'Governorate', wizGovernoratePh:'Select a governorate',
+      wizCity:'City (optional)', wizPickGovFirst:'Pick a governorate first',
+      wizNeighborhood:'Neighborhood (optional)', wizPickCityFirst:'Pick a city first',
+      wizLocationHint:'Only the governorate is required — city and neighborhood help narrow things down later.',
+      wizRelSection:'Family & relationships', wizFamilyMember1:'Family member 1', wizRelTypePh:'Select a relationship', wizAddFamily:'Add family member',
+      wizNotesHint:'Anything worth remembering about this person',
+      filtersTitle:'Filters', filtersClearAll:'Clear all', filtersLocation:'Location', filtersSubGroup:'Subgroup', filtersCity:'City', filtersNb:'Neighborhood',
+      filtersAllGov:'All governorates', filtersAllCities:'All cities', filtersAllNb:'All neighborhoods'
     };
     return {
       t, dir: ar ? 'rtl' : 'ltr',
@@ -662,6 +874,7 @@ class Component extends DCLogic {
       ],
       n0:0, n1:1, n2:2,
       groupOptions:[t.g1, t.g5, t.g3, t.g4],
+      relationTypes: ar ? ['أخت','أخ','أم','أب','زوجة','زوج','ابن','ابنة'] : ['Sister','Brother','Mother','Father','Wife','Husband','Son','Daughter'],
       noop:()=>{}
     };
   }

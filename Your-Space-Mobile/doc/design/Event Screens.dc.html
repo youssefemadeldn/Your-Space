@@ -442,6 +442,38 @@
   </div>
 
   <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">5 (current build) · Add guests — 6 tabs: People / Group / Sub-group / Governorate / City / Neighborhood</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">By-governorate tab · same one-tap-add pattern, now across all six dimensions</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ t.addGuestsTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:8px 16px 0;background:var(--surface);overflow-x:auto"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Tabs" tabs="{{ tabs6 }}" active="{{ 3 }}" on-select="{{ noop }}" hint-size="640px,44px"></x-import></div>
+          <div style="padding:10px 16px 10px;background:var(--surface)"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ t.searchPeople }}" icon="search" value="" on-change="{{ noop }}" hint-size="100%,52px"></x-import></div>
+          <div style="flex:1;overflow-y:auto;padding:0 16px 16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,420px">
+              <sc-for list="{{ addGroupRows }}" as="ag" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+                  <span style="width:40px;height:40px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">location_city</span></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                    <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ ag.name }}</span>
+                    <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ ag.sub }}</span>
+                  </div>
+                  <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="soft" size="sm" icon="add" on-click="{{ noop }}" hint-size="120px,40px">{{ t.addGroupCta }}</x-import>
+                </div>
+                <sc-if value="{{ ag.divider }}" hint-placeholder-val="{{ true }}"><div style="height:1px;background:var(--divider);margin-inline-start:66px"></div></sc-if>
+              </sc-for>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
     <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">6 · Reciprocity suggestions — within this event</span>
     <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
 
@@ -501,14 +533,14 @@ class Component extends DCLogic {
     const t = ar ? {
       home:'الرئيسية', groups:'المجموعات', people:'الأشخاص', events:'المناسبات',
       g1:'العائلة المقرّبة', g2:'عائلة ماما', g3:'الجيران', g4:'أصدقاء الجامعة', g5:'العمل', g6:'كورة نهاية الأسبوع',
-      searchEvents:'ابحث في المناسبات',
+      searchEvents:'ابحث عن مناسبة',
       eventsEmptyTitle:'لا توجد مناسبات بعد',
       eventsEmptyBody:'خطّط لغداء، أو حفل زفاف، أو أي شيء تريد تتبّع دعواته — تبدأ مناسبتك الأولى من هنا.',
       createEvent:'إنشاء مناسبة',
       newEvent:'مناسبة جديدة', editEvent:'تعديل المناسبة',
       eventName:'اسم المناسبة', eventNamePh:'مثال: غداء العيد',
-      eventNameAr:'اسم المناسبة (بالعربية)', eventNameArPh:'اختياري',
-      eventDate:'تاريخ المناسبة', pickDate:'اختر تاريخًا', dateOptional:'اختياري',
+      eventNameAr:'اسم المناسبة (عربي، اختياري)', eventNameArPh:'اختياري',
+      eventDate:'تاريخ المناسبة (اختياري)', pickDate:'اختر تاريخًا', dateOptional:'اختياري',
       notes:'ملاحظات', notesEventPh:'أي شيء تريد تذكّره عن هذه المناسبة',
       hintNotes0:'0 / 2000 · اختياري', hintNotesFilled:'52 / 2000 · اختياري',
       cancel:'إلغاء', saveChanges:'حفظ التغييرات',
@@ -517,19 +549,20 @@ class Component extends DCLogic {
       newValName:'حفل الانتقال للمنزل الجديد', noDateSet:'لا يوجد تاريخ محدد',
       guestProgress:'تقدّم الضيوف', totalGuests:'إجمالي الضيوف',
       notInvitedLabel:'غير مدعو', invitedLabel:'مُدعو', skippedLabel:'متجاوَز',
-      noGuestsYetHint:'لم تتم إضافة أي ضيف بعد.',
+      noGuestsYetHint:'لم تتم إضافة ضيوف بعد',
       byGroup:'حسب المجموعة', manageGuests:'إدارة الضيوف', addGuestsBtn:'إضافة ضيوف',
       guestsTitle:'الضيوف', chipAll:'الكل', allGroups:'كل المجموعات',
-      filterNotInvited:'غير مدعو', filterInvited:'مُدعو', filterSkipped:'متجاوَز',
-      guestsEmptyTitle:'لا يوجد ضيوف في هذه المناسبة بعد',
+      filterNotInvited:'غير مدعو', filterInvited:'مدعو', filterSkipped:'تم تخطيه',
+      guestsEmptyTitle:'لم تتم إضافة ضيوف إلى هذه المناسبة بعد',
       guestsEmptyBody:'أضف أشخاصًا من مجموعاتك، أو راجع اقتراحات المعاملة بالمثل، لتبدأ تتبّع الدعوات لهذه المناسبة.',
-      actionMarkInvited:'تمييز كمُدعو', actionSkip:'تخطي', actionRevert:'إرجاع لغير مدعو', actionRemove:'إزالة من المناسبة',
-      inviteMethodTitle:'كيف تمت دعوة', whatsapp:'واتساب', phoneCall:'اتصال هاتفي', inPerson:'شخصيًا', confirm:'تأكيد',
-      addGuestsTitle:'إضافة ضيوف', tabPeople:'أشخاص', tabByGroup:'حسب المجموعة',
+      actionMarkInvited:'تحديد كمدعو', actionSkip:'تخطي', actionRevert:'الرجوع لغير مدعو', actionRemove:'إزالة من المناسبة',
+      inviteMethodTitle:'كيف تمت دعوة', whatsapp:'واتساب', phoneCall:'مكالمة هاتفية', inPerson:'شخصيًا', confirm:'تأكيد',
+      addGuestsTitle:'إضافة ضيوف', tabPeople:'الأشخاص', tabByGroup:'حسب المجموعة',
+      tabBySubGroup:'حسب المجموعة الفرعية', tabByGovernorate:'حسب المحافظة', tabByCity:'حسب المدينة', tabByNeighborhood:'حسب الحي',
       searchPeople:'ابحث عن شخص', addNPeople:'إضافة 3 أشخاص', addGroupCta:'إضافة المجموعة',
       resultMsg:'تمت إضافة 12، وكان 3 مضافين من قبل',
-      suggestionsTitle:'اقتراحات المعاملة بالمثل', addAsGuest:'إضافة كضيف',
-      suggestionsEmptyTitle:'لا يوجد أحد جديد لاقتراحه الآن',
+      suggestionsTitle:'اقتراحات المجاملة', addAsGuest:'إضافة كضيف',
+      suggestionsEmptyTitle:'لا يوجد أحد جديد لاقتراحه الآن.',
       suggestionsEmptyBody:'الجميع الذين تمت دعوتك من قبلهم موجودون بالفعل في قائمة ضيوف هذه المناسبة — عمل رائع.'
     } : {
       home:'Home', groups:'Groups', people:'People', events:'Events',
@@ -540,8 +573,8 @@ class Component extends DCLogic {
       createEvent:'Create event',
       newEvent:'New event', editEvent:'Edit event',
       eventName:'Event name', eventNamePh:'e.g. Eid lunch',
-      eventNameAr:'Event name (Arabic)', eventNameArPh:'Optional',
-      eventDate:'Event date', pickDate:'Pick a date', dateOptional:'Optional',
+      eventNameAr:'Event name (Arabic, optional)', eventNameArPh:'Optional',
+      eventDate:'Event date (optional)', pickDate:'Pick a date', dateOptional:'Optional',
       notes:'Notes', notesEventPh:'Anything worth remembering about this event',
       hintNotes0:'0 / 2000 · Optional', hintNotesFilled:'52 / 2000 · Optional',
       cancel:'Cancel', saveChanges:'Save changes',
@@ -550,7 +583,7 @@ class Component extends DCLogic {
       newValName:'Housewarming', noDateSet:'No date set',
       guestProgress:'Guest progress', totalGuests:'total guests',
       notInvitedLabel:'not invited', invitedLabel:'invited', skippedLabel:'skipped',
-      noGuestsYetHint:'No guests added yet.',
+      noGuestsYetHint:'No guests added yet',
       byGroup:'By group', manageGuests:'Manage guests', addGuestsBtn:'Add guests',
       guestsTitle:'Guests', chipAll:'All', allGroups:'All groups',
       filterNotInvited:'Not invited', filterInvited:'Invited', filterSkipped:'Skipped',
@@ -559,10 +592,11 @@ class Component extends DCLogic {
       actionMarkInvited:'Mark invited', actionSkip:'Skip', actionRevert:'Revert to not invited', actionRemove:'Remove from event',
       inviteMethodTitle:'How was the invite sent to', whatsapp:'WhatsApp', phoneCall:'Phone call', inPerson:'In person', confirm:'Confirm',
       addGuestsTitle:'Add guests', tabPeople:'People', tabByGroup:'By group',
+      tabBySubGroup:'By subgroup', tabByGovernorate:'By governorate', tabByCity:'By city', tabByNeighborhood:'By neighborhood',
       searchPeople:'Search people', addNPeople:'Add 3 people', addGroupCta:'Add group',
       resultMsg:'12 added, 3 already on the list',
       suggestionsTitle:'Reciprocity suggestions', addAsGuest:'Add as guest',
-      suggestionsEmptyTitle:'No one new to suggest right now',
+      suggestionsEmptyTitle:'No one new to suggest right now.',
       suggestionsEmptyBody:"Everyone who's invited you before is already on this guest list — nice work."
     };
 
@@ -641,6 +675,7 @@ class Component extends DCLogic {
       n3:3,
       groupOptions:[t.g1,t.g2,t.g3,t.g4,t.g5,t.g6],
       tabsPeopleGroup:[t.tabPeople, t.tabByGroup],
+      tabs6:[t.tabPeople, t.tabByGroup, t.tabBySubGroup, t.tabByGovernorate, t.tabByCity, t.tabByNeighborhood],
       eventsList, groupRows, zeroGroupRows, guestRows, suggestionRows, addPeopleRows, addGroupRows,
       noop:()=>{}
     };
