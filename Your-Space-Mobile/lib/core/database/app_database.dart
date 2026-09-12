@@ -24,7 +24,23 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          // v1 -> v2: OutboxTable.lastAttemptAt, needed for Tier 2's
+          // exponential backoff schedule (design doc §5). Additive/nullable
+          // — no data loss, no table rebuild. No shipped users on this
+          // unreleased feature yet, so a real from-v1 upgrade test isn't
+          // warranted; the schema-version + column-reachability check in
+          // app_database_test.dart is enough.
+          if (from < 2) {
+            await m.addColumn(outboxTable, outboxTable.lastAttemptAt);
+          }
+        },
+      );
 }
 
 QueryExecutor _openConnection() => driftDatabase(name: 'app_database');

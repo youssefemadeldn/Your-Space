@@ -1292,6 +1292,18 @@ class $OutboxTableTable extends OutboxTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
+    'lastAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptAt =
+      GeneratedColumn<DateTime>(
+        'last_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1302,6 +1314,7 @@ class $OutboxTableTable extends OutboxTable
     createdAt,
     retryCount,
     lastError,
+    lastAttemptAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1371,6 +1384,15 @@ class $OutboxTableTable extends OutboxTable
         lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
       );
     }
+    if (data.containsKey('last_attempt_at')) {
+      context.handle(
+        _lastAttemptAtMeta,
+        lastAttemptAt.isAcceptableOrUnknown(
+          data['last_attempt_at']!,
+          _lastAttemptAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1412,6 +1434,10 @@ class $OutboxTableTable extends OutboxTable
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
+      lastAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt_at'],
+      ),
     );
   }
 
@@ -1430,6 +1456,11 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
   final DateTime createdAt;
   final int retryCount;
   final String? lastError;
+
+  /// When this row was last attempted (null = never attempted yet). Drives
+  /// `SyncService`'s exponential backoff schedule — `retryCount` alone can't
+  /// tell "due now" from "due in 4 more minutes" (design doc §5).
+  final DateTime? lastAttemptAt;
   const OutboxTableData({
     required this.id,
     required this.entityType,
@@ -1439,6 +1470,7 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
     required this.createdAt,
     required this.retryCount,
     this.lastError,
+    this.lastAttemptAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1452,6 +1484,9 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
     map['retry_count'] = Variable<int>(retryCount);
     if (!nullToAbsent || lastError != null) {
       map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || lastAttemptAt != null) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt);
     }
     return map;
   }
@@ -1468,6 +1503,9 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
       lastError: lastError == null && nullToAbsent
           ? const Value.absent()
           : Value(lastError),
+      lastAttemptAt: lastAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptAt),
     );
   }
 
@@ -1485,6 +1523,7 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       retryCount: serializer.fromJson<int>(json['retryCount']),
       lastError: serializer.fromJson<String?>(json['lastError']),
+      lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
     );
   }
   @override
@@ -1499,6 +1538,7 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'retryCount': serializer.toJson<int>(retryCount),
       'lastError': serializer.toJson<String?>(lastError),
+      'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
     };
   }
 
@@ -1511,6 +1551,7 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
     DateTime? createdAt,
     int? retryCount,
     Value<String?> lastError = const Value.absent(),
+    Value<DateTime?> lastAttemptAt = const Value.absent(),
   }) => OutboxTableData(
     id: id ?? this.id,
     entityType: entityType ?? this.entityType,
@@ -1520,6 +1561,9 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
     createdAt: createdAt ?? this.createdAt,
     retryCount: retryCount ?? this.retryCount,
     lastError: lastError.present ? lastError.value : this.lastError,
+    lastAttemptAt: lastAttemptAt.present
+        ? lastAttemptAt.value
+        : this.lastAttemptAt,
   );
   OutboxTableData copyWithCompanion(OutboxTableCompanion data) {
     return OutboxTableData(
@@ -1537,6 +1581,9 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
           ? data.retryCount.value
           : this.retryCount,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      lastAttemptAt: data.lastAttemptAt.present
+          ? data.lastAttemptAt.value
+          : this.lastAttemptAt,
     );
   }
 
@@ -1550,7 +1597,8 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
           ..write('payloadJson: $payloadJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('retryCount: $retryCount, ')
-          ..write('lastError: $lastError')
+          ..write('lastError: $lastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt')
           ..write(')'))
         .toString();
   }
@@ -1565,6 +1613,7 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
     createdAt,
     retryCount,
     lastError,
+    lastAttemptAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1577,7 +1626,8 @@ class OutboxTableData extends DataClass implements Insertable<OutboxTableData> {
           other.payloadJson == this.payloadJson &&
           other.createdAt == this.createdAt &&
           other.retryCount == this.retryCount &&
-          other.lastError == this.lastError);
+          other.lastError == this.lastError &&
+          other.lastAttemptAt == this.lastAttemptAt);
 }
 
 class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
@@ -1589,6 +1639,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
   final Value<DateTime> createdAt;
   final Value<int> retryCount;
   final Value<String?> lastError;
+  final Value<DateTime?> lastAttemptAt;
   const OutboxTableCompanion({
     this.id = const Value.absent(),
     this.entityType = const Value.absent(),
@@ -1598,6 +1649,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
     this.createdAt = const Value.absent(),
     this.retryCount = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
   });
   OutboxTableCompanion.insert({
     this.id = const Value.absent(),
@@ -1608,6 +1660,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
     this.createdAt = const Value.absent(),
     this.retryCount = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
   }) : entityType = Value(entityType),
        entityId = Value(entityId),
        operation = Value(operation),
@@ -1621,6 +1674,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
     Expression<DateTime>? createdAt,
     Expression<int>? retryCount,
     Expression<String>? lastError,
+    Expression<DateTime>? lastAttemptAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1631,6 +1685,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
       if (createdAt != null) 'created_at': createdAt,
       if (retryCount != null) 'retry_count': retryCount,
       if (lastError != null) 'last_error': lastError,
+      if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
     });
   }
 
@@ -1643,6 +1698,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
     Value<DateTime>? createdAt,
     Value<int>? retryCount,
     Value<String?>? lastError,
+    Value<DateTime?>? lastAttemptAt,
   }) {
     return OutboxTableCompanion(
       id: id ?? this.id,
@@ -1653,6 +1709,7 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
       createdAt: createdAt ?? this.createdAt,
       retryCount: retryCount ?? this.retryCount,
       lastError: lastError ?? this.lastError,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
     );
   }
 
@@ -1683,6 +1740,9 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
     if (lastError.present) {
       map['last_error'] = Variable<String>(lastError.value);
     }
+    if (lastAttemptAt.present) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt.value);
+    }
     return map;
   }
 
@@ -1696,7 +1756,8 @@ class OutboxTableCompanion extends UpdateCompanion<OutboxTableData> {
           ..write('payloadJson: $payloadJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('retryCount: $retryCount, ')
-          ..write('lastError: $lastError')
+          ..write('lastError: $lastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt')
           ..write(')'))
         .toString();
   }
@@ -2533,6 +2594,7 @@ typedef $$OutboxTableTableCreateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<int> retryCount,
       Value<String?> lastError,
+      Value<DateTime?> lastAttemptAt,
     });
 typedef $$OutboxTableTableUpdateCompanionBuilder =
     OutboxTableCompanion Function({
@@ -2544,6 +2606,7 @@ typedef $$OutboxTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<int> retryCount,
       Value<String?> lastError,
+      Value<DateTime?> lastAttemptAt,
     });
 
 class $$OutboxTableTableFilterComposer
@@ -2592,6 +2655,11 @@ class $$OutboxTableTableFilterComposer
 
   ColumnFilters<String> get lastError => $composableBuilder(
     column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2644,6 +2712,11 @@ class $$OutboxTableTableOrderingComposer
     column: $table.lastError,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$OutboxTableTableAnnotationComposer
@@ -2684,6 +2757,11 @@ class $$OutboxTableTableAnnotationComposer
 
   GeneratedColumn<String> get lastError =>
       $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => column,
+  );
 }
 
 class $$OutboxTableTableTableManager
@@ -2725,6 +2803,7 @@ class $$OutboxTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
               }) => OutboxTableCompanion(
                 id: id,
                 entityType: entityType,
@@ -2734,6 +2813,7 @@ class $$OutboxTableTableTableManager
                 createdAt: createdAt,
                 retryCount: retryCount,
                 lastError: lastError,
+                lastAttemptAt: lastAttemptAt,
               ),
           createCompanionCallback:
               ({
@@ -2745,6 +2825,7 @@ class $$OutboxTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
               }) => OutboxTableCompanion.insert(
                 id: id,
                 entityType: entityType,
@@ -2754,6 +2835,7 @@ class $$OutboxTableTableTableManager
                 createdAt: createdAt,
                 retryCount: retryCount,
                 lastError: lastError,
+                lastAttemptAt: lastAttemptAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
