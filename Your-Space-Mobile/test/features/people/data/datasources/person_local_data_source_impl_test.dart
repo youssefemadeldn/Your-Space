@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -127,5 +129,105 @@ void main() {
 
     expect(await dataSource.countPersons(), 3);
     expect(await dataSource.countPersons(groupId: 1), 2);
+  });
+
+  group('queuePersonMutation', () {
+    test('writes a dirty person row and one outbox row in the same transaction, returning its id', () async {
+      final person = _person(id: -1, name: 'Offline Create');
+
+      final rowId = await dataSource.queuePersonMutation(
+        person: person,
+        operation: 'create',
+        payloadJson: '{"name":"Offline Create"}',
+      );
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(-1))).getSingle();
+      expect(row.isDirty, isTrue);
+      expect(row.name, 'Offline Create');
+
+      final outboxRow =
+          await (database.select(database.outboxTable)..where((t) => t.id.equals(rowId))).getSingle();
+      expect(outboxRow.entityType, 'person');
+      expect(outboxRow.entityId, -1);
+      expect(outboxRow.operation, 'create');
+      expect(outboxRow.payloadJson, '{"name":"Offline Create"}');
+      expect(outboxRow.retryCount, 0);
+      expect(outboxRow.lastAttemptAt, isNull);
+    });
+  });
+
+  group('confirmSyncedPerson', () {
+    test('clears isDirty on the person row and deletes the replayed outbox row', () async {
+      final rowId = await dataSource.queuePersonMutation(
+        person: _person(id: 5, name: 'Dirty'),
+        operation: 'update',
+        payloadJson: '{"id":5}',
+      );
+
+      await dataSource.confirmSyncedPerson(_person(id: 5, name: 'Confirmed'), replayedOutboxRowId: rowId);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(5))).getSingle();
+      expect(row.isDirty, isFalse);
+      expect(row.name, 'Confirmed');
+
+      final remainingOutbox = await database.select(database.outboxTable).get();
+      expect(remainingOutbox, isEmpty);
+    });
+  });
+
+  group('reconcileCreatedPerson', () {
+    test(
+        'inserts under the real id, deletes the temp row, deletes the replayed outbox row, and patches a pending '
+        'update row still referencing the temp id (both entityId and its embedded payload id)', () async {
+      const tempId = -12345;
+      final createRowId = await dataSource.queuePersonMutation(
+        person: _person(id: tempId, name: 'Offline Person'),
+        operation: 'create',
+        payloadJson: '{"name":"Offline Person"}',
+      );
+      // Simulates an offline edit of the same not-yet-synced person before
+      // the create has synced — a second outbox row keyed to the same
+      // temp id (design doc §5's self-referential reconciliation case).
+      final updateRowId = await dataSource.queuePersonMutation(
+        person: _person(id: tempId, name: 'Offline Person Edited'),
+        operation: 'update',
+        payloadJson: '{"id":$tempId,"name":"Offline Person Edited"}',
+      );
+
+      const realPerson = Person(
+        id: 999,
+        name: 'Offline Person Edited',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Group 1',
+        governorateId: 1,
+        governorateName: 'Governorate 1',
+      );
+      await dataSource.reconcileCreatedPerson(
+        tempId: tempId,
+        realPerson: realPerson,
+        replayedOutboxRowId: createRowId,
+      );
+
+      final tempRow =
+          await (database.select(database.personsTable)..where((t) => t.id.equals(tempId))).getSingleOrNull();
+      expect(tempRow, isNull);
+
+      final realRow =
+          await (database.select(database.personsTable)..where((t) => t.id.equals(999))).getSingle();
+      expect(realRow.name, 'Offline Person Edited');
+
+      final replayedOutboxRow = await (database.select(database.outboxTable)
+            ..where((t) => t.id.equals(createRowId)))
+          .getSingleOrNull();
+      expect(replayedOutboxRow, isNull);
+
+      final patchedRow =
+          await (database.select(database.outboxTable)..where((t) => t.id.equals(updateRowId))).getSingle();
+      expect(patchedRow.entityId, 999);
+      final patchedPayload = jsonDecode(patchedRow.payloadJson) as Map<String, dynamic>;
+      expect(patchedPayload['id'], 999);
+      expect(patchedPayload['name'], 'Offline Person Edited');
+    });
   });
 }

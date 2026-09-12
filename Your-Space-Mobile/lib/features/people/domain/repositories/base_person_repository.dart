@@ -55,16 +55,32 @@ abstract class PersonRepository {
   /// keeps showing cached data (design doc §3).
   Future<Either<Failure, Unit>> refreshPersons();
 
+  /// Tier 2 optimistic write (design doc §5): queues via the outbox and
+  /// returns immediately with a temp id. Essentially can't fail — a drift
+  /// write isn't gated on connectivity. Use for mutations with no dependent
+  /// network call that needs a resolved real id synchronously.
+  ///
+  /// `groupName`/`governorateName` (and the optional sibling names) are
+  /// required here because `PersonsTable`'s name columns are non-null but
+  /// Groups/Classification aren't Tier-1-cached yet (rows 7-8) — there's no
+  /// local source to resolve them from otherwise. Callers pass whatever
+  /// display name they already have (e.g. from an already-loaded picker
+  /// list).
   Future<Either<Failure, Person>> createPerson({
     required String name,
     String? phoneNumber,
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    required String groupName,
     int? subGroupId,
+    String? subGroupName,
     required int governorateId,
+    required String governorateName,
     int? cityId,
+    String? cityName,
     int? neighborhoodId,
+    String? neighborhoodName,
     String? notes,
   });
 
@@ -75,10 +91,62 @@ abstract class PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    required String groupName,
     int? subGroupId,
+    String? subGroupName,
     required int governorateId,
+    required String governorateName,
     int? cityId,
+    String? cityName,
     int? neighborhoodId,
+    String? neighborhoodName,
+    String? notes,
+  });
+
+  /// Same as [createPerson] but also asks `SyncService` to replay this
+  /// specific outbox row immediately and awaits the outcome (awaited here,
+  /// in the repository/data layer — never by a cubit, per CLAUDE.md's
+  /// DI-scopes table). `Right(Person)` means the person now has a real
+  /// server id. `Left(failure)` means the immediate sync attempt failed
+  /// right now (offline/server error) — the queued row is NOT rolled back
+  /// and will still sync in the background later, but this call reports
+  /// failure so callers needing a synchronously-resolved real id (photo/
+  /// relationship uploads) can fail cleanly instead of silently proceeding
+  /// against a temp id.
+  Future<Either<Failure, Person>> createPersonAndSync({
+    required String name,
+    String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
+    required int groupId,
+    required String groupName,
+    int? subGroupId,
+    String? subGroupName,
+    required int governorateId,
+    required String governorateName,
+    int? cityId,
+    String? cityName,
+    int? neighborhoodId,
+    String? neighborhoodName,
+    String? notes,
+  });
+
+  Future<Either<Failure, Person>> updatePersonAndSync({
+    required int id,
+    required String name,
+    String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
+    required int groupId,
+    required String groupName,
+    int? subGroupId,
+    String? subGroupName,
+    required int governorateId,
+    required String governorateName,
+    int? cityId,
+    String? cityName,
+    int? neighborhoodId,
+    String? neighborhoodName,
     String? notes,
   });
 

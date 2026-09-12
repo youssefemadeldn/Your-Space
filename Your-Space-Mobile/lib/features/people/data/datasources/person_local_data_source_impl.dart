@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
 
@@ -84,6 +86,76 @@ class PersonLocalDataSourceImpl {
   Future<void> savePerson(Person person) =>
       _db.into(_db.personsTable).insertOnConflictUpdate(_toCompanion(person));
 
+  /// Tier 2 optimistic write (design doc §5): writes [person] into
+  /// PersonsTable (marked dirty) and appends one OutboxTable row, in the
+  /// same drift transaction. Returns the new outbox row's id so the
+  /// repository's `*AndSync` variants can ask `SyncService` to replay this
+  /// specific row immediately.
+  Future<int> queuePersonMutation({
+    required Person person,
+    required String operation, // 'create' | 'update'
+    required String payloadJson,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.personsTable).insertOnConflictUpdate(
+              _toCompanion(person, isDirty: true),
+            );
+        return _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'person',
+                entityId: person.id,
+                operation: operation,
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'update' syncs successfully: overwrites the
+  /// local row with the server-confirmed copy (clears `isDirty`) and
+  /// removes the now-done outbox row, in one transaction.
+  Future<void> confirmSyncedPerson(Person person, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await _db.into(_db.personsTable).insertOnConflictUpdate(_toCompanion(person));
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realPerson.id]
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///  4. self-referential patch (cross-entity FK rewrite into other tables
+  ///     is explicitly deferred to Events, design doc §5): any OTHER
+  ///     still-pending outbox row for entityType 'person' whose `entityId`
+  ///     is still [tempId] gets both its `entityId` column and the `id` key
+  ///     embedded in its own `payloadJson` rewritten to the real id. This is
+  ///     the offline-create-then-offline-edit case: two outbox rows both
+  ///     keyed to the same temp id before either has synced.
+  Future<void> reconcileCreatedPerson({
+    required int tempId,
+    required Person realPerson,
+    required int replayedOutboxRowId,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.personsTable).insertOnConflictUpdate(_toCompanion(realPerson));
+        await (_db.delete(_db.personsTable)..where((t) => t.id.equals(tempId))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+
+        final pending = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('person') & t.entityId.equals(tempId)))
+            .get();
+        for (final row in pending) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['id'] == tempId) payload['id'] = realPerson.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id))).write(
+            OutboxTableCompanion(
+              entityId: Value(realPerson.id),
+              payloadJson: Value(jsonEncode(payload)),
+            ),
+          );
+        }
+      });
+
   // Duplicated (rather than shared via a generic helper) because
   // `select()`/`SimpleSelectStatement` and `selectOnly()`/`SelectOnly` have
   // different `.where()` signatures in drift — fighting that generically
@@ -152,7 +224,8 @@ class PersonLocalDataSourceImpl {
         hasReciprocityHistory: row.hasReciprocityHistory,
       );
 
-  PersonsTableCompanion _toCompanion(Person person) => PersonsTableCompanion.insert(
+  PersonsTableCompanion _toCompanion(Person person, {bool isDirty = false}) =>
+      PersonsTableCompanion.insert(
         id: Value(person.id),
         name: person.name,
         phoneNumber: Value(person.phoneNumber),
@@ -171,11 +244,12 @@ class PersonLocalDataSourceImpl {
         primaryPhotoUrl: Value(person.primaryPhotoUrl),
         notes: Value(person.notes),
         hasReciprocityHistory: Value(person.hasReciprocityHistory),
-        // Backend doesn't expose `UpdatedAt` yet (design doc §6/§11 row 5);
-        // this row always comes from a just-completed, confirmed remote
-        // round trip, so it's clean — never soft-deleted, never dirty.
+        // Backend doesn't expose `UpdatedAt` yet (design doc §6/§11 row 5).
+        // Never soft-deleted here. `isDirty` defaults to false (a row that
+        // came from a confirmed remote round trip) — callers queuing a
+        // Tier 2 optimistic write pass `isDirty: true` explicitly.
         updatedAt: const Value(null),
         isDeleted: const Value(false),
-        isDirty: const Value(false),
+        isDirty: Value(isDirty),
       );
 }

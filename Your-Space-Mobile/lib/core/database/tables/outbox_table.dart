@@ -1,8 +1,7 @@
 import 'package:drift/drift.dart';
 
-/// Pending offline writes, replayed by `SyncService` once it exists (Tier 2,
-/// see `doc/local-first-sync-design.md` §5). Unused until then — created now
-/// so the schema doesn't need a breaking migration per tier.
+/// Pending offline writes, replayed by `SyncService` (Tier 2, see
+/// `doc/local-first-sync-design.md` §5).
 class OutboxTable extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get entityType => text()(); // 'person', 'group', 'eventGuest', ...
@@ -13,4 +12,9 @@ class OutboxTable extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
+
+  /// When this row was last attempted (null = never attempted yet). Drives
+  /// `SyncService`'s exponential backoff schedule — `retryCount` alone can't
+  /// tell "due now" from "due in 4 more minutes" (design doc §5).
+  DateTimeColumn get lastAttemptAt => dateTime().nullable()();
 }

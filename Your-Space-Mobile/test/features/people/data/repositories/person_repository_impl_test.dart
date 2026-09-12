@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -6,6 +8,7 @@ import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
+import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart';
 import 'package:your_space_mobile/features/people/data/models/add_occasion_history_request.dart';
@@ -20,6 +23,8 @@ class MockPersonRemoteDataSourceImpl extends Mock implements PersonRemoteDataSou
 
 class MockPersonLocalDataSourceImpl extends Mock implements PersonLocalDataSourceImpl {}
 
+class MockSyncService extends Mock implements SyncService {}
+
 const _person = Person(
   id: 10,
   name: 'New Person',
@@ -33,6 +38,7 @@ const _person = Person(
 void main() {
   late MockPersonRemoteDataSourceImpl remote;
   late MockPersonLocalDataSourceImpl local;
+  late MockSyncService syncService;
   late PersonRepositoryImpl repository;
 
   setUpAll(() {
@@ -50,9 +56,17 @@ void main() {
   setUp(() {
     remote = MockPersonRemoteDataSourceImpl();
     local = MockPersonLocalDataSourceImpl();
-    repository = PersonRepositoryImpl(remote, local);
+    syncService = MockSyncService();
+    repository = PersonRepositoryImpl(remote, local, syncService);
     when(() => local.savePerson(any())).thenAnswer((_) async {});
     when(() => local.savePersons(any())).thenAnswer((_) async {});
+    when(
+      () => local.queuePersonMutation(
+        person: any(named: 'person'),
+        operation: any(named: 'operation'),
+        payloadJson: any(named: 'payloadJson'),
+      ),
+    ).thenAnswer((_) async => 99);
   });
 
   test('getPersonById maps embedded occasion history alongside the person', () async {
@@ -162,68 +176,155 @@ void main() {
     });
   });
 
-  group('createPerson', () {
-    test('upserts into the local store and returns the mapped entity on success', () async {
-      when(() => remote.createPerson(any())).thenAnswer((_) async => const Right(PersonResponse(
-            id: 10,
-            name: 'New Person',
-            gender: Gender.male,
-            groupId: 1,
-            groupName: 'Family',
-            governorateId: 1,
-            governorateName: 'Cairo',
-            hasReciprocityHistory: false,
-          )));
-
+  group('createPerson (pure optimistic path)', () {
+    test('queues a negative-id create via the outbox and returns immediately', () async {
       final result = await repository.createPerson(
         name: 'New Person',
         gender: Gender.male,
         groupId: 1,
+        groupName: 'Family',
         governorateId: 1,
+        governorateName: 'Cairo',
       );
 
-      expect(result, const Right(_person));
-      verify(() => local.savePerson(_person)).called(1);
-    });
+      expect(result.isRight(), isTrue);
+      final person = result.getOrElse(() => throw StateError('expected Right'));
+      expect(person.id, lessThan(0));
+      expect(person.name, 'New Person');
 
-    test('never touches the local store on failure', () async {
-      const failure = ServerFailure(statusCode: 400, message: 'Invalid');
-      when(() => remote.createPerson(any())).thenAnswer((_) async => const Left(failure));
+      final captured = verify(
+        () => local.queuePersonMutation(
+          person: captureAny(named: 'person'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as Person).id, lessThan(0));
+      expect(captured[1], 'create');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['name'], 'New Person');
+      expect(payload.containsKey('id'), isFalse);
 
-      final result = await repository.createPerson(
-        name: 'New Person',
-        gender: Gender.male,
-        groupId: 1,
-        governorateId: 1,
-      );
-
-      expect(result, const Left(failure));
-      verifyNever(() => local.savePerson(any()));
+      verifyNever(() => remote.createPerson(any()));
+      verifyNever(() => syncService.replayRow(any()));
     });
   });
 
-  test('updatePerson upserts into the local store on success', () async {
-    when(() => remote.updatePerson(any())).thenAnswer((_) async => const Right(PersonResponse(
-          id: 10,
-          name: 'New Person',
-          gender: Gender.male,
-          groupId: 1,
-          groupName: 'Family',
-          governorateId: 1,
-          governorateName: 'Cairo',
-          hasReciprocityHistory: false,
-        )));
+  group('updatePerson (pure optimistic path)', () {
+    test('queues an update against the given id via the outbox and returns immediately', () async {
+      final result = await repository.updatePerson(
+        id: 42,
+        name: 'Renamed',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
 
-    final result = await repository.updatePerson(
-      id: 10,
-      name: 'New Person',
-      gender: Gender.male,
-      groupId: 1,
-      governorateId: 1,
-    );
+      expect(result, isA<Right<Failure, Person>>());
+      final captured = verify(
+        () => local.queuePersonMutation(
+          person: captureAny(named: 'person'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as Person).id, 42);
+      expect(captured[1], 'update');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['id'], 42);
 
-    expect(result, const Right(_person));
-    verify(() => local.savePerson(_person)).called(1);
+      verifyNever(() => remote.updatePerson(any()));
+      verifyNever(() => syncService.replayRow(any()));
+    });
+  });
+
+  group('createPersonAndSync', () {
+    test('queues via the outbox then returns the real person on a successful immediate replay', () async {
+      const realPerson = Person(
+        id: 10,
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Right(realPerson));
+
+      final result = await repository.createPersonAndSync(
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+
+      expect(result, const Right(realPerson));
+      verify(() => syncService.replayRow(99)).called(1);
+    });
+
+    test('the queued row is not rolled back when the immediate replay fails', () async {
+      const failure = NetworkFailure();
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.createPersonAndSync(
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+
+      expect(result, const Left(failure));
+      // The queue call already happened before the replay attempt — no
+      // "undo" method exists or is called.
+      verify(
+        () => local.queuePersonMutation(
+          person: any(named: 'person'),
+          operation: 'create',
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('updatePersonAndSync', () {
+    test('queues via the outbox then returns the real person on a successful immediate replay', () async {
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Right(_person));
+
+      final result = await repository.updatePersonAndSync(
+        id: 10,
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+
+      expect(result, const Right(_person));
+    });
+
+    test('propagates the failure when the immediate replay fails', () async {
+      const failure = ServerFailure(statusCode: 500, message: 'boom');
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.updatePersonAndSync(
+        id: 10,
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+
+      expect(result, const Left(failure));
+    });
   });
 
   test('addOccasionHistory maps the response to an entity', () async {

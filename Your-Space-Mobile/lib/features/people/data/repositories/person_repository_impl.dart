@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
@@ -6,6 +8,7 @@ import 'package:your_space_mobile/core/entities/invite_method.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/core/sync/sync_service.dart';
 import '../../domain/entities/person_details.dart';
 import '../../domain/entities/person_occasion_history_entry.dart';
 import '../../domain/repositories/base_person_repository.dart';
@@ -19,8 +22,13 @@ import '../models/update_person_request.dart';
 class PersonRepositoryImpl implements PersonRepository {
   final BasePersonDataSource _remote;
   final PersonLocalDataSourceImpl _local;
+  final SyncService _syncService;
 
-  PersonRepositoryImpl(@Named('remote') this._remote, @Named('local') this._local);
+  PersonRepositoryImpl(
+    @Named('remote') this._remote,
+    @Named('local') this._local,
+    this._syncService,
+  );
 
   @override
   Future<Either<Failure, PaginatedResult<Person>>> getPersons({
@@ -110,6 +118,117 @@ class PersonRepositoryImpl implements PersonRepository {
     return result.fold(Left.new, (response) => Right(response.toEntity()));
   }
 
+  int _newTempPersonId() => -DateTime.now().microsecondsSinceEpoch;
+
+  /// Builds the [Person] draft + JSON-encoded [CreatePersonRequest] payload
+  /// and queues both via the outbox. Shared by [createPerson] and
+  /// [createPersonAndSync] — only what happens after queuing differs.
+  Future<(Person, int)> _queueCreate({
+    required String name,
+    String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
+    required int groupId,
+    required String groupName,
+    int? subGroupId,
+    String? subGroupName,
+    required int governorateId,
+    required String governorateName,
+    int? cityId,
+    String? cityName,
+    int? neighborhoodId,
+    String? neighborhoodName,
+    String? notes,
+  }) async {
+    final person = Person(
+      id: _newTempPersonId(),
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      groupName: groupName,
+      subGroupId: subGroupId,
+      subGroupName: subGroupName,
+      governorateId: governorateId,
+      governorateName: governorateName,
+      cityId: cityId,
+      cityName: cityName,
+      neighborhoodId: neighborhoodId,
+      neighborhoodName: neighborhoodName,
+      notes: notes,
+    );
+    final payloadJson = jsonEncode(CreatePersonRequest(
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      subGroupId: subGroupId,
+      governorateId: governorateId,
+      cityId: cityId,
+      neighborhoodId: neighborhoodId,
+      notes: notes,
+    ).toJson());
+    final rowId = await _local.queuePersonMutation(person: person, operation: 'create', payloadJson: payloadJson);
+    return (person, rowId);
+  }
+
+  /// Shared by [updatePerson] and [updatePersonAndSync] — same split as
+  /// [_queueCreate].
+  Future<(Person, int)> _queueUpdate({
+    required int id,
+    required String name,
+    String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
+    required int groupId,
+    required String groupName,
+    int? subGroupId,
+    String? subGroupName,
+    required int governorateId,
+    required String governorateName,
+    int? cityId,
+    String? cityName,
+    int? neighborhoodId,
+    String? neighborhoodName,
+    String? notes,
+  }) async {
+    final person = Person(
+      id: id,
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      groupName: groupName,
+      subGroupId: subGroupId,
+      subGroupName: subGroupName,
+      governorateId: governorateId,
+      governorateName: governorateName,
+      cityId: cityId,
+      cityName: cityName,
+      neighborhoodId: neighborhoodId,
+      neighborhoodName: neighborhoodName,
+      notes: notes,
+    );
+    final payloadJson = jsonEncode(UpdatePersonRequest(
+      id: id,
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      subGroupId: subGroupId,
+      governorateId: governorateId,
+      cityId: cityId,
+      neighborhoodId: neighborhoodId,
+      notes: notes,
+    ).toJson());
+    final rowId = await _local.queuePersonMutation(person: person, operation: 'update', payloadJson: payloadJson);
+    return (person, rowId);
+  }
+
   @override
   Future<Either<Failure, Person>> createPerson({
     required String name,
@@ -117,36 +236,35 @@ class PersonRepositoryImpl implements PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    required String groupName,
     int? subGroupId,
+    String? subGroupName,
     required int governorateId,
+    required String governorateName,
     int? cityId,
+    String? cityName,
     int? neighborhoodId,
+    String? neighborhoodName,
     String? notes,
   }) async {
-    final result = await _remote.createPerson(
-      CreatePersonRequest(
-        name: name,
-        phoneNumber: phoneNumber,
-        phoneNumber2: phoneNumber2,
-        gender: gender,
-        groupId: groupId,
-        subGroupId: subGroupId,
-        governorateId: governorateId,
-        cityId: cityId,
-        neighborhoodId: neighborhoodId,
-        notes: notes,
-      ),
+    final (person, _) = await _queueCreate(
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      groupName: groupName,
+      subGroupId: subGroupId,
+      subGroupName: subGroupName,
+      governorateId: governorateId,
+      governorateName: governorateName,
+      cityId: cityId,
+      cityName: cityName,
+      neighborhoodId: neighborhoodId,
+      neighborhoodName: neighborhoodName,
+      notes: notes,
     );
-    return result.fold<Future<Either<Failure, Person>>>(
-      (failure) async => Left(failure),
-      (response) async {
-        final person = response.toEntity();
-        // Design doc §3: mutations go straight to remote and, on success,
-        // upsert into drift so the cache doesn't go stale until the next sync.
-        await _local.savePerson(person);
-        return Right(person);
-      },
-    );
+    return Right(person);
   }
 
   @override
@@ -157,35 +275,116 @@ class PersonRepositoryImpl implements PersonRepository {
     String? phoneNumber2,
     required Gender gender,
     required int groupId,
+    required String groupName,
     int? subGroupId,
+    String? subGroupName,
     required int governorateId,
+    required String governorateName,
     int? cityId,
+    String? cityName,
     int? neighborhoodId,
+    String? neighborhoodName,
     String? notes,
   }) async {
-    final result = await _remote.updatePerson(
-      UpdatePersonRequest(
-        id: id,
-        name: name,
-        phoneNumber: phoneNumber,
-        phoneNumber2: phoneNumber2,
-        gender: gender,
-        groupId: groupId,
-        subGroupId: subGroupId,
-        governorateId: governorateId,
-        cityId: cityId,
-        neighborhoodId: neighborhoodId,
-        notes: notes,
-      ),
+    final (person, _) = await _queueUpdate(
+      id: id,
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      groupName: groupName,
+      subGroupId: subGroupId,
+      subGroupName: subGroupName,
+      governorateId: governorateId,
+      governorateName: governorateName,
+      cityId: cityId,
+      cityName: cityName,
+      neighborhoodId: neighborhoodId,
+      neighborhoodName: neighborhoodName,
+      notes: notes,
     );
-    return result.fold<Future<Either<Failure, Person>>>(
-      (failure) async => Left(failure),
-      (response) async {
-        final person = response.toEntity();
-        await _local.savePerson(person);
-        return Right(person);
-      },
+    return Right(person);
+  }
+
+  @override
+  Future<Either<Failure, Person>> createPersonAndSync({
+    required String name,
+    String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
+    required int groupId,
+    required String groupName,
+    int? subGroupId,
+    String? subGroupName,
+    required int governorateId,
+    required String governorateName,
+    int? cityId,
+    String? cityName,
+    int? neighborhoodId,
+    String? neighborhoodName,
+    String? notes,
+  }) async {
+    final (person, rowId) = await _queueCreate(
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      groupName: groupName,
+      subGroupId: subGroupId,
+      subGroupName: subGroupName,
+      governorateId: governorateId,
+      governorateName: governorateName,
+      cityId: cityId,
+      cityName: cityName,
+      neighborhoodId: neighborhoodId,
+      neighborhoodName: neighborhoodName,
+      notes: notes,
     );
+    final result = await _syncService.replayRow(rowId);
+    return result.fold(Left.new, (payload) => Right(payload as Person? ?? person));
+  }
+
+  @override
+  Future<Either<Failure, Person>> updatePersonAndSync({
+    required int id,
+    required String name,
+    String? phoneNumber,
+    String? phoneNumber2,
+    required Gender gender,
+    required int groupId,
+    required String groupName,
+    int? subGroupId,
+    String? subGroupName,
+    required int governorateId,
+    required String governorateName,
+    int? cityId,
+    String? cityName,
+    int? neighborhoodId,
+    String? neighborhoodName,
+    String? notes,
+  }) async {
+    final (person, rowId) = await _queueUpdate(
+      id: id,
+      name: name,
+      phoneNumber: phoneNumber,
+      phoneNumber2: phoneNumber2,
+      gender: gender,
+      groupId: groupId,
+      groupName: groupName,
+      subGroupId: subGroupId,
+      subGroupName: subGroupName,
+      governorateId: governorateId,
+      governorateName: governorateName,
+      cityId: cityId,
+      cityName: cityName,
+      neighborhoodId: neighborhoodId,
+      neighborhoodName: neighborhoodName,
+      notes: notes,
+    );
+    final result = await _syncService.replayRow(rowId);
+    return result.fold(Left.new, (payload) => Right(payload as Person? ?? person));
   }
 
   @override
