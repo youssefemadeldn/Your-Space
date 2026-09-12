@@ -30,6 +30,7 @@ import 'package:your_space_mobile/core/storage/app_preferences_helper.dart'
     as _i782;
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart'
     as _i134;
+import 'package:your_space_mobile/core/sync/collection_puller.dart' as _i635;
 import 'package:your_space_mobile/core/sync/outbox_replayer.dart' as _i222;
 import 'package:your_space_mobile/core/sync/sync_service.dart' as _i477;
 import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_data_source_impl.dart'
@@ -146,6 +147,8 @@ import 'package:your_space_mobile/features/people/data/repositories/person_relat
     as _i630;
 import 'package:your_space_mobile/features/people/data/repositories/person_repository_impl.dart'
     as _i504;
+import 'package:your_space_mobile/features/people/data/sync/person_collection_puller.dart'
+    as _i946;
 import 'package:your_space_mobile/features/people/data/sync/person_outbox_replayer.dart'
     as _i622;
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_image_repository.dart'
@@ -216,6 +219,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i935.AppDatabase>(),
         gh<_i0.ConnectivityHelper>(),
         gh<List<_i222.OutboxReplayer>>(),
+        gh<List<_i635.CollectionPuller>>(),
       ),
       dispose: (i) => i.dispose(),
     );
@@ -274,6 +278,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
         gh<_i477.SyncService>(),
       ),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
     );
     gh.lazySingleton<_i994.GroupRepository>(
       () => _i612.GroupRepositoryImpl(gh<_i190.GroupRemoteDataSourceImpl>()),

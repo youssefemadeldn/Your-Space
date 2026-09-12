@@ -1,18 +1,39 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/database/app_database.dart';
 import 'package:your_space_mobile/core/network/connectivity_helper.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/core/sync/collection_puller.dart';
 import 'package:your_space_mobile/core/sync/outbox_replayer.dart';
 import 'package:your_space_mobile/core/sync/sync_service.dart';
 
 class MockConnectivityHelper extends Mock implements ConnectivityHelper {}
+
+/// Configurable fake `CollectionPuller` — records call count and returns a
+/// caller-controlled result, so `pullAll()`/watermark bookkeeping can be
+/// tested without depending on a real feature's repository.
+class FakeCollectionPuller implements CollectionPuller {
+  FakeCollectionPuller({this.result = const Right(unit)});
+
+  Either<Failure, Unit> result;
+  int callCount = 0;
+
+  @override
+  String get collection => 'things';
+
+  @override
+  Future<Either<Failure, Unit>> pull() async {
+    callCount++;
+    return result;
+  }
+}
 
 /// Configurable, generic replayer used to test `SyncService` in isolation
 /// from any real feature. Records every row it's asked to replay (in call
@@ -66,6 +87,8 @@ Future<int> _seedRow(
         );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late AppDatabase db;
   late MockConnectivityHelper connectivity;
   late StreamController<bool> connectivityController;
@@ -83,10 +106,23 @@ void main() {
     await db.close();
   });
 
+  // Every construction goes through here so the WidgetsBindingObserver
+  // registration is always cleaned up — otherwise stale observers from
+  // earlier tests would receive later tests' lifecycle events and touch an
+  // already-closed db.
+  SyncService createService({
+    List<OutboxReplayer> replayers = const [],
+    List<CollectionPuller> pullers = const [],
+  }) {
+    final service = SyncService(db, connectivity, replayers, pullers);
+    addTearDown(service.dispose);
+    return service;
+  }
+
   test('a never-attempted row (lastAttemptAt null) is due immediately', () async {
     await _seedRow(db, entityId: 1);
     final replayer = FakeOutboxReplayer(db);
-    final service = SyncService(db, connectivity, [replayer]);
+    final service = createService(replayers: [replayer]);
 
     await service.replayAll();
 
@@ -98,7 +134,7 @@ void main() {
     await _seedRow(db, entityId: 1, retryCount: 1, lastAttemptAt: DateTime.now().subtract(const Duration(seconds: 4)));
     await _seedRow(db, entityId: 2, retryCount: 1, lastAttemptAt: DateTime.now().subtract(const Duration(seconds: 6)));
     final replayer = FakeOutboxReplayer(db);
-    final service = SyncService(db, connectivity, [replayer]);
+    final service = createService(replayers: [replayer]);
 
     await service.replayAll();
 
@@ -108,7 +144,7 @@ void main() {
   test('a row at the max retry count is held and never selected', () async {
     await _seedRow(db, entityId: 1, retryCount: 6, lastAttemptAt: DateTime.now().subtract(const Duration(days: 1)));
     final replayer = FakeOutboxReplayer(db);
-    final service = SyncService(db, connectivity, [replayer]);
+    final service = createService(replayers: [replayer]);
 
     await service.replayAll();
 
@@ -120,7 +156,7 @@ void main() {
     await _seedRow(db, entityId: 1, createdAt: DateTime(2026, 1, 1));
     await _seedRow(db, entityId: 3, createdAt: DateTime(2026, 1, 3));
     final replayer = FakeOutboxReplayer(db);
-    final service = SyncService(db, connectivity, [replayer]);
+    final service = createService(replayers: [replayer]);
 
     await service.replayAll();
 
@@ -130,7 +166,7 @@ void main() {
   test('a failure increments retryCount and stamps lastAttemptAt/lastError, without dropping the row', () async {
     final rowId = await _seedRow(db, entityId: 1);
     final replayer = FakeOutboxReplayer(db)..failuresByRowId[rowId] = const NetworkFailure();
-    final service = SyncService(db, connectivity, [replayer]);
+    final service = createService(replayers: [replayer]);
 
     await service.replayAll();
 
@@ -159,7 +195,7 @@ void main() {
             .write(const OutboxTableCompanion(entityId: Value(realId)));
       },
     );
-    final service = SyncService(db, connectivity, [replayer]);
+    final service = createService(replayers: [replayer]);
 
     await service.replayAll();
 
@@ -168,26 +204,84 @@ void main() {
     expect(replayer.calls[1].entityId, realId); // the update, seen AFTER reconciliation patched it
   });
 
-  test('connectivity regained triggers a background replayAll()', () async {
+  test('connectivity regained triggers a background replayAll() and pullAll()', () async {
     await _seedRow(db, entityId: 1);
     final replayer = FakeOutboxReplayer(db);
-    SyncService(db, connectivity, [replayer]);
+    final puller = FakeCollectionPuller();
+    createService(replayers: [replayer], pullers: [puller]);
 
     connectivityController.add(true);
     await pumpEventQueue();
 
     expect(replayer.calls, hasLength(1));
+    expect(puller.callCount, 1);
   });
 
-  test('a cold-start check that finds connectivity already up also triggers a replay', () async {
+  test('a cold-start check that finds connectivity already up also triggers a replay and pull', () async {
     when(() => connectivity.isConnected()).thenAnswer((_) async => true);
     await _seedRow(db, entityId: 1);
     final replayer = FakeOutboxReplayer(db);
-    SyncService(db, connectivity, [replayer]);
+    final puller = FakeCollectionPuller();
+    createService(replayers: [replayer], pullers: [puller]);
 
     await pumpEventQueue();
 
     expect(replayer.calls, hasLength(1));
+    expect(puller.callCount, 1);
+  });
+
+  group('pullAll', () {
+    test('calls every registered puller and writes SyncStateTable.lastSyncedAt on success', () async {
+      final puller = FakeCollectionPuller();
+      final service = createService(pullers: [puller]);
+
+      await service.pullAll();
+
+      expect(puller.callCount, 1);
+      final row =
+          await (db.select(db.syncStateTable)..where((t) => t.collection.equals('things'))).getSingle();
+      expect(row.lastSyncedAt, isNotNull);
+    });
+
+    test('leaves SyncStateTable untouched on a failing pull', () async {
+      final puller = FakeCollectionPuller(result: const Left(NetworkFailure()));
+      final service = createService(pullers: [puller]);
+
+      await service.pullAll();
+
+      expect(puller.callCount, 1);
+      final row = await (db.select(db.syncStateTable)..where((t) => t.collection.equals('things')))
+          .getSingleOrNull();
+      expect(row, isNull);
+    });
+  });
+
+  group('app lifecycle', () {
+    test('resuming triggers pullAll() and replayAll()', () async {
+      await _seedRow(db, entityId: 1);
+      final replayer = FakeOutboxReplayer(db);
+      final puller = FakeCollectionPuller();
+      final service = createService(replayers: [replayer], pullers: [puller]);
+
+      service.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await pumpEventQueue();
+
+      expect(replayer.calls, hasLength(1));
+      expect(puller.callCount, 1);
+    });
+
+    test('a non-resumed state does not trigger a pull or replay', () async {
+      await _seedRow(db, entityId: 1);
+      final replayer = FakeOutboxReplayer(db);
+      final puller = FakeCollectionPuller();
+      final service = createService(replayers: [replayer], pullers: [puller]);
+
+      service.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await pumpEventQueue();
+
+      expect(replayer.calls, isEmpty);
+      expect(puller.callCount, 0);
+    });
   });
 
   group('replayRow', () {
@@ -199,7 +293,7 @@ void main() {
         lastAttemptAt: DateTime.now(), // would not be due for 5s under the schedule
       );
       final replayer = FakeOutboxReplayer(db);
-      final service = SyncService(db, connectivity, [replayer]);
+      final service = createService(replayers: [replayer]);
 
       final result = await service.replayRow(rowId);
 
@@ -209,7 +303,7 @@ void main() {
 
     test('no-ops safely when the row no longer exists', () async {
       final replayer = FakeOutboxReplayer(db);
-      final service = SyncService(db, connectivity, [replayer]);
+      final service = createService(replayers: [replayer]);
 
       final result = await service.replayRow(12345);
 

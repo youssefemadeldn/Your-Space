@@ -60,6 +60,7 @@ void main() {
     repository = PersonRepositoryImpl(remote, local, syncService);
     when(() => local.savePerson(any())).thenAnswer((_) async {});
     when(() => local.savePersons(any())).thenAnswer((_) async {});
+    when(() => local.applyPersonsSnapshot(any())).thenAnswer((_) async {});
     when(
       () => local.queuePersonMutation(
         person: any(named: 'person'),
@@ -161,7 +162,7 @@ void main() {
       final result = await repository.refreshPersons();
 
       expect(result, const Right(unit));
-      final captured = verify(() => local.savePersons(captureAny())).captured.single as List<Person>;
+      final captured = verify(() => local.applyPersonsSnapshot(captureAny())).captured.single as List<Person>;
       expect(captured.map((p) => p.id), [1, 2]);
     });
 
@@ -172,7 +173,7 @@ void main() {
       final result = await repository.refreshPersons();
 
       expect(result, const Left(failure));
-      verifyNever(() => local.savePersons(any()));
+      verifyNever(() => local.applyPersonsSnapshot(any()));
     });
   });
 
