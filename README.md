@@ -11,6 +11,7 @@
 
 ## Table of Contents
 
+- [Screens](#screens)
 - [What this is](#what-this-is)
 - [Repository layout](#repository-layout)
 - [Tech stack at a glance](#tech-stack-at-a-glance)
@@ -29,6 +30,11 @@
 - [Contributing](#contributing)
 - [Known limitations / TODO](#known-limitations--todo)
 - [License](#license)
+
+## Screens
+
+<!-- SCREENS_GALLERY_PLACEHOLDER -->
+> _Screen gallery not yet generated._ A design prototype exists at `Your-Space-Mobile/doc/design/` (`Auth Flow.dc.html`, `Core Screens.dc.html`, `Event Screens.dc.html`, plus a `design-conformance-fixes.md` drift log). Run `/capture-design-screens` to capture the prototype screens and populate this section.
 
 ## What this is
 
@@ -50,6 +56,7 @@ Your-Space/
 ├── CLAUDE.md                  # Cross-project rules: never blend one project's
 │                               # conventions into the other; each folder is
 │                               # independently governed by its own CLAUDE.md
+├── .vscode/                    # Repo-root run configuration (launch.json, settings.json)
 ├── doc/                        # Repo-wide docs — see "Documentation & handoffs" below
 │   ├── context/                   dated point-in-time engineering audits (stale on specifics)
 │   ├── handoffs/                  dated cross-project handoff notes
@@ -72,7 +79,9 @@ Your-Space/
     ├── test/                        mirrors lib/ structure
     ├── assets/translations/          en.json, ar.json (easy_localization)
     ├── doc/handoffs/                 dated engineering handoff notes
-    ├── doc/design/                    exported design system + HTML mockups
+    ├── doc/design/                    exported design prototypes (Auth Flow, Core Screens,
+    │                                   Event Screens `.dc.html`) + design-conformance-fixes.md
+    │                                   drift log between the prototypes and shipped code
     ├── .fvmrc                        pins Flutter 3.44.8
     └── CLAUDE.md + .claude/rules/     mobile-specific standards (authoritative for this folder)
 ```
@@ -84,6 +93,7 @@ Your-Space/
 | Backend runtime | ASP.NET Core / .NET **10.0** | `*.csproj` (`TargetFramework`) |
 | Backend database | PostgreSQL via Npgsql EF Core provider **10.0.3** | `YourSpace.Data.csproj` |
 | Backend auth | ASP.NET Core Identity + JWT Bearer | `YourSpace.WebAPI/Extensions/IdentityServiceExtension.cs` |
+| Backend file storage | Cloudflare R2 (S3-compatible), lazily-built client, separate buckets for avatars vs. person photos | `YourSpace.Services/Services/StorageService/R2StorageService.cs`, `appsettings.json` `R2` section |
 | Mobile framework | Flutter **3.44.8** (pinned via FVM), Dart `^3.12.2` | `.fvmrc`, `pubspec.yaml` |
 | Mobile state management | `flutter_bloc` (Cubit) **^9.1.1** | `pubspec.yaml` |
 | Mobile DI | `get_it` + `injectable` | `pubspec.yaml` |
@@ -97,14 +107,15 @@ The full-stack feature set, as actually implemented (backend controllers + mobil
 
 - **Authentication** — register, login, JWT access + rotating refresh tokens, email confirmation via OTP, forgot/reset password, change password. Mobile handles token refresh transparently (`AuthInterceptor`); backend enforces per-IP rate limiting on all auth endpoints.
 - **Onboarding** — first-run onboarding carousel before the app lands on Home.
+- **Home dashboard** — at-a-glance stats screen (`HomeStatsCubit`) showing Groups/People/Events counts with an empty state and quick-nav cards into each section.
 - **Groups & sub-groups** — CRUD for contact circles, plus nested sub-groups within a group (`groups/{id}/subgroups`), searchable and paginated.
-- **People** — CRUD for personal contacts, each assigned to a Group, via a multi-step person wizard (basic identity → classification & location → relationships → notes). Includes server-side person search and multiple profile photos per person (`persons/{id}/images`).
+- **People** — CRUD for personal contacts, each assigned to a Group, via a multi-step person wizard (basic identity → classification & location → relationships → notes). Includes server-side person search, inline "+ Add new" creation of a Group/Sub-group/Governorate/City/Neighborhood directly from the wizard's picker steps without leaving the flow, and multiple profile photos per person (`persons/{id}/images`).
 - **Person relationships** — link people to one another with a typed relationship (`persons/{id}/relationships`), editable inline in the wizard.
 - **Location reference data** — a Governorate → City → Neighborhood hierarchy (`governorates`, `governorates/{id}/cities`, `cities/{id}/neighborhoods`), used to tag a person's location and to slice guest lists by area.
 - **Events** — CRUD for occasions being planned, with a live guest-count breakdown (not invited / invited / skipped).
 - **Guest-List / Invitation Planner** — bulk-add to an Event by People, Group, Sub-group, Governorate, City, or Neighborhood; per-guest status transitions (invite / skip / revert); and a progress summary per event.
 - **Reciprocity** — a per-person log of past occasions where *they* invited the user, plus a "reciprocity suggestions" endpoint/screen surfacing contacts who've invited the user before but haven't been added to the current event yet.
-- **User settings & profile** — per-user preference flags (e.g. toggling reciprocity suggestions), profile edit (name, avatar), and account deletion.
+- **User settings & profile** — profile edit (name, avatar), and account deletion, on both sides. The backend also exposes per-user preference flags (e.g. toggling reciprocity suggestions) via `usersettings`, but the mobile Settings screen does not yet surface a toggle for it — that endpoint currently has no mobile UI.
 - **Role-based access control** — `User` / `StandardAdmin` / `SuperAdmin` hierarchy on the backend, with a bootstrap SuperAdmin seeder.
 - **Bilingual (EN/AR) throughout** — every user-facing entity field and every response/validation message on the backend has an Arabic counterpart resolved server-side; the mobile app mirrors this with `easy_localization` and RTL-aware layout primitives end to end.
 
@@ -145,7 +156,7 @@ Full setup, environment switching (`--dart-define=ENVIRONMENT=prod`), and build 
 
 ### Running both together
 
-The mobile app's `ApiConstants.baseUrl` (`Your-Space-Mobile/lib/core/constants/api_constants.dart`) must point at a reachable instance of the backend — either the locally-run API above or the shared dev deployment already configured there. There is no orchestration tool (Docker Compose, etc.) wiring the two together in this repo — each project is started independently.
+The mobile app's `ApiConstants.baseUrl` (`Your-Space-Mobile/lib/core/constants/api_constants.dart`) must point at a reachable instance of the backend. The switch machinery for this is a compile-time `--dart-define=ENVIRONMENT=dev|prod` flag, but as of this writing `_devBaseUrl` and `_prodBaseUrl` are set to the identical shared dev deployment URL — there is no separate prod endpoint configured yet, so today the flag has no observable effect; update both constants (or point one at a locally-run API) as needed. There is no orchestration tool (Docker Compose, etc.) wiring the two together in this repo — each project is started independently.
 
 ## Architecture
 
@@ -162,7 +173,7 @@ Base path: `/api/v{version}/...` (currently v1), Bearer JWT auth, EN/AR via `Acc
 
 ## Environment & secrets
 
-Neither project commits real secrets. The backend uses `dotnet user-secrets` locally and environment variables/a secrets manager in deployed environments (`appsettings*.json` holds shape only). The mobile app has no secrets to configure at build time — it only switches a compile-time `ENVIRONMENT` define between `dev`/`prod` base URLs, and acquires session tokens at runtime via login. Full key-by-key tables: [Backend env vars](Your-Space-Backend/README.md#environment-variables-reference) / [Mobile env vars](Your-Space-Mobile/README.md#environment-variables-reference).
+Neither project commits real secrets. The backend uses `dotnet user-secrets` locally and environment variables/a secrets manager in deployed environments (`appsettings*.json` holds shape only) — this now also covers the `R2` section (Cloudflare account id, access/secret key, bucket names) used for avatar and person-photo storage, blank by default so the client builds lazily without failing auth when unset. The mobile app has no secrets to configure at build time — it only switches a compile-time `ENVIRONMENT` define between `dev`/`prod` base URLs, and acquires session tokens at runtime via login. Full key-by-key tables: [Backend env vars](Your-Space-Backend/README.md#environment-variables-reference) / [Mobile env vars](Your-Space-Mobile/README.md#environment-variables-reference).
 
 ## Testing
 
@@ -194,7 +205,7 @@ Governed by the root `CLAUDE.md`:
 
 - Each project's own `CLAUDE.md` (plus its `.claude/rules/`, `.claude/templates/`) is the authority for everything inside its folder — never apply the backend's architecture rules/naming/anti-patterns to the mobile app or vice versa, even where a section name matches (e.g. both have a "Testing discipline" section that means something different in each).
 - A task that spans both projects (e.g. a new backend endpoint plus the mobile screen that calls it) should keep each half strictly inside its own project's conventions rather than blending them into one style.
-- Commit convention observed in history: a loose `feat: <description>` prefix for feature work, plain imperative messages otherwise.
+- Commit convention observed in history: scoped conventional-commit prefixes — `feat:`, `fix:`, `chore:`, `docs:`, `test:` — optionally suffixed with a project scope (e.g. `fix(backend):`, `feat(backend):`, `test(backend):`); plain imperative messages appear occasionally otherwise.
 - Adding a new project (e.g. a web frontend): give it its own top-level folder with its own `CLAUDE.md` + `.claude/rules/` + `.claude/templates/`, and add a row to the table in the root `CLAUDE.md`.
 
 ## Known limitations / TODO
