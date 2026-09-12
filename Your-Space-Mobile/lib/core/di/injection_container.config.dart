@@ -17,6 +17,7 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:go_router/go_router.dart' as _i583;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:shared_preferences/shared_preferences.dart' as _i460;
+import 'package:your_space_mobile/core/database/app_database.dart' as _i935;
 import 'package:your_space_mobile/core/di/register_module.dart' as _i876;
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart' as _i215;
 import 'package:your_space_mobile/core/helpers/dialog_helper.dart' as _i733;
@@ -171,6 +172,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => registerModule.sharedPreferences,
       preResolve: true,
     );
+    gh.lazySingleton<_i935.AppDatabase>(() => _i935.AppDatabase());
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => registerModule.secureStorage,
     );
