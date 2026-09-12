@@ -78,7 +78,7 @@ void main() {
     );
     addTearDown(cubit.close);
 
-    cubit.pushState(const PeopleListSuccess(people: [], groups: [], pageIndex: 1, hasNextPage: false));
+    cubit.pushState(const PeopleListSuccess(people: [], groups: [], limit: 20, hasNextPage: false));
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -118,7 +118,7 @@ void main() {
         governorateName: 'Cairo',
       ),
     ];
-    cubit.pushState(const PeopleListSuccess(people: people, groups: [group], pageIndex: 1, hasNextPage: false));
+    cubit.pushState(const PeopleListSuccess(people: people, groups: [group], limit: 20, hasNextPage: false));
     await tester.pumpAndSettle();
     expect(find.text('Sara Adel'), findsOneWidget);
 
