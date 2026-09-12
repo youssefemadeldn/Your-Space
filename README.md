@@ -33,8 +33,105 @@
 
 ## Screens
 
+> These are captures from the **design prototype** (`Your-Space-Mobile/doc/design/*.dc.html`), not the live running app — see [Known limitations / TODO](#known-limitations--todo) for real-device screenshots. Full set of frames (loading/empty/wizard-step variants included) lives in [`Your-Space-Mobile/doc/design/screenshots/`](Your-Space-Mobile/doc/design/screenshots/); a `design-conformance-fixes.md` drift log tracks where the code has since diverged from these mocks.
+
 <!-- SCREENS_GALLERY_PLACEHOLDER -->
-> _Screen gallery not yet generated._ A design prototype exists at `Your-Space-Mobile/doc/design/` (`Auth Flow.dc.html`, `Core Screens.dc.html`, `Event Screens.dc.html`, plus a `design-conformance-fixes.md` drift log). Run `/capture-design-screens` to capture the prototype screens and populate this section.
+<table>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/01-login.png" width="180" alt="Login"><br>
+<sub>Login</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/02-register.png" width="180" alt="Register (with gender field)"><br>
+<sub>Register</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/03-confirm-email-otp.png" width="180" alt="Confirm email (OTP)"><br>
+<sub>Confirm email (OTP)</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/04-forgot-password.png" width="180" alt="Forgot password"><br>
+<sub>Forgot password</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/05-reset-password.png" width="180" alt="Reset password"><br>
+<sub>Reset password</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/06-change-password.png" width="180" alt="Change password (authenticated)"><br>
+<sub>Change password</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/07-home.png" width="180" alt="Home"><br>
+<sub>Home</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/08-groups-list.png" width="180" alt="Groups — list"><br>
+<sub>Groups — list</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/09-create-group.png" width="180" alt="Create group (bottom sheet)"><br>
+<sub>Create group</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/10-people-list.png" width="180" alt="People — list"><br>
+<sub>People — list</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/11-add-person-wizard.png" width="180" alt="Add person — 4-step wizard"><br>
+<sub>Add person (wizard)</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/12-person-details.png" width="180" alt="Person details & occasion history"><br>
+<sub>Person details & history</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/13-add-occasion.png" width="180" alt="Add occasion (reciprocity)"><br>
+<sub>Add occasion</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/14-events-list.png" width="180" alt="Events — list"><br>
+<sub>Events — list</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/15-create-event.png" width="180" alt="Create event"><br>
+<sub>Create event</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/16-event-details.png" width="180" alt="Event details (progress dashboard)"><br>
+<sub>Event details</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/17-event-guests.png" width="180" alt="Event guests — filter & status"><br>
+<sub>Event guests</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/18-add-guests-people.png" width="180" alt="Add guests — People tab"><br>
+<sub>Add guests — People tab</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/19-add-guests-group.png" width="180" alt="Add guests — By group tab"><br>
+<sub>Add guests — By group tab</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/20-reciprocity-suggestions.png" width="180" alt="Reciprocity suggestions"><br>
+<sub>Reciprocity suggestions</sub>
+</td>
+</tr>
+</table>
 
 ## What this is
 
