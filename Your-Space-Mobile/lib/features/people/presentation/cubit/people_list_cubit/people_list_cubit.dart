@@ -7,8 +7,10 @@ import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/neighborhood.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
@@ -26,6 +28,13 @@ const _refPageSize = 50;
 /// screen's single source of truth for 5 filter dimensions (group, subgroup,
 /// governorate, city, neighborhood), each backed by its own small reference
 /// repository. Mirrors `PersonWizardCubit`'s equivalent orchestration.
+///
+/// People is local-first (CLAUDE.md Architecture rule 7): the people list
+/// itself is read from a reactive drift `Stream` via `watchPersons()`, with
+/// `refreshPersons()` running the network leg in the background. Only the
+/// reference/filter-option lists (groups, subgroups, governorates, cities,
+/// neighborhoods) are still plain one-shot `Future` calls — those features
+/// aren't migrated yet.
 @injectable
 class PeopleListCubit extends Cubit<PeopleListState> {
   final PersonRepository _personRepository;
@@ -37,6 +46,7 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   final DataRefreshBus _dataRefreshBus;
   Timer? _searchDebounce;
   late final StreamSubscription<DataScope> _refreshSubscription;
+  StreamSubscription<List<Person>>? _peopleSubscription;
 
   PeopleListCubit(
     this._personRepository,
@@ -49,8 +59,6 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   ) : super(const PeopleListInitial()) {
     _refreshSubscription = _dataRefreshBus.stream.listen((scope) {
       switch (scope) {
-        case DataScope.people:
-          refresh();
         case DataScope.groups:
           refreshGroups();
         case DataScope.classification:
@@ -58,6 +66,13 @@ class PeopleListCubit extends Cubit<PeopleListState> {
           // wizard's inline "+ Add new") elsewhere — refresh whatever filter
           // option lists this cubit is currently holding.
           refreshClassificationFilters();
+        case DataScope.people:
+          // No longer needed: PersonRepositoryImpl upserts into drift on every
+          // successful create/update, so every open `watchPersons` stream
+          // (including other branch-cubit instances kept alive by
+          // StatefulShellRoute.indexedStack) already sees the change directly
+          // (design doc §7).
+          break;
         case DataScope.events:
         case DataScope.eventGuests:
         case DataScope.profile:
@@ -72,17 +87,22 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
     final governoratesResult = await _governorateRepository.getGovernorates(pageIndex: 1, pageSize: _refPageSize);
     final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
-    final peopleResult = await _personRepository.getPersons(pageIndex: 1, pageSize: _pageSize);
-    peopleResult.fold(
-      (failure) => emit(PeopleListError(core.failureToMessage(failure))),
-      (page) => emit(PeopleListSuccess(
-        people: page.items,
-        groups: groups,
-        governorates: governorates,
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-      )),
+
+    await _subscribeToPersons(
+      groupId: null,
+      subGroupId: null,
+      governorateId: null,
+      cityId: null,
+      neighborhoodId: null,
+      search: null,
+      limit: _pageSize,
+      groups: groups,
+      governorates: governorates,
     );
+    // Background network leg — the first render already came from the local
+    // cache above; a failure here is swallowed (design doc §3), the UI just
+    // keeps showing whatever was cached.
+    unawaited(_personRepository.refreshPersons());
   }
 
   /// Debounced — bound directly to every keystroke in the search field.
@@ -95,14 +115,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   Future<void> _performSearch(String query) async {
     final current = state;
     if (current is! PeopleListSuccess) return;
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: current.selectedSubGroupId,
       governorateId: current.selectedGovernorateId,
       cityId: current.selectedCityId,
       neighborhoodId: current.selectedNeighborhoodId,
       search: query.isEmpty ? null : query,
+      limit: _pageSize,
     );
   }
 
@@ -114,14 +134,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
       final result = await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: _refPageSize);
       subGroups = result.fold((_) => const <SubGroup>[], (p) => p.items);
     }
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: groupId,
       subGroupId: null, // a subgroup belongs to the previous group — reset
       governorateId: current.selectedGovernorateId,
       cityId: current.selectedCityId,
       neighborhoodId: current.selectedNeighborhoodId,
       search: current.search,
+      limit: _pageSize,
       subGroups: subGroups,
     );
   }
@@ -129,14 +149,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   Future<void> filterBySubGroup(int? subGroupId) async {
     final current = state;
     if (current is! PeopleListSuccess) return;
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: subGroupId,
       governorateId: current.selectedGovernorateId,
       cityId: current.selectedCityId,
       neighborhoodId: current.selectedNeighborhoodId,
       search: current.search,
+      limit: _pageSize,
     );
   }
 
@@ -149,14 +169,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
           await _cityRepository.getCities(governorateId: governorateId, pageIndex: 1, pageSize: _refPageSize);
       cities = result.fold((_) => const <City>[], (p) => p.items);
     }
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: current.selectedSubGroupId,
       governorateId: governorateId,
       cityId: null, // a city belongs to the previous governorate — reset
       neighborhoodId: null,
       search: current.search,
+      limit: _pageSize,
       cities: cities,
       neighborhoods: const [],
     );
@@ -171,14 +191,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
           await _neighborhoodRepository.getNeighborhoods(cityId: cityId, pageIndex: 1, pageSize: _refPageSize);
       neighborhoods = result.fold((_) => const <Neighborhood>[], (p) => p.items);
     }
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: current.selectedSubGroupId,
       governorateId: current.selectedGovernorateId,
       cityId: cityId,
       neighborhoodId: null, // a neighborhood belongs to the previous city — reset
       search: current.search,
+      limit: _pageSize,
       neighborhoods: neighborhoods,
     );
   }
@@ -186,14 +206,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   Future<void> filterByNeighborhood(int? neighborhoodId) async {
     final current = state;
     if (current is! PeopleListSuccess) return;
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: current.selectedSubGroupId,
       governorateId: current.selectedGovernorateId,
       cityId: current.selectedCityId,
       neighborhoodId: neighborhoodId,
       search: current.search,
+      limit: _pageSize,
     );
   }
 
@@ -203,14 +223,14 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   Future<void> clearSubGroupAndLocationFilters() async {
     final current = state;
     if (current is! PeopleListSuccess) return;
-    await _refetch(
-      current,
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: null,
       governorateId: null,
       cityId: null,
       neighborhoodId: null,
       search: current.search,
+      limit: _pageSize,
       cities: const [],
       neighborhoods: const [],
     );
@@ -220,52 +240,29 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     final current = state;
     if (current is! PeopleListSuccess || !current.hasNextPage || current.isLoadingMore) return;
     emit(current.copyWith(isLoadingMore: true));
-    final result = await _personRepository.getPersons(
+    await _subscribeToPersons(
       groupId: current.selectedGroupId,
       subGroupId: current.selectedSubGroupId,
       governorateId: current.selectedGovernorateId,
       cityId: current.selectedCityId,
       neighborhoodId: current.selectedNeighborhoodId,
       search: current.search,
-      pageIndex: current.pageIndex + 1,
-      pageSize: _pageSize,
-    );
-    result.fold(
-      (failure) => emit(current.copyWith(
+      limit: current.limit + _pageSize,
+      onError: (_) => emit(current.copyWith(
         isLoadingMore: false,
-        loadMoreErrorMessage: core.failureToMessage(failure),
+        loadMoreErrorMessage: core.failureToMessage(const CacheFailure()),
         loadMoreErrorId: current.loadMoreErrorId + 1,
-      )),
-      (page) => emit(current.copyWith(
-        people: [...current.people, ...page.items],
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-        isLoadingMore: false,
       )),
     );
   }
 
-  /// Re-fetches page 1 with the current filters/search, without a `Loading`
-  /// flash — triggered by [DataRefreshBus] on a `people` scope notification
-  /// (a person was added/edited/removed elsewhere). Keeps the last-good list
-  /// on a background failure rather than replacing it with an error screen.
+  /// Kicks off a background bulk sync (design doc §3) — the drift `Stream`
+  /// already re-emits on upsert, so there's nothing to manually re-fetch or
+  /// re-emit here. Failure is swallowed; the last-good cached list stays on
+  /// screen.
   Future<void> refresh() async {
-    final current = state;
-    if (current is! PeopleListSuccess) return;
-    final result = await _personRepository.getPersons(
-      groupId: current.selectedGroupId,
-      subGroupId: current.selectedSubGroupId,
-      governorateId: current.selectedGovernorateId,
-      cityId: current.selectedCityId,
-      neighborhoodId: current.selectedNeighborhoodId,
-      search: current.search,
-      pageIndex: 1,
-      pageSize: _pageSize,
-    );
-    result.fold(
-      (_) {},
-      (page) => emit(current.copyWith(people: page.items, pageIndex: page.pageIndex, hasNextPage: page.hasNextPage)),
-    );
+    if (state is! PeopleListSuccess) return;
+    await _personRepository.refreshPersons();
   }
 
   /// Re-fetches only the group-filter chip row — triggered by
@@ -328,58 +325,108 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     ));
   }
 
-  /// Re-fetches page 1 for a fully-specified set of filters/search (callers
-  /// always pass all 5 dimensions — either carried over from [current] or a
-  /// new value) and emits the resulting [PeopleListSuccess]. The single path
-  /// every filter mutator and search funnels through, so the `getPersons(...)`
-  /// call and its state reconstruction exist exactly once.
-  Future<void> _refetch(
-    PeopleListSuccess current, {
+  /// Cancels any existing local subscription and resubscribes to
+  /// `watchPersons(..., limit: limit)` for a fully-specified set of
+  /// filters/search (callers always pass all 5 dimensions — either carried
+  /// over from the current state or a new value) and an explicit [limit]
+  /// (callers always pass `_pageSize` to reset, or `current.limit +
+  /// _pageSize` to grow — never a separately-tracked field, so a failed
+  /// `loadMore()` retry recomputes the same window instead of silently
+  /// skipping a chunk). Every emission also resolves `hasNextPage` via a
+  /// one-shot `countPersons` call before building the next
+  /// [PeopleListSuccess]. The single path every filter mutator, search, and
+  /// `loadMore()` funnels through.
+  ///
+  /// [onError] lets `loadMore()` report a failure through its own
+  /// `loadMoreErrorMessage`/`loadMoreErrorId` retry-snackbar path instead of
+  /// the default: replacing the whole screen with [PeopleListError].
+  Future<void> _subscribeToPersons({
     required int? groupId,
     required int? subGroupId,
     required int? governorateId,
     required int? cityId,
     required int? neighborhoodId,
     required String? search,
+    required int limit,
+    List<Group>? groups,
     List<SubGroup>? subGroups,
+    List<Governorate>? governorates,
     List<City>? cities,
     List<Neighborhood>? neighborhoods,
+    void Function(Object error)? onError,
   }) async {
-    final result = await _personRepository.getPersons(
+    await _peopleSubscription?.cancel();
+    final done = Completer<void>();
+
+    void handleError(Object error) {
+      if (onError != null) {
+        onError(error);
+      } else {
+        emit(PeopleListError(core.failureToMessage(const CacheFailure())));
+      }
+      if (!done.isCompleted) done.complete();
+    }
+
+    _peopleSubscription = _personRepository
+        .watchPersons(
       groupId: groupId,
       subGroupId: subGroupId,
       governorateId: governorateId,
       cityId: cityId,
       neighborhoodId: neighborhoodId,
       search: search,
-      pageIndex: 1,
-      pageSize: _pageSize,
+      limit: limit,
+    )
+        .listen(
+      (people) async {
+        try {
+          final total = await _personRepository.countPersons(
+            groupId: groupId,
+            subGroupId: subGroupId,
+            governorateId: governorateId,
+            cityId: cityId,
+            neighborhoodId: neighborhoodId,
+            search: search,
+          );
+          final base = state;
+          emit(PeopleListSuccess(
+            people: people,
+            groups: groups ?? (base is PeopleListSuccess ? base.groups : const []),
+            selectedGroupId: groupId,
+            subGroups: subGroups ?? (base is PeopleListSuccess ? base.subGroups : const []),
+            selectedSubGroupId: subGroupId,
+            governorates: governorates ?? (base is PeopleListSuccess ? base.governorates : const []),
+            selectedGovernorateId: governorateId,
+            cities: cities ?? (base is PeopleListSuccess ? base.cities : const []),
+            selectedCityId: cityId,
+            neighborhoods: neighborhoods ?? (base is PeopleListSuccess ? base.neighborhoods : const []),
+            selectedNeighborhoodId: neighborhoodId,
+            search: search,
+            limit: limit,
+            hasNextPage: people.length < total,
+          ));
+          if (!done.isCompleted) done.complete();
+        } catch (error) {
+          // Only the first emission's failure is the caller's problem (it's
+          // awaited below); a later background emission's failure has no
+          // caller left to report to and is swallowed, matching this cubit's
+          // existing "background refresh failures don't replace the list"
+          // posture.
+          handleError(error);
+        }
+      },
+      onError: (Object error) => handleError(error),
     );
-    result.fold(
-      (failure) => emit(PeopleListError(core.failureToMessage(failure))),
-      (page) => emit(PeopleListSuccess(
-        people: page.items,
-        groups: current.groups,
-        selectedGroupId: groupId,
-        subGroups: subGroups ?? current.subGroups,
-        selectedSubGroupId: subGroupId,
-        governorates: current.governorates,
-        selectedGovernorateId: governorateId,
-        cities: cities ?? current.cities,
-        selectedCityId: cityId,
-        neighborhoods: neighborhoods ?? current.neighborhoods,
-        selectedNeighborhoodId: neighborhoodId,
-        search: search,
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-      )),
-    );
+    // Wait for the first emission so callers (load(), filter mutators,
+    // loadMore()) can treat this like the old awaited Future-based refetch.
+    await done.future;
   }
 
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
     _refreshSubscription.cancel();
+    _peopleSubscription?.cancel();
     return super.close();
   }
 }

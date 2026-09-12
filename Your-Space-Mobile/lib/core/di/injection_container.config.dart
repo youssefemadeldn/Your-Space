@@ -128,8 +128,12 @@ import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list
     as _i771;
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_cubit.dart'
     as _i136;
+import 'package:your_space_mobile/features/people/data/datasources/base_person_data_source.dart'
+    as _i498;
 import 'package:your_space_mobile/features/people/data/datasources/person_image_remote_data_source_impl.dart'
     as _i931;
+import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart'
+    as _i439;
 import 'package:your_space_mobile/features/people/data/datasources/person_relationship_remote_data_source_impl.dart'
     as _i903;
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart'
@@ -193,6 +197,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i559.LocaleHelper>(
       () => _i559.LocaleHelper(gh<_i460.SharedPreferences>()),
     );
+    gh.lazySingleton<_i439.PersonLocalDataSourceImpl>(
+      () => _i439.PersonLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
     gh.lazySingleton<_i733.DialogHelper>(
       () => _i733.DialogHelper(gh<_i409.GlobalKey<_i409.NavigatorState>>()),
     );
@@ -208,6 +216,10 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i361.Dio>(() => registerModule.dio(gh<_i927.DioFactory>()));
     gh.lazySingleton<_i531.ApiManager>(() => _i531.ApiManager(gh<_i361.Dio>()));
+    gh.lazySingleton<_i498.BasePersonDataSource>(
+      () => _i293.PersonRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
+    );
     gh.lazySingleton<_i1073.AuthRemoteDataSourceImpl>(
       () => _i1073.AuthRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
@@ -239,9 +251,6 @@ extension GetItInjectableX on _i174.GetIt {
       () =>
           _i903.PersonRelationshipRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
-    gh.lazySingleton<_i293.PersonRemoteDataSourceImpl>(
-      () => _i293.PersonRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
     gh.lazySingleton<_i235.EventGuestRepository>(
       () => _i1063.EventGuestRepositoryImpl(
         gh<_i320.EventGuestRemoteDataSourceImpl>(),
@@ -249,9 +258,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i994.GroupRepository>(
       () => _i612.GroupRepositoryImpl(gh<_i190.GroupRemoteDataSourceImpl>()),
-    );
-    gh.lazySingleton<_i571.PersonRepository>(
-      () => _i504.PersonRepositoryImpl(gh<_i293.PersonRemoteDataSourceImpl>()),
     );
     gh.lazySingleton<_i126.PersonRelationshipRepository>(
       () => _i630.PersonRelationshipRepositoryImpl(
@@ -275,12 +281,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i930.PersonDetailsCubit>(
-      () => _i930.PersonDetailsCubit(
-        gh<_i571.PersonRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
     gh.factory<_i889.EventGuestsListCubit>(
       () => _i889.EventGuestsListCubit(
         gh<_i235.EventGuestRepository>(),
@@ -297,6 +297,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i722.AuthRepositoryImpl(
         gh<_i1073.AuthRemoteDataSourceImpl>(),
         gh<_i134.SecureStorageHelper>(),
+      ),
+    );
+    gh.lazySingleton<_i571.PersonRepository>(
+      () => _i504.PersonRepositoryImpl(
+        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
+        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
       ),
     );
     gh.lazySingleton<_i1005.PersonImageRepository>(
@@ -434,6 +440,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i681.AuthRepository>()),
+    );
+    gh.factory<_i930.PersonDetailsCubit>(
+      () => _i930.PersonDetailsCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
     );
     gh.factory<_i68.PersonWizardCubit>(
       () => _i68.PersonWizardCubit(

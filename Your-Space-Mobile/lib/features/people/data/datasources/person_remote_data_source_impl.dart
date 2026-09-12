@@ -12,13 +12,16 @@ import '../models/person_details_response.dart';
 import '../models/person_occasion_history_response.dart';
 import '../models/person_response.dart';
 import '../models/update_person_request.dart';
+import 'base_person_data_source.dart';
 
-@lazySingleton
-class PersonRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BasePersonDataSource)
+class PersonRemoteDataSourceImpl implements BasePersonDataSource {
   final ApiManager _api;
 
   PersonRemoteDataSourceImpl(this._api);
 
+  @override
   Future<Either<Failure, PaginatedResponse<PersonResponse>>> getPersons({
     int? groupId,
     int? subGroupId,
@@ -50,6 +53,7 @@ class PersonRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, PersonDetailsResponse>> getPersonById(int id) => _api.get<PersonDetailsResponse>(
         path: '${ApiConstants.persons}/$id',
         fromJson: (json) => unwrapServiceResult(
@@ -58,6 +62,7 @@ class PersonRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, PersonResponse>> createPerson(CreatePersonRequest request) =>
       _api.post<PersonResponse>(
         path: ApiConstants.persons,
@@ -68,6 +73,7 @@ class PersonRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, PersonResponse>> updatePerson(UpdatePersonRequest request) =>
       _api.put<PersonResponse>(
         path: ApiConstants.persons,
@@ -78,6 +84,7 @@ class PersonRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, PersonOccasionHistoryResponse>> addOccasionHistory(
     int personId,
     AddOccasionHistoryRequest request,

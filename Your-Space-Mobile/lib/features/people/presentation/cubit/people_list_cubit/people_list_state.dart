@@ -45,7 +45,11 @@ final class PeopleListSuccess extends PeopleListState {
   final int? selectedNeighborhoodId;
 
   final String? search;
-  final int pageIndex;
+
+  /// How many rows the local `watchPersons` query is currently asking for
+  /// (grows by the page size on `loadMore()`) — a local read window, not a
+  /// server page index (Tier 1, design doc §3).
+  final int limit;
   final bool hasNextPage;
   final bool isLoadingMore;
 
@@ -70,7 +74,7 @@ final class PeopleListSuccess extends PeopleListState {
     this.neighborhoods = const [],
     this.selectedNeighborhoodId,
     this.search,
-    required this.pageIndex,
+    required this.limit,
     required this.hasNextPage,
     this.isLoadingMore = false,
     this.loadMoreErrorMessage,
@@ -95,7 +99,7 @@ final class PeopleListSuccess extends PeopleListState {
     List<Governorate>? governorates,
     List<City>? cities,
     List<Neighborhood>? neighborhoods,
-    int? pageIndex,
+    int? limit,
     bool? hasNextPage,
     bool? isLoadingMore,
     String? loadMoreErrorMessage,
@@ -114,7 +118,7 @@ final class PeopleListSuccess extends PeopleListState {
         neighborhoods: neighborhoods ?? this.neighborhoods,
         selectedNeighborhoodId: selectedNeighborhoodId,
         search: search,
-        pageIndex: pageIndex ?? this.pageIndex,
+        limit: limit ?? this.limit,
         hasNextPage: hasNextPage ?? this.hasNextPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
         loadMoreErrorMessage: loadMoreErrorMessage ?? this.loadMoreErrorMessage,
@@ -135,7 +139,7 @@ final class PeopleListSuccess extends PeopleListState {
         neighborhoods,
         selectedNeighborhoodId,
         search,
-        pageIndex,
+        limit,
         hasNextPage,
         isLoadingMore,
         loadMoreErrorMessage,
