@@ -5,6 +5,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.PersonService.Dtos;
 using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
@@ -20,6 +21,7 @@ public class PersonService_UpdateAsyncTests
     private readonly Mock<IGenericRepository<PersonOccasionHistory, int>> _historyRepo = new();
     private readonly Mock<IGenericRepository<PersonRelationship, int>> _relationshipRepo = new();
     private readonly Mock<IGenericRepository<PersonImage, int>> _imageRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public PersonService_UpdateAsyncTests()
     {
@@ -31,6 +33,7 @@ public class PersonService_UpdateAsyncTests
         _relationshipRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonRelationship>>())).ReturnsAsync([]);
         _unitOfWork.Setup(u => u.Repository<PersonImage, int>()).Returns(_imageRepo.Object);
         _imageRepo.Setup(r => r.ListAllWithSpecAsync(It.IsAny<ISpecification<PersonImage>>())).ReturnsAsync([]);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private PersonServiceImpl CreateSut() => new(
@@ -39,6 +42,7 @@ public class PersonService_UpdateAsyncTests
         Mock.Of<IR2StorageService>(),
         R2SettingsFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<PersonServiceImpl>>());
 
     [Fact]
@@ -105,5 +109,19 @@ public class PersonService_UpdateAsyncTests
         person.PhoneNumber2.Should().Be("+201234567891");
         person.Notes.Should().Be("Original notes.");
         person.Gender.Should().Be(Gender.Male);
+    }
+
+    [Fact]
+    public async Task Assigns_a_fresh_syncversion_from_the_provider_before_saving()
+    {
+        var group = new Group { Id = 1, OwnerUserId = "owner-1", Name = "Relatives" };
+        var person = new Person { Id = 10, OwnerUserId = "owner-1", Name = "Ahmed", Gender = Gender.Male, GroupId = 1, GovernorateId = 1, Group = group, SyncVersion = 1 };
+        _personRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(person);
+        _syncVersionProvider.Setup(s => s.NextValueAsync("People_SyncVersion_seq", It.IsAny<CancellationToken>())).ReturnsAsync(42);
+
+        var result = await CreateSut().UpdateAsync("owner-1", new UpdatePersonDto { Id = 10, Name = "Ahmed Updated" });
+
+        result.Success.Should().BeTrue();
+        person.SyncVersion.Should().Be(42);
     }
 }

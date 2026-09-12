@@ -39,6 +39,16 @@ public class PersonsController(IPersonService personService) : ControllerBase
         return new ResultActionResult<PersonDetailsDto>(result);
     }
 
+    // Delta-sync pull (doc/local-first-sync-design.md §6) — row 5 of the delivery plan. `since`
+    // is the caller's last-seen SyncVersion cursor (0 on a first-ever sync); `pageSize` is
+    // clamped server-side in PersonService.
+    [HttpGet("changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await personService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<PersonChangesDto>(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePersonDto dto)
     {

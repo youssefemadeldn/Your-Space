@@ -175,6 +175,9 @@
   <data name="Person.NeighborhoodId.Invalid" xml:space="preserve">
     <value>الحي المحدد غير صالح لهذه المدينة.</value>
   </data>
+  <data name="Person.Since.Invalid" xml:space="preserve">
+    <value>مؤشر المزامنة يجب ألا يكون سالبًا.</value>
+  </data>
   <data name="SubGroup.NotFound" xml:space="preserve">
     <value>المجموعة الفرعية غير موجودة.</value>
   </data>

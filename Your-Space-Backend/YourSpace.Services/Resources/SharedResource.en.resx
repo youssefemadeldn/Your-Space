@@ -175,6 +175,9 @@
   <data name="Person.NeighborhoodId.Invalid" xml:space="preserve">
     <value>The specified neighborhood is invalid for this city.</value>
   </data>
+  <data name="Person.Since.Invalid" xml:space="preserve">
+    <value>The sync cursor must not be negative.</value>
+  </data>
   <data name="SubGroup.NotFound" xml:space="preserve">
     <value>Subgroup not found.</value>
   </data>

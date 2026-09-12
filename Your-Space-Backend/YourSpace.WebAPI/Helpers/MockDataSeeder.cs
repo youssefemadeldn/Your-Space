@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using YourSpace.Data.Contexts;
 using YourSpace.Data.Entities;
 using YourSpace.Data.Enums;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.AuthService;
 using YourSpace.Services.Services.OtpService;
 using Person = YourSpace.Data.Entities.Person; // disambiguates from Bogus.Person, used by the Faker<Person> below
@@ -21,7 +22,7 @@ public static class MockDataSeeder
     private const string LockedUserEmail = "seed.locked@yourspace.dev";
     private const string SeedUserPassword = "Seed!Pass123";
 
-    public static async Task SeedAsync(YourSpaceDbContext context, UserManager<AppUser> userManager)
+    public static async Task SeedAsync(YourSpaceDbContext context, UserManager<AppUser> userManager, ISyncVersionProvider syncVersionProvider)
     {
         var (activeUserId, lockedUserId) = await SeedDevUsersAsync(userManager);
 
@@ -34,7 +35,7 @@ public static class MockDataSeeder
         await SeedGovernoratesAsync(context, activeUserId);
         await SeedCitiesAsync(context, activeUserId);
         await SeedNeighborhoodsAsync(context, activeUserId);
-        await SeedPersonsAsync(context, activeUserId, lockedUserId);
+        await SeedPersonsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedPersonImagesAsync(context, activeUserId);
         await SeedEventsAsync(context, activeUserId, lockedUserId);
         await SeedEventGuestsAsync(context, activeUserId);
@@ -306,7 +307,7 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedPersonsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    private static async Task SeedPersonsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
         if (await context.People.AnyAsync())
         {
@@ -372,6 +373,15 @@ public static class MockDataSeeder
             SubGroupId = lockedUserSubGroup.Id,
             GovernorateId = giza.Id
         });
+
+        // Seeding inserts directly via the DbContext, bypassing PersonService — so SyncVersion
+        // (which PersonService assigns on every real write, doc/local-first-sync-design.md §6)
+        // must be assigned here too, or every seeded row would be stuck at the column default
+        // and collide with each other under a `WHERE SyncVersion > @since` delta-sync query.
+        foreach (var person in persons)
+        {
+            person.SyncVersion = await syncVersionProvider.NextValueAsync("People_SyncVersion_seq");
+        }
 
         await context.People.AddRangeAsync(persons);
         await context.SaveChangesAsync();

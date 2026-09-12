@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using YourSpace.Data.Contexts;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.EmailService;
 using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.Fakes;
@@ -95,6 +96,14 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             }
 
             services.AddSingleton<IR2StorageService>(R2Storage);
+
+            var syncVersionProvider = services.SingleOrDefault(d => d.ServiceType == typeof(ISyncVersionProvider));
+            if (syncVersionProvider is not null)
+            {
+                services.Remove(syncVersionProvider);
+            }
+
+            services.AddSingleton<ISyncVersionProvider, FakeSyncVersionProvider>();
         });
     }
 
