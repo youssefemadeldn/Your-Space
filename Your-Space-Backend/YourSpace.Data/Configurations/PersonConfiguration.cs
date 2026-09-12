@@ -15,6 +15,11 @@ public class PersonConfiguration : IEntityTypeConfiguration<Person>
         builder.HasIndex(p => new { p.OwnerUserId, p.SubGroupId });
         builder.HasIndex(p => new { p.OwnerUserId, p.GovernorateId });
 
+        // Backs the delta-sync "changes since" query (PersonWithSpecs(ownerUserId, since, pageSize),
+        // doc/local-first-sync-design.md §6): WHERE OwnerUserId = @p0 AND SyncVersion > @p1,
+        // ORDER BY SyncVersion.
+        builder.HasIndex(p => new { p.OwnerUserId, p.SyncVersion });
+
         builder.HasOne(p => p.Owner)
             .WithMany()
             .HasForeignKey(p => p.OwnerUserId)

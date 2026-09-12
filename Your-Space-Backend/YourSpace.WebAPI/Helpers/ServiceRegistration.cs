@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Repositories;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Services.AuthService;
 using YourSpace.Services.Services.CityService;
@@ -29,6 +30,10 @@ public static class ServiceRegistration
         // Repository / Unit of Work
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
+
+        // Delta-sync monotonic cursors (doc/local-first-sync-design.md §6) — one Postgres
+        // sequence per synced entity table, reused across rows 5/7-9 of the delivery plan.
+        services.AddScoped<ISyncVersionProvider, SyncVersionProvider>();
 
         // Mapping
         services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());

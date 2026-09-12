@@ -22,4 +22,6 @@ public class PersonProfileDto
     public string? PrimaryPhotoUrl { get; set; }
     public string? Notes { get; set; }
     public required bool HasReciprocityHistory { get; set; }
+    public required DateTime UpdatedAt { get; set; }
+    public required long SyncVersion { get; set; }
 }
