@@ -8,6 +8,11 @@ di-annotation: "@injectable"
 
 Two files per cubit concern. Replace all `<Placeholder>` tokens before use.
 
+> **Synced features (local-first, CLAUDE.md Architecture rule 7):** the cubit watches a
+> reactive `Stream` from the repository instead of calling it once and folding an `Either`.
+> The local-first variant of this template is pending approval of
+> `doc/local-first-sync-design.md` — until then, follow that document for synced-feature cubits.
+
 ---
 
 ## Cubit — `presentation/cubit/<action>_cubit/<action>_cubit.dart`

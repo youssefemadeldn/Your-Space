@@ -142,20 +142,42 @@ class <Feature>RepositoryImpl implements <Feature>Repository {
 Do not create the abstract contract until a local data source actually exists.
 A base class with one implementation is ceremony with no benefit.
 
+#### Synced (local-first) features
+
+When the feature is on the local-first sync rollout (CLAUDE.md Architecture rule 7), the
+split above is **required**, and:
+
+- `<feature>_local_data_source_impl.dart` is backed by the shared drift `AppDatabase` (its
+  DAOs), never `SharedPreferences`.
+- The repository serves every read from the local source and exposes a reactive `Stream`
+  the cubit watches; the remote source is not called on the read path.
+- Mutations are written to the local store and appended to the `outbox` in the same
+  transaction; the repository never calls the remote source directly for a write.
+- `SyncService` (injected, `@lazySingleton`) owns all network traffic — pull-by-watermark
+  and outbox replay. No data source or cubit awaits it.
+- Server-computed reads (reciprocity suggestions, guest progress, `hasReciprocityHistory`)
+  stay on the remote source and are called directly — they are not cached.
+
+The drift schema, outbox row shape, and reconciliation rules are owned by
+`doc/local-first-sync-design.md`. Do not invent them here.
+
 ### Choosing a storage backend
 
-`SharedPreferences` is the default for feature-level local data source caching — it's
-already `@preResolve @singleton` in `register_module.dart`, and it's what `CartStorage`,
-`SearchHistoryStorage`, and `WishlistStorage` already use for the same kind of data. Only
-reach for something heavier when a feature's data genuinely outgrows a flat key-value
-store — decide per feature against this table, not preemptively:
+A feature on the local-first sync rollout (CLAUDE.md Architecture rule 7) skips this
+decision entirely — it uses `drift` (the shared `AppDatabase`), governed by
+`doc/local-first-sync-design.md`. For every other feature, `SharedPreferences` is the
+default for feature-level local data source caching — it's already `@preResolve @singleton`
+in `register_module.dart`, and it's what `CartStorage`, `SearchHistoryStorage`, and
+`WishlistStorage` already use for the same kind of data. Only reach for something heavier
+when a feature's data genuinely outgrows a flat key-value store — decide per feature
+against this table, not preemptively:
 
 | Signal | Storage choice |
 |---|---|
 | Bounded reference/user data (settings, wishlist, cart, recently-viewed, small paginated lists) | `SharedPreferences` |
 | Caching a full catalog for real offline-first browsing (e.g. an entire list so search/filter/sort work with no connection) | `Hive` — SharedPreferences forces decoding the entire JSON blob on every read just to filter a subset, and rewriting the whole blob on every write |
 | Relational queries across cached entities (joins, filtered counts, cross-entity lookups) | `drift` — Hive is still a KV/box store; `drift` gives real type-safe SQL queries |
-| Sync/conflict resolution (bi-directional offline edits) | Out of scope for a read cache — needs its own design |
+| Local-first with backend sync (offline reads + queued offline writes, per Architecture rule 7) | `drift` — mandatory for a synced feature: the shared `AppDatabase`, the `outbox` table, and `SyncService`. The schema, outbox shape, and reconciliation rules are governed by `doc/local-first-sync-design.md`, not this table. |
 
 Adding Hive or drift is still a new package — it must clear the dependency rule (see
 CLAUDE.md) same as anything else. This table is what makes "necessary and justified"
@@ -883,6 +905,13 @@ Before marking a feature complete, verify every item:
 - [ ] Repository abstract returns only entities and primitives — no `*ResponseModel` types
 - [ ] Use cases added only where Rule 4 applies; otherwise cubits call repo directly
 
+**Sync (synced features only — CLAUDE.md Architecture rule 7)**
+- [ ] Reads come from the local drift store via a reactive `Stream` — no bare spinner while waiting on the network for previously-cached data
+- [ ] Writes are applied to the local store and appended to the `outbox` in one transaction — no direct remote write from the repository
+- [ ] `SyncService` is never `await`ed from a cubit or screen
+- [ ] Server-computed values (reciprocity suggestions, guest progress, `hasReciprocityHistory`) are read from the network path directly, not cached or queued
+- [ ] A failed token refresh gates writes but does not wipe the local database
+
 **Presentation layer**
 - [ ] All cubits are `@injectable` (factory), never `@lazySingleton`
 - [ ] All states are `sealed class` extending `Equatable`
@@ -940,3 +969,7 @@ in this codebase:
 | Creating a `states/` subfolder inside a screen folder | "states" already means cubit sealed classes in this codebase — naming collision causes confusion | Keep flat inside the screen folder; name by visual concern (`home_shimmer.dart`, `home_body.dart`) |
 | Hardcoding strings in a single-language app | Adding a second language later requires touching every screen to externalize the strings | Use `.tr()` with a JSON key in every screen from day one; adding a language then only requires a new JSON file |
 | Creating a commented skeleton file for a conditionally-needed artifact | Can be mistaken for "already implemented"; must be actively deleted if the condition never triggers; a dead file's comments are less reliably seen than a note in a file that is always read | Place a single marker comment in the nearest high-traffic file in the same layer |
+| A synced feature's cubit/repository calling the remote data source on the read path | Bypasses the local-first store; reintroduces the network as a screen dependency and the spinner it was meant to remove | Read from the local drift store via a reactive `Stream`; let `SyncService` refresh it in the background (Architecture rule 7) |
+| Writing a synced feature's mutation straight to the remote source | Loses the change on a flaky connection; no optimistic UI; no retry | Apply to the local store + append to the `outbox` in one transaction; `SyncService` replays it (Architecture rule 7) |
+| Wiping the local database on a failed token refresh / logout | Destroys offline data the user still owns; forces a full re-download on next login | Clear tokens and gate outbound writes only; the cache survives logout (Architecture rule 1 / 7) |
+| `await`ing `SyncService` from a cubit to "make sure data is fresh" before rendering | Puts the network back on the critical path; defeats local-first | Render local data now; `SyncService` runs in the background and the reactive `Stream` updates the UI when it lands |

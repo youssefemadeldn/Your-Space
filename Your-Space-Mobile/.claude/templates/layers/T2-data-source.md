@@ -8,6 +8,11 @@ di-annotation: "@lazySingleton"
 
 Single file. Replace all `<Placeholder>` tokens before use.
 
+> **Synced features (local-first, CLAUDE.md Architecture rule 7)** additionally need
+> `base_<feature>_data_source.dart` + a drift-backed `<feature>_local_data_source_impl.dart`
+> (see feature guide "Synced (local-first) features"). The local-source template is pending
+> approval of `doc/local-first-sync-design.md`.
+
 ---
 
 ## `data/datasources/<feature>_remote_data_source_impl.dart`
