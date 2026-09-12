@@ -108,7 +108,7 @@ class PersonRepositoryImpl implements PersonRepository {
       all.addAll(response.items.map((r) => r.toEntity()));
       if (response.pageIndex >= response.totalPages) break;
     }
-    await _local.savePersons(all);
+    await _local.applyPersonsSnapshot(all);
     return const Right(unit);
   }
 

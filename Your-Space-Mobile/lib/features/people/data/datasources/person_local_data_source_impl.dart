@@ -71,14 +71,43 @@ class PersonLocalDataSourceImpl {
     return query.map((row) => row.read(countExp) ?? 0).getSingle();
   }
 
-  /// No remote equivalent — bulk-replaces the cache after a successful
-  /// `refreshPersons()` fetch. One drift transaction.
+  /// Tier 1 upsert, no tombstoning — kept as a documented primitive for a
+  /// future caller that wants a plain bulk replace. `refreshPersons()`
+  /// (Tier 3) uses [applyPersonsSnapshot] instead.
   Future<void> savePersons(List<Person> people) => _db.batch(
         (batch) => batch.insertAllOnConflictUpdate(
           _db.personsTable,
           people.map(_toCompanion).toList(),
         ),
       );
+
+  /// Tier 3 "full refetch as delta" (design doc §6): [serverPersons] is the
+  /// complete, just-fetched owned collection. Diffs it against local drift by
+  /// id in one transaction:
+  ///  - a row with `isDirty == true` is left untouched — it has a pending
+  ///    outbox entry, so the local edit is presumed newer
+  ///  - every other server row is upserted (clean: not dirty, not deleted)
+  ///  - every local row with id > 0, isDirty == false, whose id is absent
+  ///    from [serverPersons] is soft-tombstoned (`isDeleted = true`) — a
+  ///    temp (negative) id is never a tombstone candidate; it was never on
+  ///    the server to begin with
+  Future<void> applyPersonsSnapshot(List<Person> serverPersons) => _db.transaction(() async {
+        final dirtyIds = (await (_db.select(_db.personsTable)..where((t) => t.isDirty.equals(true)))
+                .get())
+            .map((r) => r.id)
+            .toSet();
+        final toUpsert = serverPersons.where((p) => !dirtyIds.contains(p.id)).toList();
+        await _db.batch(
+          (batch) => batch.insertAllOnConflictUpdate(_db.personsTable, toUpsert.map(_toCompanion).toList()),
+        );
+
+        final serverIds = serverPersons.map((p) => p.id).toSet();
+        await (_db.update(_db.personsTable)
+              ..where(
+                (t) => t.id.isBiggerThanValue(0) & t.isDirty.equals(false) & t.id.isNotIn(serverIds),
+              ))
+            .write(const PersonsTableCompanion(isDeleted: Value(true)));
+      });
 
   /// No remote equivalent — single-row upsert after a successful
   /// create/update mutation (design doc §3: mutations go straight to remote

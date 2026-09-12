@@ -175,6 +175,64 @@ void main() {
     });
   });
 
+  group('applyPersonsSnapshot', () {
+    test('upserts a server row that is not already dirty locally', () async {
+      await dataSource.applyPersonsSnapshot([_person(id: 1, name: 'From Server')]);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a dirty row is neither overwritten nor tombstoned, even when absent from the server list', () async {
+      await dataSource.queuePersonMutation(
+        person: _person(id: 1, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{"id":1}',
+      );
+
+      await dataSource.applyPersonsSnapshot([]);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDirty, isTrue);
+      expect(row.isDeleted, isFalse);
+    });
+
+    test('a clean positive-id row absent from the server list is soft-tombstoned', () async {
+      await dataSource.savePerson(_person(id: 1, name: 'Gone Server-Side'));
+
+      await dataSource.applyPersonsSnapshot([]);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isTrue);
+    });
+
+    test('a temp (negative) id row is never touched regardless of the server list', () async {
+      await dataSource.queuePersonMutation(
+        person: _person(id: -1, name: 'Offline Create'),
+        operation: 'create',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyPersonsSnapshot([]);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(-1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.name, 'Offline Create');
+    });
+
+    test('a previously-tombstoned row that reappears in the server list is restored', () async {
+      await dataSource.savePerson(_person(id: 1, name: 'Was Deleted'));
+      await dataSource.applyPersonsSnapshot([]);
+
+      await dataSource.applyPersonsSnapshot([_person(id: 1, name: 'Back Again')]);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.name, 'Back Again');
+    });
+  });
+
   group('reconcileCreatedPerson', () {
     test(
         'inserts under the real id, deletes the temp row, deletes the replayed outbox row, and patches a pending '
