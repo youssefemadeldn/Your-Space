@@ -5,6 +5,7 @@ import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import '../../domain/repositories/base_group_repository.dart';
+import '../datasources/group_local_data_source_impl.dart';
 import '../datasources/group_remote_data_source_impl.dart';
 import '../models/create_group_request.dart';
 import '../models/update_group_request.dart';
@@ -12,8 +13,9 @@ import '../models/update_group_request.dart';
 @LazySingleton(as: GroupRepository)
 class GroupRepositoryImpl implements GroupRepository {
   final GroupRemoteDataSourceImpl _remote;
+  final GroupLocalDataSourceImpl _local;
 
-  GroupRepositoryImpl(this._remote);
+  GroupRepositoryImpl(this._remote, @Named('local') this._local);
 
   @override
   Future<Either<Failure, PaginatedResult<Group>>> getGroups({
@@ -26,9 +28,19 @@ class GroupRepositoryImpl implements GroupRepository {
   }
 
   @override
+  Stream<List<Group>> watchGroups({String? search, required int limit}) =>
+      _local.watchGroups(search: search, limit: limit);
+
+  @override
+  Future<int> countGroups({String? search}) => _local.countGroups(search: search);
+
+  @override
   Future<Either<Failure, Group>> createGroup({required String name, String? nameAr}) async {
     final result = await _remote.createGroup(CreateGroupRequest(name: name, nameAr: nameAr));
-    return result.fold(Left.new, (response) => Right(response.toEntity()));
+    if (result.isLeft()) return result.fold(Left.new, (_) => throw StateError('unreachable'));
+    final group = result.getOrElse(() => throw StateError('unreachable')).toEntity();
+    await _local.saveGroup(group);
+    return Right(group);
   }
 
   @override
@@ -38,6 +50,9 @@ class GroupRepositoryImpl implements GroupRepository {
     String? nameAr,
   }) async {
     final result = await _remote.updateGroup(UpdateGroupRequest(id: id, name: name, nameAr: nameAr));
-    return result.fold(Left.new, (response) => Right(response.toEntity()));
+    if (result.isLeft()) return result.fold(Left.new, (_) => throw StateError('unreachable'));
+    final group = result.getOrElse(() => throw StateError('unreachable')).toEntity();
+    await _local.saveGroup(group);
+    return Right(group);
   }
 }

@@ -1,13 +1,9 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/group.dart';
-import 'package:your_space_mobile/core/entities/paginated_result.dart';
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
-import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list_cubit/groups_list_cubit.dart';
 import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list_cubit/groups_list_state.dart';
@@ -16,24 +12,26 @@ class MockGroupRepository extends Mock implements GroupRepository {}
 
 void main() {
   late MockGroupRepository repository;
-  late DataRefreshBus dataRefreshBus;
   late GroupsListCubit cubit;
 
   const group1 = Group(id: 1, name: 'Family');
   const group2 = Group(id: 2, name: 'Close friends');
 
+  /// Stubs a `watchGroups`/`countGroups` pair for a given search/limit.
+  void stubGroups({String? search, required int limit, required List<Group> groups, required int total}) {
+    when(() => repository.watchGroups(search: search, limit: limit)).thenAnswer((_) => Stream.value(groups));
+    when(() => repository.countGroups(search: search)).thenAnswer((_) async => total);
+  }
+
   setUp(() {
     repository = MockGroupRepository();
-    dataRefreshBus = DataRefreshBus();
-    cubit = GroupsListCubit(repository, dataRefreshBus);
+    cubit = GroupsListCubit(repository);
   });
 
   tearDown(() => cubit.close());
 
-  test('emits [Loading, Success] with the first page on load', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-    );
+  test('emits [Loading, Success] with the first window on load', () async {
+    stubGroups(limit: 20, groups: const [group1, group2], total: 2);
 
     final expectation = expectLater(
       cubit.stream,
@@ -45,32 +43,27 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.load());
+    await cubit.load();
     await expectation;
   });
 
-  test('emits [Loading, Error] on failure', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20))
-        .thenAnswer((_) async => const Left(NetworkFailure()));
+  test('emits [Loading, Error] when the local read throws', () async {
+    when(() => repository.watchGroups(search: null, limit: 20)).thenAnswer((_) => Stream.error(Exception('boom')));
 
     final expectation = expectLater(
       cubit.stream,
       emitsInOrder([const GroupsListLoading(), isA<GroupsListError>()]),
     );
 
-    unawaited(cubit.load());
+    await cubit.load();
     await expectation;
   });
 
-  test('search debounces then filters the list without a Loading flash', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-    );
+  test('search debounces then resubscribes with the new filter', () async {
+    stubGroups(limit: 20, groups: const [group1, group2], total: 2);
     await cubit.load();
 
-    when(() => repository.getGroups(search: 'fam', pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+    stubGroups(search: 'fam', limit: 20, groups: const [group1], total: 1);
 
     cubit.search('fam');
     await Future.delayed(const Duration(milliseconds: 500));
@@ -82,143 +75,80 @@ void main() {
     cubit.search('fam');
     await Future.delayed(const Duration(milliseconds: 500));
     expect(cubit.state, isA<GroupsListInitial>());
-    verifyNever(() => repository.getGroups(
-          search: any(named: 'search'),
-          pageIndex: any(named: 'pageIndex'),
-          pageSize: any(named: 'pageSize'),
-        ));
+    verifyNever(() => repository.watchGroups(search: any(named: 'search'), limit: any(named: 'limit')));
   });
 
-  test('loadMore appends the next page and advances pageIndex', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1], pageIndex: 1, totalPages: 2, totalItems: 2)),
-    );
+  test('loadMore grows the limit and hasNextPage reflects the exact count', () async {
+    stubGroups(limit: 20, groups: const [group1], total: 2);
     await cubit.load();
+    expect((cubit.state as GroupsListSuccess).hasNextPage, isTrue);
 
-    when(() => repository.getGroups(search: null, pageIndex: 2, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group2], pageIndex: 2, totalPages: 2, totalItems: 2)),
-    );
+    stubGroups(limit: 40, groups: const [group1, group2], total: 2);
 
     await cubit.loadMore();
 
     final state = cubit.state as GroupsListSuccess;
     expect(state.groups, [group1, group2]);
-    expect(state.pageIndex, 2);
+    expect(state.limit, 40);
     expect(state.hasNextPage, isFalse);
   });
 
   test('loadMore is a no-op when hasNextPage is already false', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+    stubGroups(limit: 20, groups: const [group1], total: 1);
     await cubit.load();
 
     await cubit.loadMore();
 
-    verifyNever(() => repository.getGroups(
-          search: any(named: 'search'),
-          pageIndex: 2,
-          pageSize: any(named: 'pageSize'),
-        ));
+    verifyNever(() => repository.watchGroups(search: any(named: 'search'), limit: 40));
   });
 
   test('loadMore ignores a second concurrent call while the first is in flight', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1], pageIndex: 1, totalPages: 2, totalItems: 2)),
-    );
+    stubGroups(limit: 20, groups: const [group1], total: 2);
     await cubit.load();
 
-    final completer = Completer<Either<Failure, PaginatedResult<Group>>>();
-    when(() => repository.getGroups(search: null, pageIndex: 2, pageSize: 20))
-        .thenAnswer((_) => completer.future);
+    final controller = StreamController<List<Group>>();
+    when(() => repository.watchGroups(search: null, limit: 40)).thenAnswer((_) => controller.stream);
+    when(() => repository.countGroups(search: null)).thenAnswer((_) async => 2);
 
     final first = cubit.loadMore();
     final second = cubit.loadMore();
-    completer.complete(
-      const Right(PaginatedResult(items: [group2], pageIndex: 2, totalPages: 2, totalItems: 2)),
-    );
+    controller.add(const [group1, group2]);
+    await controller.close();
     await first;
     await second;
 
-    verify(() => repository.getGroups(search: null, pageIndex: 2, pageSize: 20)).called(1);
+    verify(() => repository.watchGroups(search: null, limit: 40)).called(1);
   });
 
-  test('loadMore preserves existing items and resets isLoadingMore on failure', () async {
-    when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [group1], pageIndex: 1, totalPages: 2, totalItems: 2)),
-    );
+  test('loadMore preserves the existing items/limit and resets isLoadingMore on failure', () async {
+    stubGroups(limit: 20, groups: const [group1], total: 2);
     await cubit.load();
 
-    when(() => repository.getGroups(search: null, pageIndex: 2, pageSize: 20))
-        .thenAnswer((_) async => const Left(NetworkFailure()));
+    when(() => repository.watchGroups(search: null, limit: 40)).thenAnswer((_) => Stream.error(Exception('boom')));
 
     await cubit.loadMore();
 
     final state = cubit.state as GroupsListSuccess;
     expect(state.groups, [group1]);
-    expect(state.pageIndex, 1);
+    expect(state.limit, 20);
     expect(state.hasNextPage, isTrue);
     expect(state.isLoadingMore, isFalse);
     expect(state.loadMoreErrorMessage, isNotNull);
     expect(state.loadMoreErrorId, 1);
   });
 
-  group('DataRefreshBus', () {
-    // Reproduces the original bug: GroupsListCubit is a shell-branch cubit,
-    // built once by IndexedStack and never rebuilt — a group created via the
-    // FAB sheet never reached it until logout/login. A bus notification must
-    // now silently pull the updated list in.
-    test('a `groups` notification re-fetches page 1 preserving search, no Loading flash', () async {
-      when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-      );
-      await cubit.load();
+  test('refresh resubscribes at the current search/limit without a Loading flash', () async {
+    stubGroups(limit: 20, groups: const [group1], total: 1);
+    await cubit.load();
 
-      const newGroup = Group(id: 3, name: 'Book club');
-      when(() => repository.getGroups(search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async => const Right(
-          PaginatedResult(items: [group1, group2, newGroup], pageIndex: 1, totalPages: 1, totalItems: 3),
-        ),
-      );
+    stubGroups(limit: 20, groups: const [group1, group2], total: 2);
 
-      final states = <dynamic>[];
-      final sub = cubit.stream.listen(states.add);
+    final states = <dynamic>[];
+    final sub = cubit.stream.listen(states.add);
+    await cubit.refresh();
+    await sub.cancel();
 
-      dataRefreshBus.notify(DataScope.groups);
-      await Future<void>.delayed(Duration.zero);
-      await sub.cancel();
-
-      expect(states, isNot(contains(isA<GroupsListLoading>())));
-      expect(cubit.state, isA<GroupsListSuccess>().having((s) => s.groups, 'groups', [group1, group2, newGroup]));
-    });
-
-    test('a failed background refresh keeps the last-good list on screen', () async {
-      when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-      );
-      await cubit.load();
-      final beforeRefresh = cubit.state;
-
-      when(() => repository.getGroups(search: null, pageIndex: 1, pageSize: 20))
-          .thenAnswer((_) async => const Left(NetworkFailure()));
-
-      dataRefreshBus.notify(DataScope.groups);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(cubit.state, beforeRefresh);
-    });
-
-    test('a `people` notification is ignored (Groups does not depend on person data)', () async {
-      when(() => repository.getGroups(pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async => const Right(PaginatedResult(items: [group1, group2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-      );
-      await cubit.load();
-      final beforeNotify = cubit.state;
-
-      dataRefreshBus.notify(DataScope.people);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(cubit.state, beforeNotify);
-    });
+    expect(states, isNot(contains(isA<GroupsListLoading>())));
+    expect(cubit.state, isA<GroupsListSuccess>().having((s) => s.groups, 'groups', [group1, group2]));
   });
 }

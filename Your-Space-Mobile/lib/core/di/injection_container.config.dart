@@ -119,6 +119,8 @@ import 'package:your_space_mobile/features/events/presentation/cubit/events_list
     as _i890;
 import 'package:your_space_mobile/features/events/presentation/cubit/reciprocity_suggestions_cubit/reciprocity_suggestions_cubit.dart'
     as _i147;
+import 'package:your_space_mobile/features/groups/data/datasources/group_local_data_source_impl.dart'
+    as _i640;
 import 'package:your_space_mobile/features/groups/data/datasources/group_remote_data_source_impl.dart'
     as _i190;
 import 'package:your_space_mobile/features/groups/data/repositories/group_repository_impl.dart'
@@ -204,6 +206,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i559.LocaleHelper>(
       () => _i559.LocaleHelper(gh<_i460.SharedPreferences>()),
     );
+    gh.lazySingleton<_i640.GroupLocalDataSourceImpl>(
+      () => _i640.GroupLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
     gh.lazySingleton<_i439.PersonLocalDataSourceImpl>(
       () => _i439.PersonLocalDataSourceImpl(gh<_i935.AppDatabase>()),
       instanceName: 'local',
@@ -282,15 +288,18 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i635.CollectionPuller>(
       () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
     );
-    gh.lazySingleton<_i994.GroupRepository>(
-      () => _i612.GroupRepositoryImpl(gh<_i190.GroupRemoteDataSourceImpl>()),
-    );
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
     );
     gh.lazySingleton<_i126.PersonRelationshipRepository>(
       () => _i630.PersonRelationshipRepositoryImpl(
         gh<_i903.PersonRelationshipRemoteDataSourceImpl>(),
+      ),
+    );
+    gh.lazySingleton<_i994.GroupRepository>(
+      () => _i612.GroupRepositoryImpl(
+        gh<_i190.GroupRemoteDataSourceImpl>(),
+        gh<_i640.GroupLocalDataSourceImpl>(instanceName: 'local'),
       ),
     );
     gh.lazySingleton<_i680.NeighborhoodRepository>(
@@ -379,12 +388,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i771.GroupsListCubit>(
-      () => _i771.GroupsListCubit(
-        gh<_i994.GroupRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
     gh.factory<_i837.CityActionCubit>(
       () => _i837.CityActionCubit(
         gh<_i881.CityRepository>(),
@@ -414,6 +417,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i680.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
+    );
+    gh.factory<_i771.GroupsListCubit>(
+      () => _i771.GroupsListCubit(gh<_i994.GroupRepository>()),
     );
     gh.factory<_i895.AddGuestsListCubit>(
       () => _i895.AddGuestsListCubit(
