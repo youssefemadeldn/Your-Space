@@ -8,6 +8,14 @@ import '../../domain/repositories/base_person_repository.dart';
 /// `SyncService`'s collection: 'persons' strategy — a thin wrapper over
 /// `PersonRepository.refreshPersons()`, which already does the fetch +
 /// diff/tombstone work (Tier 3, design doc §6).
+///
+/// The `@Named` tag mirrors `PersonOutboxReplayer`'s (see its doc comment):
+/// it reserves this registration's identity so a future second
+/// `CollectionPuller` implementation (e.g. Groups' row 7.4) doesn't collide
+/// with it under injectable's duplicate-registration check.
+/// `RegisterModule.collectionPullers` collects every tagged `CollectionPuller`
+/// back into the `List<CollectionPuller>` `SyncService` actually wants.
+@Named('person')
 @LazySingleton(as: CollectionPuller)
 class PersonCollectionPuller implements CollectionPuller {
   final PersonRepository _personRepository;

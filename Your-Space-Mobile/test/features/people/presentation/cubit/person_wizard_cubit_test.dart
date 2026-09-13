@@ -224,7 +224,7 @@ void main() {
     });
 
     test('creates the group, selects it, appends it, and pings the refresh bus', () async {
-      when(() => groupRepository.createGroup(name: any(named: 'name')))
+      when(() => groupRepository.createGroupAndSync(name: any(named: 'name')))
           .thenAnswer((_) async => const Right(Group(id: 99, name: 'Neighbours')));
       when(() => subGroupRepository.getSubGroups(
             groupId: any(named: 'groupId'),

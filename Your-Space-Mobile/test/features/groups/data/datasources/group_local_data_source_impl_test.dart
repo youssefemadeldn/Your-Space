@@ -72,6 +72,71 @@ void main() {
     expect(await dataSource.countGroups(search: 'club'), 1);
   });
 
+  group('queueGroupMutation', () {
+    test('writes a dirty group row and one outbox row in the same transaction, returning its id', () async {
+      const group = Group(id: -1, name: 'Offline Create');
+
+      final rowId = await dataSource.queueGroupMutation(
+        group: group,
+        operation: 'create',
+        payloadJson: '{"name":"Offline Create"}',
+      );
+
+      final row = await (database.select(database.groupsTable)..where((t) => t.id.equals(-1))).getSingle();
+      expect(row.isDirty, isTrue);
+      expect(row.name, 'Offline Create');
+
+      final outboxRow = await (database.select(database.outboxTable)..where((t) => t.id.equals(rowId))).getSingle();
+      expect(outboxRow.entityType, 'group');
+      expect(outboxRow.entityId, -1);
+      expect(outboxRow.operation, 'create');
+      expect(outboxRow.payloadJson, '{"name":"Offline Create"}');
+    });
+  });
+
+  group('confirmSyncedGroup', () {
+    test('clears isDirty on the group row and deletes the replayed outbox row', () async {
+      final rowId = await dataSource.queueGroupMutation(
+        group: const Group(id: 5, name: 'Dirty'),
+        operation: 'update',
+        payloadJson: '{"id":5}',
+      );
+
+      await dataSource.confirmSyncedGroup(const Group(id: 5, name: 'Confirmed'), replayedOutboxRowId: rowId);
+
+      final row = await (database.select(database.groupsTable)..where((t) => t.id.equals(5))).getSingle();
+      expect(row.isDirty, isFalse);
+      expect(row.name, 'Confirmed');
+
+      final remainingOutbox = await database.select(database.outboxTable).get();
+      expect(remainingOutbox, isEmpty);
+    });
+  });
+
+  group('reconcileCreatedGroup', () {
+    test('inserts under the real id, deletes the temp row, and deletes the replayed outbox row', () async {
+      const tempId = -12345;
+      final rowId = await dataSource.queueGroupMutation(
+        group: const Group(id: tempId, name: 'Offline Group'),
+        operation: 'create',
+        payloadJson: '{"name":"Offline Group"}',
+      );
+
+      const realGroup = Group(id: 999, name: 'Offline Group');
+      await dataSource.reconcileCreatedGroup(tempId: tempId, realGroup: realGroup, replayedOutboxRowId: rowId);
+
+      final tempRow =
+          await (database.select(database.groupsTable)..where((t) => t.id.equals(tempId))).getSingleOrNull();
+      expect(tempRow, isNull);
+
+      final realRow = await (database.select(database.groupsTable)..where((t) => t.id.equals(999))).getSingle();
+      expect(realRow.name, 'Offline Group');
+
+      final remainingOutbox = await database.select(database.outboxTable).get();
+      expect(remainingOutbox, isEmpty);
+    });
+  });
+
   group('applyGroupsSnapshot', () {
     test('upserts a server row that is not already dirty locally', () async {
       await dataSource.applyGroupsSnapshot(const [Group(id: 1, name: 'From Server')]);

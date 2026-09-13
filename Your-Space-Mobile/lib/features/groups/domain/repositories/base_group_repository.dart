@@ -21,6 +21,9 @@ abstract class GroupRepository {
   /// `hasNextPage` without a `length == limit` heuristic.
   Future<int> countGroups({String? search});
 
+  /// Tier 2 optimistic write (design doc §5): queues via the outbox and
+  /// returns immediately with a temp id. Essentially can't fail — a drift
+  /// write isn't gated on connectivity.
   Future<Either<Failure, Group>> createGroup({required String name, String? nameAr});
 
   Future<Either<Failure, Group>> updateGroup({
@@ -28,4 +31,18 @@ abstract class GroupRepository {
     required String name,
     String? nameAr,
   });
+
+  /// Same as [createGroup] but also asks `SyncService` to replay this
+  /// specific outbox row immediately and awaits the outcome (awaited here,
+  /// in the repository/data layer — never by a cubit, per CLAUDE.md's
+  /// DI-scopes table). `Right(Group)` means the group now has a real server
+  /// id. `Left(failure)` means the immediate sync attempt failed right now
+  /// (offline/server error) — the queued row is NOT rolled back and will
+  /// still sync in the background later, but this call reports failure so
+  /// callers needing a synchronously-resolved real id (the person wizard's
+  /// inline "add new group", which embeds the id in the person's own
+  /// create/update payload) can fail cleanly instead of silently proceeding
+  /// against a temp id. No `updateGroupAndSync` exists — nothing in scope
+  /// needs a synchronous id resolution after an *edit*, only after a create.
+  Future<Either<Failure, Group>> createGroupAndSync({required String name, String? nameAr});
 }

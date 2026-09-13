@@ -17,6 +17,14 @@ import '../models/update_person_request.dart';
 /// Tier 2 has replaced `PersonRepositoryImpl`'s direct remote calls with the
 /// outbox (design doc §5: "unchanged — Tier 2 doesn't touch ApiManager/
 /// AuthInterceptor/Failure mapping").
+/// The `@Named` tag here (distinct from the `@Named('remote')`/`@Named('local')`
+/// on this class's own constructor params below) exists solely so this
+/// registration and `GroupOutboxReplayer`'s don't collide under injectable's
+/// duplicate-registration check, which only allows one *unnamed* binding per
+/// interface — `RegisterModule.outboxReplayers` collects every tagged
+/// `OutboxReplayer` back into the `List<OutboxReplayer>` `SyncService`
+/// actually wants, via `GetIt.getAll`, which ignores instance names.
+@Named('person')
 @LazySingleton(as: OutboxReplayer)
 class PersonOutboxReplayer implements OutboxReplayer {
   final BasePersonDataSource _remote;
