@@ -42,6 +42,26 @@ class GroupRepositoryImpl implements GroupRepository {
   @override
   Future<int> countGroups({String? search}) => _local.countGroups(search: search);
 
+  @override
+  Future<Either<Failure, Unit>> refreshGroups() async {
+    const pageSize = 200;
+    // Defensive cap — this data shape is meant to be small (design doc §1/§2:
+    // Groups is "small, low cardinality"), never expected to trip.
+    const maxPages = 50;
+    final all = <Group>[];
+    for (var page = 1; page <= maxPages; page++) {
+      final result = await _remote.getGroups(pageIndex: page, pageSize: pageSize);
+      if (result.isLeft()) {
+        return result.fold(Left.new, (_) => throw StateError('unreachable'));
+      }
+      final response = result.getOrElse(() => throw StateError('unreachable'));
+      all.addAll(response.items.map((r) => r.toEntity()));
+      if (response.pageIndex >= response.totalPages) break;
+    }
+    await _local.applyGroupsSnapshot(all);
+    return const Right(unit);
+  }
+
   int _newTempGroupId() => -DateTime.now().microsecondsSinceEpoch;
 
   /// Builds the [Group] draft + JSON-encoded [CreateGroupRequest] payload

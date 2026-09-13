@@ -31,6 +31,7 @@ void main() {
     registerFallbackValue(const Group(id: 0, name: ''));
     registerFallbackValue(const CreateGroupRequest(name: ''));
     registerFallbackValue(const UpdateGroupRequest(id: 0, name: ''));
+    registerFallbackValue(const <Group>[]);
   });
 
   setUp(() {
@@ -46,6 +47,7 @@ void main() {
         payloadJson: any(named: 'payloadJson'),
       ),
     ).thenAnswer((_) async => 99);
+    when(() => local.applyGroupsSnapshot(any())).thenAnswer((_) async {});
   });
 
   test('getGroups maps a paginated response to a PaginatedResult of entities', () async {
@@ -169,4 +171,33 @@ void main() {
       ).called(1);
     });
   });
+
+  group('refreshGroups', () {
+    test('loops every remote page and upserts the concatenated, mapped entities', () async {
+      when(() => remote.getGroups(pageIndex: 1, pageSize: 200)).thenAnswer(
+        (_) async => Right(PaginatedResponse(items: [_toResponse(1)], pageIndex: 1, totalPages: 2, totalItems: 2)),
+      );
+      when(() => remote.getGroups(pageIndex: 2, pageSize: 200)).thenAnswer(
+        (_) async => Right(PaginatedResponse(items: [_toResponse(2)], pageIndex: 2, totalPages: 2, totalItems: 2)),
+      );
+
+      final result = await repository.refreshGroups();
+
+      expect(result, const Right(unit));
+      final captured = verify(() => local.applyGroupsSnapshot(captureAny())).captured.single as List<Group>;
+      expect(captured.map((g) => g.id), [1, 2]);
+    });
+
+    test('stops and returns Left immediately on a failing page, without saving anything', () async {
+      const failure = NetworkFailure();
+      when(() => remote.getGroups(pageIndex: 1, pageSize: 200)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.refreshGroups();
+
+      expect(result, const Left(failure));
+      verifyNever(() => local.applyGroupsSnapshot(any()));
+    });
+  });
 }
+
+GroupResponse _toResponse(int id) => GroupResponse(id: id, name: 'Group $id');

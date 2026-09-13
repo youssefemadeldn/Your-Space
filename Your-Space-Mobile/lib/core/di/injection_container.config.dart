@@ -127,6 +127,8 @@ import 'package:your_space_mobile/features/groups/data/datasources/group_remote_
     as _i190;
 import 'package:your_space_mobile/features/groups/data/repositories/group_repository_impl.dart'
     as _i612;
+import 'package:your_space_mobile/features/groups/data/sync/group_collection_puller.dart'
+    as _i544;
 import 'package:your_space_mobile/features/groups/data/sync/group_outbox_replayer.dart'
     as _i1011;
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart'
@@ -481,6 +483,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i219.EventRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i544.GroupCollectionPuller(gh<_i994.GroupRepository>()),
+      instanceName: 'group',
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i681.AuthRepository>()),
