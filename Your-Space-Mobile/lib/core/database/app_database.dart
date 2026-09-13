@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:injectable/injectable.dart';
 
+import 'tables/governorates_table.dart';
 import 'tables/groups_table.dart';
 import 'tables/outbox_table.dart';
 import 'tables/persons_table.dart';
@@ -16,7 +17,9 @@ part 'app_database.g.dart';
 /// hood — this constructor is synchronous, so a plain `@lazySingleton` is
 /// enough; no `@preResolve` async DI wiring is needed.
 @lazySingleton
-@DriftDatabase(tables: [PersonsTable, GroupsTable, OutboxTable, SyncStateTable])
+@DriftDatabase(
+  tables: [PersonsTable, GroupsTable, GovernoratesTable, OutboxTable, SyncStateTable],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -25,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +47,12 @@ class AppDatabase extends _$AppDatabase {
           // Groups, same reasoning as above — no shipped users yet).
           if (from < 3) {
             await m.createTable(groupsTable);
+          }
+          // v3 -> v4: GovernoratesTable, Classification's row 8.1 (local-first
+          // rollout for Governorate — same reasoning as above, no shipped
+          // users yet).
+          if (from < 4) {
+            await m.createTable(governoratesTable);
           }
         },
       );
