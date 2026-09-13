@@ -12,6 +12,10 @@ public class GroupConfiguration : IEntityTypeConfiguration<Group>
 
         builder.HasIndex(g => g.OwnerUserId);
 
+        // Backs GroupWithSpecs's delta-sync "changes since" query (doc/local-first-sync-design.md
+        // §6): WHERE OwnerUserId = @p0 AND SyncVersion > @p1, ORDER BY SyncVersion.
+        builder.HasIndex(g => new { g.OwnerUserId, g.SyncVersion });
+
         builder.HasOne(g => g.Owner)
             .WithMany()
             .HasForeignKey(g => g.OwnerUserId)

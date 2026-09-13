@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.GroupService.Dtos;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using GroupServiceImpl = YourSpace.Services.Services.GroupService.GroupService;
@@ -13,16 +14,19 @@ public class GroupService_CreateAsyncTests
 {
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Group, int>> _groupRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public GroupService_CreateAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Group, int>()).Returns(_groupRepo.Object);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private GroupServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<GroupServiceImpl>>());
 
     [Fact]
@@ -35,5 +39,16 @@ public class GroupService_CreateAsyncTests
         result.Data!.Name.Should().Be("Village Friends");
         _groupRepo.Verify(r => r.AddAsync(It.Is<Group>(g => g.OwnerUserId == "owner-1" && g.Name == "Village Friends")), Times.Once);
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Assigns_a_syncversion_from_the_sequence_provider()
+    {
+        _syncVersionProvider.Setup(s => s.NextValueAsync("Groups_SyncVersion_seq", It.IsAny<CancellationToken>())).ReturnsAsync(42);
+
+        var result = await CreateSut().CreateAsync("owner-1", new CreateGroupDto { Name = "Village Friends" });
+
+        result.Success.Should().BeTrue();
+        _groupRepo.Verify(r => r.AddAsync(It.Is<Group>(g => g.SyncVersion == 42)), Times.Once);
     }
 }

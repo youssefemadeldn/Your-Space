@@ -31,6 +31,16 @@ public class GroupsController(IGroupService groupService) : ControllerBase
         return new ResultActionResult<GroupDetailsDto>(result);
     }
 
+    // Delta-sync pull (doc/local-first-sync-design.md §6) — row 7.5 of the delivery plan. `since`
+    // is the caller's last-seen SyncVersion cursor (0 on a first-ever sync); `pageSize` is
+    // clamped server-side in GroupService.
+    [HttpGet("changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await groupService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<GroupChangesDto>(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateGroupDto dto)
     {
