@@ -7,6 +7,7 @@ import 'package:your_space_mobile/core/network/api_manager.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_group_request.dart';
+import '../models/group_changes_response.dart';
 import '../models/group_response.dart';
 import '../models/update_group_request.dart';
 import 'base_group_data_source.dart';
@@ -59,6 +60,23 @@ class GroupRemoteDataSourceImpl implements BaseGroupDataSource {
         fromJson: (json) => unwrapServiceResult(
           json,
           (inner) => GroupResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  @override
+  Future<Either<Failure, GroupChangesResponse>> getGroupChanges({
+    required int since,
+    required int pageSize,
+  }) =>
+      _api.get<GroupChangesResponse>(
+        path: '${ApiConstants.groups}/changes',
+        queryParameters: {
+          'since': since,
+          'pageSize': pageSize,
+        },
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => GroupChangesResponse.fromJson(inner as Map<String, dynamic>),
         ),
       );
 }
