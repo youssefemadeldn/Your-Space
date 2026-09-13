@@ -75,6 +75,8 @@ import 'package:your_space_mobile/features/classification/data/repositories/neig
     as _i412;
 import 'package:your_space_mobile/features/classification/data/repositories/subgroup_repository_impl.dart'
     as _i180;
+import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
+    as _i774;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart'
     as _i881;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart'
@@ -336,6 +338,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
+    gh.lazySingleton<_i262.GovernorateRepository>(
+      () => _i362.GovernorateRepositoryImpl(
+        gh<_i721.BaseGovernorateDataSource>(instanceName: 'remote'),
+        gh<_i577.GovernorateLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
+      ),
+    );
     gh.factory<_i930.PersonDetailsCubit>(
       () => _i930.PersonDetailsCubit(
         gh<_i571.PersonRepository>(),
@@ -416,10 +425,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.lazySingleton<_i262.GovernorateRepository>(
-      () => _i362.GovernorateRepositoryImpl(
-        gh<_i721.BaseGovernorateDataSource>(instanceName: 'remote'),
-        gh<_i577.GovernorateLocalDataSourceImpl>(instanceName: 'local'),
+    gh.factory<_i512.PeopleListCubit>(
+      () => _i512.PeopleListCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i994.GroupRepository>(),
+        gh<_i133.SubGroupRepository>(),
+        gh<_i262.GovernorateRepository>(),
+        gh<_i881.CityRepository>(),
+        gh<_i680.NeighborhoodRepository>(),
+        gh<_i215.DataRefreshBus>(),
       ),
     );
     gh.factory<_i965.GroupActionCubit>(
@@ -427,6 +441,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i771.GroupsListCubit>(
       () => _i771.GroupsListCubit(gh<_i994.GroupRepository>()),
+    );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i774.GovernorateOutboxReplayer(
+        gh<_i721.BaseGovernorateDataSource>(instanceName: 'remote'),
+        gh<_i577.GovernorateLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'governorate',
     );
     gh.factory<_i895.AddGuestsListCubit>(
       () => _i895.AddGuestsListCubit(
@@ -519,17 +540,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i291.ProfileFormCubit(
         gh<_i84.GetCurrentUserProfileUseCase>(),
         gh<_i681.AuthRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
-    gh.factory<_i512.PeopleListCubit>(
-      () => _i512.PeopleListCubit(
-        gh<_i571.PersonRepository>(),
-        gh<_i994.GroupRepository>(),
-        gh<_i133.SubGroupRepository>(),
-        gh<_i262.GovernorateRepository>(),
-        gh<_i881.CityRepository>(),
-        gh<_i680.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
     );

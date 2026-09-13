@@ -26,5 +26,24 @@ abstract class GovernorateRepository {
   /// `hasNextPage` without a `length == limit` heuristic.
   Future<int> countGovernorates({String? search});
 
+  /// Tier 2 optimistic write (design doc §5): queues via the outbox and
+  /// returns immediately with a temp id. Essentially can't fail — a drift
+  /// write isn't gated on connectivity.
   Future<Either<Failure, Governorate>> createGovernorate({required String name, String? nameAr});
+
+  /// Same as [createGovernorate] but also asks `SyncService` to replay this
+  /// specific outbox row immediately and awaits the outcome (awaited here,
+  /// in the repository/data layer — never by a cubit, per CLAUDE.md's
+  /// DI-scopes table). `Right(Governorate)` means the governorate now has a
+  /// real server id. `Left(failure)` means the immediate sync attempt
+  /// failed right now (offline/server error) — the queued row is NOT rolled
+  /// back and will still sync in the background later, but this call
+  /// reports failure so callers needing a synchronously-resolved real id
+  /// (the person wizard's inline "add new governorate", which embeds the id
+  /// in the person's own create/update payload) can fail cleanly instead of
+  /// silently proceeding against a temp id. Mirrors
+  /// `GroupRepository.createGroupAndSync` — no `updateGovernorateAndSync`
+  /// exists for the same reason no `updateGroupAndSync` does: Governorate
+  /// has no update path at all.
+  Future<Either<Failure, Governorate>> createGovernorateAndSync({required String name, String? nameAr});
 }

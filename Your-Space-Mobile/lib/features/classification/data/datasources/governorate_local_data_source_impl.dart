@@ -58,11 +58,69 @@ class GovernorateLocalDataSourceImpl {
       );
 
   /// No remote equivalent — single-row upsert after a successful
-  /// create mutation. This is the transitional Tier 1 write path used by
-  /// `GovernorateRepositoryImpl.createGovernorate` until row 8.3 moves it to
-  /// the outbox (mirrors `GroupLocalDataSourceImpl.saveGroup`).
+  /// create mutation. This was the transitional Tier 1 write path used by
+  /// `GovernorateRepositoryImpl.createGovernorate` before row 8.3 moved it to
+  /// the outbox (mirrors `GroupLocalDataSourceImpl.saveGroup`) — kept as a
+  /// documented primitive, same reasoning as Group's own `saveGroup`.
   Future<void> saveGovernorate(Governorate governorate) =>
       _db.into(_db.governoratesTable).insertOnConflictUpdate(_toCompanion(governorate));
+
+  /// Tier 2 optimistic write (design doc §5): writes [governorate] into
+  /// GovernoratesTable (marked dirty) and appends one OutboxTable row, in the
+  /// same drift transaction. Returns the new outbox row's id so the
+  /// repository's `createGovernorateAndSync` can ask `SyncService` to replay
+  /// this specific row immediately. Governorate has no update/delete on
+  /// mobile, so [operation] is always `'create'` — the parameter is kept for
+  /// shape-parity with `GroupLocalDataSourceImpl.queueGroupMutation`.
+  Future<int> queueGovernorateMutation({
+    required Governorate governorate,
+    required String operation, // 'create' — Governorate has no update/delete
+    required String payloadJson,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.governoratesTable).insertOnConflictUpdate(
+              _toCompanion(governorate, isDirty: true),
+            );
+        return _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'governorate',
+                entityId: governorate.id,
+                operation: operation,
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Kept as a documented, currently-unreachable primitive — mirrors
+  /// `GroupLocalDataSourceImpl.confirmSyncedGroup`. Governorate has no
+  /// update path on mobile, so nothing ever calls this today; it exists so a
+  /// future update feature has the same confirm-after-sync shape every other
+  /// entity uses, rather than needing to invent one from scratch.
+  Future<void> confirmSyncedGovernorate(Governorate governorate, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await _db.into(_db.governoratesTable).insertOnConflictUpdate(_toCompanion(governorate));
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realGovernorate].id
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///  4. rewrite any dependent `CitiesTable` row (and any still-queued
+  ///     `entityType='city'` outbox payload) that references [tempId] — see
+  ///     row 8.9, City's own Tier 2 step, which is what actually adds this
+  ///     4th step; nothing depends on Governorate's temp id yet at row 8.3.
+  Future<void> reconcileCreatedGovernorate({
+    required int tempId,
+    required Governorate realGovernorate,
+    required int replayedOutboxRowId,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.governoratesTable).insertOnConflictUpdate(_toCompanion(realGovernorate));
+        await (_db.delete(_db.governoratesTable)..where((t) => t.id.equals(tempId))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
 
   /// Tier 3 "full refetch as delta" (design doc §6): [serverGovernorates] is
   /// the complete, just-fetched owned+global collection. Diffs it against
@@ -104,15 +162,18 @@ class GovernorateLocalDataSourceImpl {
         isLocked: row.isLocked,
       );
 
-  GovernoratesTableCompanion _toCompanion(Governorate governorate) => GovernoratesTableCompanion.insert(
+  GovernoratesTableCompanion _toCompanion(Governorate governorate, {bool isDirty = false}) =>
+      GovernoratesTableCompanion.insert(
         id: Value(governorate.id),
         name: governorate.name,
         nameAr: Value(governorate.nameAr),
         isLocked: Value(governorate.isLocked),
         // `updatedAt` is added once the backend exposes it (row 8.5/8.6) —
-        // nothing to set yet. Never soft-deleted here; `isDirty` defaults to
-        // false (a row that came from a confirmed remote round trip).
+        // nothing to set yet. Never soft-deleted here. `isDirty` defaults to
+        // false (a row that came from a confirmed remote round trip) —
+        // callers queuing a Tier 2 optimistic write pass `isDirty: true`
+        // explicitly.
         isDeleted: const Value(false),
-        isDirty: const Value(false),
+        isDirty: Value(isDirty),
       );
 }

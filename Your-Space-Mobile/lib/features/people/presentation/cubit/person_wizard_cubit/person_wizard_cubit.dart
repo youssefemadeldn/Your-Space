@@ -284,7 +284,17 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   }
 
   Future<int?> addGovernorateInline(String name) async {
-    final result = await _governorateRepository.createGovernorate(name: name);
+    // createGovernorateAndSync, not createGovernorate: the outbox (row 8.3)
+    // makes a plain createGovernorate optimistic (a temp negative id), but
+    // this id gets embedded directly into the in-progress person's own
+    // `governorateId` — a value that can never resolve to a real server id
+    // via Person's own reconciliation, which only rewrites Person outbox
+    // rows keyed to a Person tempId, not a foreign Governorate tempId
+    // sitting inside an already-built Person payload.
+    // createGovernorateAndSync guarantees this always returns either a
+    // real, server-confirmed id or null (on failure, same as before this
+    // row).
+    final result = await _governorateRepository.createGovernorateAndSync(name: name);
     return result.fold((failure) => null, (governorate) {
       _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(
