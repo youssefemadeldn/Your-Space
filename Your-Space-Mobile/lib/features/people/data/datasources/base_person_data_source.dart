@@ -4,6 +4,7 @@ import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/add_occasion_history_request.dart';
 import '../models/create_person_request.dart';
+import '../models/person_changes_response.dart';
 import '../models/person_details_response.dart';
 import '../models/person_occasion_history_response.dart';
 import '../models/person_response.dart';
@@ -40,4 +41,13 @@ abstract class BasePersonDataSource {
     int personId,
     AddOccasionHistoryRequest request,
   );
+
+  /// Tier 3 real delta pull (design doc §6, row 6): [since] is the last
+  /// cursor seen (0 on first sync); the response's `hasMore` tells the
+  /// caller whether to keep paging with the returned `cursor` as the next
+  /// `since`.
+  Future<Either<Failure, PersonChangesResponse>> getPersonChanges({
+    required int since,
+    required int pageSize,
+  });
 }

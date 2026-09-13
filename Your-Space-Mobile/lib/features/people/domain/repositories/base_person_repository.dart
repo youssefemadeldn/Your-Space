@@ -48,11 +48,12 @@ abstract class PersonRepository {
     String? search,
   });
 
-  /// Background bulk sync, no filters: the entire owned dataset is meant to
-  /// live on-device (design doc §1), so this loops the paginated remote
-  /// endpoint until exhausted and upserts everything into drift. The result
-  /// only signals whether the fetch itself succeeded — on failure the UI
-  /// keeps showing cached data (design doc §3).
+  /// Tier 3 real delta pull (design doc §6, row 6): loops the backend's
+  /// cursor-based `/persons/changes` endpoint against the stored watermark
+  /// until `hasMore` is false, applying each page's upserts/tombstones and
+  /// persisting the advancing cursor after every page. The result only
+  /// signals whether the fetch itself succeeded — on failure the UI keeps
+  /// showing cached data (design doc §3).
   Future<Either<Failure, Unit>> refreshPersons();
 
   /// Tier 2 optimistic write (design doc §5): queues via the outbox and

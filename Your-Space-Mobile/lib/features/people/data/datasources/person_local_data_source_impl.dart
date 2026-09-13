@@ -81,9 +81,11 @@ class PersonLocalDataSourceImpl {
         ),
       );
 
-  /// Tier 3 "full refetch as delta" (design doc §6): [serverPersons] is the
-  /// complete, just-fetched owned collection. Diffs it against local drift by
-  /// id in one transaction:
+  /// Tier 3 "full refetch as delta" (design doc §6). No longer used by
+  /// `PersonRepositoryImpl.refreshPersons()` since row 6 switched Person to
+  /// real deltas ([applyPersonChanges]) — kept as a documented full-snapshot
+  /// primitive. [serverPersons] is the complete, just-fetched owned
+  /// collection. Diffs it against local drift by id in one transaction:
   ///  - a row with `isDirty == true` is left untouched — it has a pending
   ///    outbox entry, so the local edit is presumed newer
   ///  - every other server row is upserted (clean: not dirty, not deleted)
@@ -108,6 +110,53 @@ class PersonLocalDataSourceImpl {
               ))
             .write(const PersonsTableCompanion(isDeleted: Value(true)));
       });
+
+  /// Tier 3 real delta application (design doc §6, row 6): [upserts] and
+  /// [tombstoneIds] are exactly what the server says changed on this page —
+  /// no absence inference, unlike [applyPersonsSnapshot]. Same dirty-row
+  /// conflict policy applies to both upserts and tombstones: a row with a
+  /// pending outbox entry is left untouched either way.
+  Future<void> applyPersonChanges({
+    required List<Person> upserts,
+    required List<int> tombstoneIds,
+  }) =>
+      _db.transaction(() async {
+        final dirtyIds = (await (_db.select(_db.personsTable)..where((t) => t.isDirty.equals(true)))
+                .get())
+            .map((r) => r.id)
+            .toSet();
+
+        final toUpsert = upserts.where((p) => !dirtyIds.contains(p.id)).toList();
+        if (toUpsert.isNotEmpty) {
+          await _db.batch(
+            (batch) => batch.insertAllOnConflictUpdate(_db.personsTable, toUpsert.map(_toCompanion).toList()),
+          );
+        }
+
+        if (tombstoneIds.isNotEmpty) {
+          await (_db.update(_db.personsTable)
+                ..where((t) => t.id.isIn(tombstoneIds) & t.isDirty.equals(false)))
+              .write(const PersonsTableCompanion(isDeleted: Value(true)));
+        }
+      });
+
+  /// The stored Tier 3 watermark for People (design doc §6, row 6). `0` (the
+  /// backend's own "since the beginning" default) when never synced or when
+  /// the stored value is somehow unparseable.
+  Future<int> getPersonsSyncCursor() async {
+    final row = await (_db.select(_db.syncStateTable)..where((t) => t.collection.equals(_syncCollection)))
+        .getSingleOrNull();
+    return int.tryParse(row?.cursor ?? '') ?? 0;
+  }
+
+  /// Persists the new watermark after a successful delta page. Only touches
+  /// the `cursor` column — `lastSyncedAt` is written separately by
+  /// `SyncService` once the whole pull cycle succeeds.
+  Future<void> savePersonsSyncCursor(int cursor) => _db.into(_db.syncStateTable).insertOnConflictUpdate(
+        SyncStateTableCompanion.insert(collection: _syncCollection, cursor: Value(cursor.toString())),
+      );
+
+  static const _syncCollection = 'persons';
 
   /// No remote equivalent — single-row upsert after a successful
   /// create/update mutation (design doc §3: mutations go straight to remote
@@ -251,6 +300,7 @@ class PersonLocalDataSourceImpl {
         primaryPhotoUrl: row.primaryPhotoUrl,
         notes: row.notes,
         hasReciprocityHistory: row.hasReciprocityHistory,
+        updatedAt: row.updatedAt,
       );
 
   PersonsTableCompanion _toCompanion(Person person, {bool isDirty = false}) =>
@@ -273,11 +323,13 @@ class PersonLocalDataSourceImpl {
         primaryPhotoUrl: Value(person.primaryPhotoUrl),
         notes: Value(person.notes),
         hasReciprocityHistory: Value(person.hasReciprocityHistory),
-        // Backend doesn't expose `UpdatedAt` yet (design doc §6/§11 row 5).
-        // Never soft-deleted here. `isDirty` defaults to false (a row that
-        // came from a confirmed remote round trip) — callers queuing a
-        // Tier 2 optimistic write pass `isDirty: true` explicitly.
-        updatedAt: const Value(null),
+        // `updatedAt` comes from the server (design doc §6, row 5/6); still
+        // nullable because a locally-created draft (Tier 2 optimistic
+        // create, not yet synced) has none. Never soft-deleted here.
+        // `isDirty` defaults to false (a row that came from a confirmed
+        // remote round trip) — callers queuing a Tier 2 optimistic write
+        // pass `isDirty: true` explicitly.
+        updatedAt: Value(person.updatedAt),
         isDeleted: const Value(false),
         isDirty: Value(isDirty),
       );

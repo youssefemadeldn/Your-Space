@@ -25,6 +25,7 @@ class Person extends Equatable {
   final String? primaryPhotoUrl;
   final String? notes;
   final bool hasReciprocityHistory;
+  final DateTime? updatedAt;
 
   const Person({
     required this.id,
@@ -45,6 +46,7 @@ class Person extends Equatable {
     this.primaryPhotoUrl,
     this.notes,
     this.hasReciprocityHistory = false,
+    this.updatedAt,
   });
 
   @override
@@ -67,5 +69,6 @@ class Person extends Equatable {
         primaryPhotoUrl,
         notes,
         hasReciprocityHistory,
+        updatedAt,
       ];
 }

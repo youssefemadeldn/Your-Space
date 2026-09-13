@@ -8,6 +8,7 @@ import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/add_occasion_history_request.dart';
 import '../models/create_person_request.dart';
+import '../models/person_changes_response.dart';
 import '../models/person_details_response.dart';
 import '../models/person_occasion_history_response.dart';
 import '../models/person_response.dart';
@@ -95,6 +96,23 @@ class PersonRemoteDataSourceImpl implements BasePersonDataSource {
         fromJson: (json) => unwrapServiceResult(
           json,
           (inner) => PersonOccasionHistoryResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  @override
+  Future<Either<Failure, PersonChangesResponse>> getPersonChanges({
+    required int since,
+    required int pageSize,
+  }) =>
+      _api.get<PersonChangesResponse>(
+        path: '${ApiConstants.persons}/changes',
+        queryParameters: {
+          'since': since,
+          'pageSize': pageSize,
+        },
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => PersonChangesResponse.fromJson(inner as Map<String, dynamic>),
         ),
       );
 }

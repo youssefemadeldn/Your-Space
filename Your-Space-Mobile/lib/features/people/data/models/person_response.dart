@@ -24,6 +24,7 @@ class PersonResponse {
   final String? primaryPhotoUrl;
   final String? notes;
   final bool hasReciprocityHistory;
+  final DateTime? updatedAt;
 
   const PersonResponse({
     required this.id,
@@ -44,6 +45,7 @@ class PersonResponse {
     this.primaryPhotoUrl,
     this.notes,
     required this.hasReciprocityHistory,
+    this.updatedAt,
   });
 
   factory PersonResponse.fromJson(Map<String, dynamic> json) => PersonResponse(
@@ -65,6 +67,7 @@ class PersonResponse {
         primaryPhotoUrl: json['primaryPhotoUrl'] as String?,
         notes: json['notes'] as String?,
         hasReciprocityHistory: json['hasReciprocityHistory'] as bool,
+        updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
 
   Person toEntity() => Person(
@@ -86,5 +89,6 @@ class PersonResponse {
         primaryPhotoUrl: primaryPhotoUrl,
         notes: notes,
         hasReciprocityHistory: hasReciprocityHistory,
+        updatedAt: updatedAt,
       );
 }

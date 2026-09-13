@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -230,6 +231,88 @@ void main() {
       final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
       expect(row.isDeleted, isFalse);
       expect(row.name, 'Back Again');
+    });
+  });
+
+  group('applyPersonChanges', () {
+    test('upserts a clean row given in upserts', () async {
+      await dataSource.applyPersonChanges(upserts: [_person(id: 1, name: 'From Server')], tombstoneIds: const []);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a dirty row is not overwritten by an upsert for the same id', () async {
+      await dataSource.queuePersonMutation(
+        person: _person(id: 1, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{"id":1}',
+      );
+
+      await dataSource.applyPersonChanges(upserts: [_person(id: 1, name: 'From Server')], tombstoneIds: const []);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDirty, isTrue);
+    });
+
+    test('tombstones exactly the ids given in tombstoneIds — no absence inference', () async {
+      await dataSource.savePersons([_person(id: 1, name: 'Untouched'), _person(id: 2, name: 'Removed')]);
+
+      await dataSource.applyPersonChanges(upserts: const [], tombstoneIds: const [2]);
+
+      final untouched = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(untouched.isDeleted, isFalse);
+      final removed = await (database.select(database.personsTable)..where((t) => t.id.equals(2))).getSingle();
+      expect(removed.isDeleted, isTrue);
+    });
+
+    test('a dirty row is not tombstoned even if its id is given in tombstoneIds', () async {
+      await dataSource.queuePersonMutation(
+        person: _person(id: 1, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{"id":1}',
+      );
+
+      await dataSource.applyPersonChanges(upserts: const [], tombstoneIds: const [1]);
+
+      final row = await (database.select(database.personsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.isDirty, isTrue);
+    });
+  });
+
+  group('getPersonsSyncCursor / savePersonsSyncCursor', () {
+    test('reads 0 when never synced', () async {
+      expect(await dataSource.getPersonsSyncCursor(), 0);
+    });
+
+    test('round-trips a saved cursor', () async {
+      await dataSource.savePersonsSyncCursor(137);
+
+      expect(await dataSource.getPersonsSyncCursor(), 137);
+    });
+
+    test('a later save overwrites the earlier value', () async {
+      await dataSource.savePersonsSyncCursor(50);
+      await dataSource.savePersonsSyncCursor(90);
+
+      expect(await dataSource.getPersonsSyncCursor(), 90);
+    });
+
+    test('does not clobber a previously-written lastSyncedAt', () async {
+      final syncedAt = DateTime(2026, 9, 13);
+      await database.into(database.syncStateTable).insertOnConflictUpdate(
+            SyncStateTableCompanion.insert(collection: 'persons', lastSyncedAt: Value(syncedAt)),
+          );
+
+      await dataSource.savePersonsSyncCursor(137);
+
+      final row =
+          await (database.select(database.syncStateTable)..where((t) => t.collection.equals('persons')))
+              .getSingle();
+      expect(row.cursor, '137');
+      expect(row.lastSyncedAt, syncedAt);
     });
   });
 
