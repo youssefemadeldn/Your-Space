@@ -119,12 +119,16 @@ import 'package:your_space_mobile/features/events/presentation/cubit/events_list
     as _i890;
 import 'package:your_space_mobile/features/events/presentation/cubit/reciprocity_suggestions_cubit/reciprocity_suggestions_cubit.dart'
     as _i147;
+import 'package:your_space_mobile/features/groups/data/datasources/base_group_data_source.dart'
+    as _i229;
 import 'package:your_space_mobile/features/groups/data/datasources/group_local_data_source_impl.dart'
     as _i640;
 import 'package:your_space_mobile/features/groups/data/datasources/group_remote_data_source_impl.dart'
     as _i190;
 import 'package:your_space_mobile/features/groups/data/repositories/group_repository_impl.dart'
     as _i612;
+import 'package:your_space_mobile/features/groups/data/sync/group_outbox_replayer.dart'
+    as _i1011;
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart'
     as _i994;
 import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_cubit.dart'
@@ -186,6 +190,12 @@ extension GetItInjectableX on _i174.GetIt {
       preResolve: true,
     );
     gh.lazySingleton<_i935.AppDatabase>(() => _i935.AppDatabase());
+    gh.lazySingleton<List<_i222.OutboxReplayer>>(
+      () => registerModule.outboxReplayers,
+    );
+    gh.lazySingleton<List<_i635.CollectionPuller>>(
+      () => registerModule.collectionPullers,
+    );
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => registerModule.secureStorage,
     );
@@ -242,6 +252,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i293.PersonRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
+    gh.lazySingleton<_i229.BaseGroupDataSource>(
+      () => _i190.GroupRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
+    );
     gh.lazySingleton<_i1073.AuthRemoteDataSourceImpl>(
       () => _i1073.AuthRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
@@ -263,9 +277,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i557.EventRemoteDataSourceImpl>(
       () => _i557.EventRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
-    gh.lazySingleton<_i190.GroupRemoteDataSourceImpl>(
-      () => _i190.GroupRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
     gh.lazySingleton<_i931.PersonImageRemoteDataSourceImpl>(
       () => _i931.PersonImageRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
@@ -285,21 +296,16 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i477.SyncService>(),
       ),
     );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
-    );
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
+      instanceName: 'person',
     );
     gh.lazySingleton<_i126.PersonRelationshipRepository>(
       () => _i630.PersonRelationshipRepositoryImpl(
         gh<_i903.PersonRelationshipRemoteDataSourceImpl>(),
-      ),
-    );
-    gh.lazySingleton<_i994.GroupRepository>(
-      () => _i612.GroupRepositoryImpl(
-        gh<_i190.GroupRemoteDataSourceImpl>(),
-        gh<_i640.GroupLocalDataSourceImpl>(instanceName: 'local'),
       ),
     );
     gh.lazySingleton<_i680.NeighborhoodRepository>(
@@ -319,28 +325,24 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.lazySingleton<_i222.OutboxReplayer>(
-      () => _i622.PersonOutboxReplayer(
-        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
-        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
-      ),
-    );
     gh.factory<_i930.PersonDetailsCubit>(
       () => _i930.PersonDetailsCubit(
         gh<_i571.PersonRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i889.EventGuestsListCubit>(
-      () => _i889.EventGuestsListCubit(
-        gh<_i235.EventGuestRepository>(),
-        gh<_i994.GroupRepository>(),
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i622.PersonOutboxReplayer(
+        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
+        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
       ),
+      instanceName: 'person',
     );
-    gh.factory<_i147.ReciprocitySuggestionsCubit>(
-      () => _i147.ReciprocitySuggestionsCubit(
-        gh<_i235.EventGuestRepository>(),
-        gh<_i994.GroupRepository>(),
+    gh.lazySingleton<_i994.GroupRepository>(
+      () => _i612.GroupRepositoryImpl(
+        gh<_i229.BaseGroupDataSource>(instanceName: 'remote'),
+        gh<_i640.GroupLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
       ),
     );
     gh.lazySingleton<_i681.AuthRepository>(
@@ -382,11 +384,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i881.CityRepository>(
       () => _i866.CityRepositoryImpl(gh<_i500.CityRemoteDataSourceImpl>()),
     );
-    gh.factory<_i965.GroupActionCubit>(
-      () => _i965.GroupActionCubit(
-        gh<_i994.GroupRepository>(),
-        gh<_i215.DataRefreshBus>(),
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i1011.GroupOutboxReplayer(
+        gh<_i229.BaseGroupDataSource>(instanceName: 'remote'),
+        gh<_i640.GroupLocalDataSourceImpl>(instanceName: 'local'),
       ),
+      instanceName: 'group',
     );
     gh.factory<_i837.CityActionCubit>(
       () => _i837.CityActionCubit(
@@ -417,6 +420,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i680.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
+    );
+    gh.factory<_i965.GroupActionCubit>(
+      () => _i965.GroupActionCubit(gh<_i994.GroupRepository>()),
     );
     gh.factory<_i771.GroupsListCubit>(
       () => _i771.GroupsListCubit(gh<_i994.GroupRepository>()),
@@ -478,6 +484,18 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i681.AuthRepository>()),
+    );
+    gh.factory<_i889.EventGuestsListCubit>(
+      () => _i889.EventGuestsListCubit(
+        gh<_i235.EventGuestRepository>(),
+        gh<_i994.GroupRepository>(),
+      ),
+    );
+    gh.factory<_i147.ReciprocitySuggestionsCubit>(
+      () => _i147.ReciprocitySuggestionsCubit(
+        gh<_i235.EventGuestRepository>(),
+        gh<_i994.GroupRepository>(),
+      ),
     );
     gh.factory<_i68.PersonWizardCubit>(
       () => _i68.PersonWizardCubit(

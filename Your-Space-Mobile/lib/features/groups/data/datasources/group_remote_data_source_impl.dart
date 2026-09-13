@@ -9,13 +9,16 @@ import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_group_request.dart';
 import '../models/group_response.dart';
 import '../models/update_group_request.dart';
+import 'base_group_data_source.dart';
 
-@lazySingleton
-class GroupRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseGroupDataSource)
+class GroupRemoteDataSourceImpl implements BaseGroupDataSource {
   final ApiManager _api;
 
   GroupRemoteDataSourceImpl(this._api);
 
+  @override
   Future<Either<Failure, PaginatedResponse<GroupResponse>>> getGroups({
     String? search,
     required int pageIndex,
@@ -37,6 +40,7 @@ class GroupRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, GroupResponse>> createGroup(CreateGroupRequest request) =>
       _api.post<GroupResponse>(
         path: ApiConstants.groups,
@@ -47,6 +51,7 @@ class GroupRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, GroupResponse>> updateGroup(UpdateGroupRequest request) =>
       _api.put<GroupResponse>(
         path: ApiConstants.groups,

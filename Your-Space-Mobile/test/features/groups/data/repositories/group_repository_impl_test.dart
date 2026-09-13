@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,33 +7,45 @@ import 'package:mocktail/mocktail.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
+import 'package:your_space_mobile/core/sync/sync_service.dart';
+import 'package:your_space_mobile/features/groups/data/datasources/base_group_data_source.dart';
 import 'package:your_space_mobile/features/groups/data/datasources/group_local_data_source_impl.dart';
-import 'package:your_space_mobile/features/groups/data/datasources/group_remote_data_source_impl.dart';
 import 'package:your_space_mobile/features/groups/data/models/create_group_request.dart';
 import 'package:your_space_mobile/features/groups/data/models/group_response.dart';
 import 'package:your_space_mobile/features/groups/data/models/update_group_request.dart';
 import 'package:your_space_mobile/features/groups/data/repositories/group_repository_impl.dart';
 
-class MockGroupRemoteDataSourceImpl extends Mock implements GroupRemoteDataSourceImpl {}
+class MockBaseGroupDataSource extends Mock implements BaseGroupDataSource {}
 
 class MockGroupLocalDataSourceImpl extends Mock implements GroupLocalDataSourceImpl {}
 
+class MockSyncService extends Mock implements SyncService {}
+
 void main() {
-  late MockGroupRemoteDataSourceImpl remote;
+  late MockBaseGroupDataSource remote;
   late MockGroupLocalDataSourceImpl local;
+  late MockSyncService syncService;
   late GroupRepositoryImpl repository;
 
   setUpAll(() {
+    registerFallbackValue(const Group(id: 0, name: ''));
     registerFallbackValue(const CreateGroupRequest(name: ''));
     registerFallbackValue(const UpdateGroupRequest(id: 0, name: ''));
-    registerFallbackValue(const Group(id: 0, name: ''));
   });
 
   setUp(() {
-    remote = MockGroupRemoteDataSourceImpl();
+    remote = MockBaseGroupDataSource();
     local = MockGroupLocalDataSourceImpl();
-    repository = GroupRepositoryImpl(remote, local);
+    syncService = MockSyncService();
+    repository = GroupRepositoryImpl(remote, local, syncService);
     when(() => local.saveGroup(any())).thenAnswer((_) async {});
+    when(
+      () => local.queueGroupMutation(
+        group: any(named: 'group'),
+        operation: any(named: 'operation'),
+        payloadJson: any(named: 'payloadJson'),
+      ),
+    ).thenAnswer((_) async => 99);
   });
 
   test('getGroups maps a paginated response to a PaginatedResult of entities', () async {
@@ -62,36 +76,6 @@ void main() {
     expect(result, const Left(failure));
   });
 
-  test('createGroup maps the response to an entity and saves it locally', () async {
-    when(() => remote.createGroup(any()))
-        .thenAnswer((_) async => const Right(GroupResponse(id: 5, name: 'Book club')));
-
-    final result = await repository.createGroup(name: 'Book club');
-
-    expect(result, const Right(Group(id: 5, name: 'Book club')));
-    verify(() => local.saveGroup(const Group(id: 5, name: 'Book club'))).called(1);
-  });
-
-  test('createGroup propagates a failure without touching local storage', () async {
-    const failure = NetworkFailure();
-    when(() => remote.createGroup(any())).thenAnswer((_) async => const Left(failure));
-
-    final result = await repository.createGroup(name: 'Book club');
-
-    expect(result, const Left(failure));
-    verifyNever(() => local.saveGroup(any()));
-  });
-
-  test('updateGroup maps the response to an entity and saves it locally', () async {
-    when(() => remote.updateGroup(any()))
-        .thenAnswer((_) async => const Right(GroupResponse(id: 1, name: 'The Family')));
-
-    final result = await repository.updateGroup(id: 1, name: 'The Family');
-
-    expect(result, const Right(Group(id: 1, name: 'The Family')));
-    verify(() => local.saveGroup(const Group(id: 1, name: 'The Family'))).called(1);
-  });
-
   test('watchGroups delegates straight to the local data source', () {
     when(() => local.watchGroups(search: 'fam', limit: 20)).thenAnswer(
       (_) => Stream.value(const [Group(id: 1, name: 'Family')]),
@@ -108,5 +92,81 @@ void main() {
     final count = await repository.countGroups();
 
     expect(count, 7);
+  });
+
+  group('createGroup (pure optimistic path)', () {
+    test('queues a negative-id create via the outbox and returns immediately', () async {
+      final result = await repository.createGroup(name: 'Book club');
+
+      expect(result.isRight(), isTrue);
+      final group = result.getOrElse(() => throw StateError('expected Right'));
+      expect(group.id, lessThan(0));
+      expect(group.name, 'Book club');
+
+      final captured = verify(
+        () => local.queueGroupMutation(
+          group: captureAny(named: 'group'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as Group).id, lessThan(0));
+      expect(captured[1], 'create');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['name'], 'Book club');
+
+      verifyNever(() => remote.createGroup(any()));
+      verifyNever(() => syncService.replayRow(any()));
+    });
+  });
+
+  group('updateGroup (pure optimistic path)', () {
+    test('queues an update against the given id via the outbox and returns immediately', () async {
+      final result = await repository.updateGroup(id: 1, name: 'The Family');
+
+      expect(result, isA<Right<Failure, Group>>());
+      final captured = verify(
+        () => local.queueGroupMutation(
+          group: captureAny(named: 'group'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as Group).id, 1);
+      expect(captured[1], 'update');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['id'], 1);
+
+      verifyNever(() => remote.updateGroup(any()));
+      verifyNever(() => syncService.replayRow(any()));
+    });
+  });
+
+  group('createGroupAndSync', () {
+    test('queues via the outbox then returns the real group on a successful immediate replay', () async {
+      const realGroup = Group(id: 5, name: 'Book club');
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Right(realGroup));
+
+      final result = await repository.createGroupAndSync(name: 'Book club');
+
+      expect(result, const Right(realGroup));
+      verify(() => syncService.replayRow(99)).called(1);
+    });
+
+    test('the queued row is not rolled back when the immediate replay fails', () async {
+      const failure = NetworkFailure();
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.createGroupAndSync(name: 'Book club');
+
+      expect(result, const Left(failure));
+      verify(
+        () => local.queueGroupMutation(
+          group: any(named: 'group'),
+          operation: 'create',
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      ).called(1);
+    });
   });
 }

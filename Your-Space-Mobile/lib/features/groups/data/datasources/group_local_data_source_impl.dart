@@ -55,10 +55,70 @@ class GroupLocalDataSourceImpl {
       );
 
   /// No remote equivalent — single-row upsert after a successful
-  /// create/update mutation (design doc §3: mutations go straight to remote
-  /// and, on success, upsert into drift so the cache doesn't go stale).
+  /// create/update mutation. Superseded for Groups' own create/update path
+  /// by the outbox (row 7.3) — kept as a documented primitive; still called
+  /// transitionally from nowhere in production code once 7.3 lands, but
+  /// costs nothing to leave in place (mirrors `PersonLocalDataSourceImpl`'s
+  /// own `savePerson`).
   Future<void> saveGroup(Group group) =>
       _db.into(_db.groupsTable).insertOnConflictUpdate(_toCompanion(group));
+
+  /// Tier 2 optimistic write (design doc §5): writes [group] into
+  /// GroupsTable (marked dirty) and appends one OutboxTable row, in the
+  /// same drift transaction. Returns the new outbox row's id so the
+  /// repository's `createGroupAndSync` can ask `SyncService` to replay this
+  /// specific row immediately.
+  Future<int> queueGroupMutation({
+    required Group group,
+    required String operation, // 'create' | 'update'
+    required String payloadJson,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.groupsTable).insertOnConflictUpdate(
+              _toCompanion(group, isDirty: true),
+            );
+        return _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'group',
+                entityId: group.id,
+                operation: operation,
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'update' syncs successfully: overwrites the
+  /// local row with the server-confirmed copy (clears `isDirty`) and
+  /// removes the now-done outbox row, in one transaction.
+  Future<void> confirmSyncedGroup(Group group, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await _db.into(_db.groupsTable).insertOnConflictUpdate(_toCompanion(group));
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realGroup].id
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///
+  /// Unlike `PersonLocalDataSourceImpl.reconcileCreatedPerson`, no step 4
+  /// (cross-entity FK-rewrite of other pending outbox rows referencing this
+  /// tempId) is needed here — Groups' only analogous risk (a pending
+  /// Person-create outbox row referencing a Group's tempId) is sidestepped
+  /// by `GroupRepositoryImpl.createGroupAndSync`, which the wizard's inline
+  /// "add new group" flow uses specifically to resolve the real id
+  /// synchronously *before* building the person's own payload.
+  Future<void> reconcileCreatedGroup({
+    required int tempId,
+    required Group realGroup,
+    required int replayedOutboxRowId,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.groupsTable).insertOnConflictUpdate(_toCompanion(realGroup));
+        await (_db.delete(_db.groupsTable)..where((t) => t.id.equals(tempId))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
 
   /// Tier 3 "full refetch as delta" (design doc §6): [serverGroups] is the
   /// complete, just-fetched owned collection. Diffs it against local drift by

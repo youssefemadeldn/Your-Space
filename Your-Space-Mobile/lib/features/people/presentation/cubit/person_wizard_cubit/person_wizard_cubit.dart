@@ -249,7 +249,16 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   /// reachable from the wizard, and a zero-group account would otherwise be
   /// stuck, so creating one here is the only way forward.
   Future<int?> addGroupInline(String name) async {
-    final result = await _groupRepository.createGroup(name: name);
+    // createGroupAndSync, not createGroup: the outbox (row 7.3) makes a
+    // plain createGroup optimistic (a temp negative id), but this id gets
+    // embedded directly into the in-progress person's own `groupId` — a
+    // value that can never resolve to a real server id via Person's own
+    // reconciliation, which only rewrites Person outbox rows keyed to a
+    // Person tempId, not a foreign Group tempId sitting inside an
+    // already-built Person payload. createGroupAndSync guarantees this
+    // always returns either a real, server-confirmed id or null (on
+    // failure, same as before this row).
+    final result = await _groupRepository.createGroupAndSync(name: name);
     return result.fold((failure) => null, (group) {
       _dataRefreshBus.notify(DataScope.groups);
       _updateReady((r) => r.copyWith(
