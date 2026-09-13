@@ -30,7 +30,7 @@ public static class MockDataSeeder
         await SeedEmailConfirmationCodesAsync(context, activeUserId, lockedUserId);
         await SeedPasswordResetCodesAsync(context, activeUserId, lockedUserId);
 
-        await SeedGroupsAsync(context, activeUserId, lockedUserId);
+        await SeedGroupsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedSubGroupsAsync(context, activeUserId, lockedUserId);
         await SeedGovernoratesAsync(context, activeUserId);
         await SeedCitiesAsync(context, activeUserId);
@@ -206,26 +206,38 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    private static async Task SeedGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
         if (await context.Groups.AnyAsync())
         {
             return;
         }
 
-        await context.Groups.AddRangeAsync(
-            new Group { OwnerUserId = activeUserId, Name = "Relatives", NameAr = "الأقارب" },
-            new Group { OwnerUserId = activeUserId, Name = "Village Friends", NameAr = "أصدقاء القرية" },
-            new Group { OwnerUserId = activeUserId, Name = "University Friends", NameAr = "أصدقاء الجامعة" },
-            new Group { OwnerUserId = activeUserId, Name = new string('A', 200) }, // edge case — max-length name
-            new Group // edge case — soft-deleted
+        var groups = new List<Group>
+        {
+            new() { OwnerUserId = activeUserId, Name = "Relatives", NameAr = "الأقارب" },
+            new() { OwnerUserId = activeUserId, Name = "Village Friends", NameAr = "أصدقاء القرية" },
+            new() { OwnerUserId = activeUserId, Name = "University Friends", NameAr = "أصدقاء الجامعة" },
+            new() { OwnerUserId = activeUserId, Name = new string('A', 200) }, // edge case — max-length name
+            new() // edge case — soft-deleted
             {
                 OwnerUserId = activeUserId,
                 Name = "Old Neighbors (Archived)",
                 DeletedAt = DateTime.UtcNow.AddDays(-10)
             },
-            new Group { OwnerUserId = lockedUserId, Name = "Neighboring Village Friends" });
+            new() { OwnerUserId = lockedUserId, Name = "Neighboring Village Friends" }
+        };
 
+        // Seeding inserts directly via the DbContext, bypassing GroupService — so SyncVersion
+        // (which GroupService assigns on every real write, doc/local-first-sync-design.md §6)
+        // must be assigned here too, or every seeded row would be stuck at the column default
+        // and collide with each other under a `WHERE SyncVersion > @since` delta-sync query.
+        foreach (var group in groups)
+        {
+            group.SyncVersion = await syncVersionProvider.NextValueAsync("Groups_SyncVersion_seq");
+        }
+
+        await context.Groups.AddRangeAsync(groups);
         await context.SaveChangesAsync();
     }
 

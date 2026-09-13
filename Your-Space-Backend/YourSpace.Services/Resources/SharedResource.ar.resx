@@ -64,6 +64,9 @@
   <data name="Group.HasActivePersons" xml:space="preserve">
     <value>لا تزال هذه المجموعة تحتوي على أشخاص. يرجى نقلهم أو إزالتهم قبل حذف المجموعة.</value>
   </data>
+  <data name="Group.Since.Invalid" xml:space="preserve">
+    <value>مؤشر المزامنة يجب ألا يكون سالبًا.</value>
+  </data>
   <data name="Person.NotFound" xml:space="preserve">
     <value>الشخص غير موجود.</value>
   </data>

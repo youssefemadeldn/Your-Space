@@ -5,6 +5,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Repository.Specifications.Paginated;
+using YourSpace.Repository.Sync;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using GroupServiceImpl = YourSpace.Services.Services.GroupService.GroupService;
 
@@ -24,6 +25,7 @@ public class GroupService_GetAllAsyncTests
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        Mock.Of<ISyncVersionProvider>(),
         Mock.Of<ILogger<GroupServiceImpl>>());
 
     [Fact]

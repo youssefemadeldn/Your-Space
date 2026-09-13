@@ -92,6 +92,61 @@ public class GroupsControllerTests(TestWebApplicationFactory factory) : IClassFi
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task Changes_reflects_create_update_and_soft_delete_via_an_increasing_syncversion_cursor()
+    {
+        var client = await factory.CreateAuthenticatedClientAsync("groups.changes@example.com");
+
+        var created = await DeserializeAsync<GroupDetailsDto>(
+            await client.PostAsJsonAsync("/api/v1/Groups", new CreateGroupDto { Name = "Village Friends" }));
+        var groupId = created.Data!.Id;
+        var createdVersion = created.Data.SyncVersion;
+
+        var beforeCreate = await DeserializeAsync<GroupChangesDto>(
+            await client.GetAsync($"/api/v1/Groups/changes?since={createdVersion - 1}"));
+        beforeCreate.Data!.Upserts.Should().Contain(g => g.Id == groupId);
+        beforeCreate.Data.TombstoneIds.Should().NotContain(groupId);
+
+        var atCreatedVersion = await DeserializeAsync<GroupChangesDto>(
+            await client.GetAsync($"/api/v1/Groups/changes?since={createdVersion}"));
+        atCreatedVersion.Data!.Upserts.Should().NotContain(g => g.Id == groupId, "already seen up to this cursor");
+
+        var updated = await DeserializeAsync<GroupDetailsDto>(
+            await client.PutAsJsonAsync("/api/v1/Groups", new UpdateGroupDto { Id = groupId, Name = "Village Friends (Updated)" }));
+        updated.Data!.SyncVersion.Should().BeGreaterThan(createdVersion, "an update must bump the cursor, not just create");
+
+        var afterUpdate = await DeserializeAsync<GroupChangesDto>(
+            await client.GetAsync($"/api/v1/Groups/changes?since={createdVersion}"));
+        afterUpdate.Data!.Upserts.Should().Contain(g => g.Id == groupId && g.Name == "Village Friends (Updated)");
+
+        await client.DeleteAsync($"/api/v1/Groups/{groupId}");
+
+        var afterDelete = await DeserializeAsync<GroupChangesDto>(
+            await client.GetAsync($"/api/v1/Groups/changes?since={updated.Data.SyncVersion}"));
+        afterDelete.Data!.TombstoneIds.Should().Contain(groupId);
+        afterDelete.Data.Upserts.Should().NotContain(g => g.Id == groupId);
+    }
+
+    [Fact]
+    public async Task Changes_rejects_a_negative_since_cursor()
+    {
+        var client = await factory.CreateAuthenticatedClientAsync("groups.changes-invalid@example.com");
+
+        var response = await client.GetAsync("/api/v1/Groups/changes?since=-1");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Changes_rejects_unauthenticated_requests()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/Groups/changes");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private static async Task<ServiceResult<T>> DeserializeAsync<T>(HttpResponseMessage response)
     {
         var result = await response.Content.ReadFromJsonAsync<ServiceResult<T>>(JsonOptions);
