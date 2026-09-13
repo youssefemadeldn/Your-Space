@@ -21,14 +21,10 @@ abstract class GroupRepository {
   /// `hasNextPage` without a `length == limit` heuristic.
   Future<int> countGroups({String? search});
 
-  /// Tier 3 "full refetch as delta" interim pull (design doc §6, row 7.4):
-  /// no backend `since`/cursor support exists for Group yet, so this loops
-  /// the paginated remote endpoint until exhausted and diffs the result
-  /// against local drift by absence (mirrors `PersonRepository.refreshPersons()`'s
-  /// pre-row-6 shape). Superseded by a real delta pull once row 7.5/7.6 add
-  /// backend `SyncVersion`/`GET /groups/changes` support. The result only
-  /// signals whether the fetch itself succeeded — on failure the UI keeps
-  /// showing cached data (design doc §3).
+  /// Tier 3 real delta pull (design doc §6, row 7.6): cursor-based, against
+  /// `GET /groups/changes`, mirrors `PersonRepository.refreshPersons()`
+  /// exactly. The result only signals whether the fetch itself succeeded —
+  /// on failure the UI keeps showing cached data (design doc §3).
   Future<Either<Failure, Unit>> refreshGroups();
 
   /// Tier 2 optimistic write (design doc §5): queues via the outbox and

@@ -45,20 +45,25 @@ class GroupRepositoryImpl implements GroupRepository {
   @override
   Future<Either<Failure, Unit>> refreshGroups() async {
     const pageSize = 200;
-    // Defensive cap — this data shape is meant to be small (design doc §1/§2:
-    // Groups is "small, low cardinality"), never expected to trip.
+    // Defensive cap against a pathological `hasMore` loop — this data shape
+    // is meant to be small (design doc §1/§2: Groups is "small, low
+    // cardinality"), never expected to trip.
     const maxPages = 50;
-    final all = <Group>[];
-    for (var page = 1; page <= maxPages; page++) {
-      final result = await _remote.getGroups(pageIndex: page, pageSize: pageSize);
+    var cursor = await _local.getGroupsSyncCursor();
+    for (var page = 0; page < maxPages; page++) {
+      final result = await _remote.getGroupChanges(since: cursor, pageSize: pageSize);
       if (result.isLeft()) {
         return result.fold(Left.new, (_) => throw StateError('unreachable'));
       }
-      final response = result.getOrElse(() => throw StateError('unreachable'));
-      all.addAll(response.items.map((r) => r.toEntity()));
-      if (response.pageIndex >= response.totalPages) break;
+      final changes = result.getOrElse(() => throw StateError('unreachable'));
+      await _local.applyGroupChanges(
+        upserts: changes.upserts.map((r) => r.toEntity()).toList(),
+        tombstoneIds: changes.tombstoneIds,
+      );
+      await _local.saveGroupsSyncCursor(changes.cursor);
+      cursor = changes.cursor;
+      if (!changes.hasMore) break;
     }
-    await _local.applyGroupsSnapshot(all);
     return const Right(unit);
   }
 
