@@ -91,6 +91,83 @@ void main() {
     expect(governorate.single.isLocked, isFalse);
   });
 
+  group('queueGovernorateMutation', () {
+    test('writes a dirty governorate row and one outbox row in the same transaction, returning its id',
+        () async {
+      const governorate = Governorate(id: -1, name: 'Offline Create');
+
+      final rowId = await dataSource.queueGovernorateMutation(
+        governorate: governorate,
+        operation: 'create',
+        payloadJson: '{"name":"Offline Create"}',
+      );
+
+      final row =
+          await (database.select(database.governoratesTable)..where((t) => t.id.equals(-1))).getSingle();
+      expect(row.isDirty, isTrue);
+      expect(row.name, 'Offline Create');
+
+      final outboxRow =
+          await (database.select(database.outboxTable)..where((t) => t.id.equals(rowId))).getSingle();
+      expect(outboxRow.entityType, 'governorate');
+      expect(outboxRow.entityId, -1);
+      expect(outboxRow.operation, 'create');
+      expect(outboxRow.payloadJson, '{"name":"Offline Create"}');
+    });
+  });
+
+  group('confirmSyncedGovernorate', () {
+    test('clears isDirty on the governorate row and deletes the replayed outbox row', () async {
+      final rowId = await dataSource.queueGovernorateMutation(
+        governorate: const Governorate(id: 5, name: 'Dirty'),
+        operation: 'create',
+        payloadJson: '{"id":5}',
+      );
+
+      await dataSource.confirmSyncedGovernorate(
+        const Governorate(id: 5, name: 'Confirmed'),
+        replayedOutboxRowId: rowId,
+      );
+
+      final row =
+          await (database.select(database.governoratesTable)..where((t) => t.id.equals(5))).getSingle();
+      expect(row.isDirty, isFalse);
+      expect(row.name, 'Confirmed');
+
+      final remainingOutbox = await database.select(database.outboxTable).get();
+      expect(remainingOutbox, isEmpty);
+    });
+  });
+
+  group('reconcileCreatedGovernorate', () {
+    test('inserts under the real id, deletes the temp row, and deletes the replayed outbox row', () async {
+      const tempId = -12345;
+      final rowId = await dataSource.queueGovernorateMutation(
+        governorate: const Governorate(id: tempId, name: 'Offline Governorate'),
+        operation: 'create',
+        payloadJson: '{"name":"Offline Governorate"}',
+      );
+
+      const realGovernorate = Governorate(id: 999, name: 'Offline Governorate');
+      await dataSource.reconcileCreatedGovernorate(
+        tempId: tempId,
+        realGovernorate: realGovernorate,
+        replayedOutboxRowId: rowId,
+      );
+
+      final tempRow = await (database.select(database.governoratesTable)..where((t) => t.id.equals(tempId)))
+          .getSingleOrNull();
+      expect(tempRow, isNull);
+
+      final realRow =
+          await (database.select(database.governoratesTable)..where((t) => t.id.equals(999))).getSingle();
+      expect(realRow.name, 'Offline Governorate');
+
+      final remainingOutbox = await database.select(database.outboxTable).get();
+      expect(remainingOutbox, isEmpty);
+    });
+  });
+
   group('applyGovernoratesSnapshot', () {
     test('upserts a server row that is not already dirty locally', () async {
       await dataSource.applyGovernoratesSnapshot(const [Governorate(id: 1, name: 'From Server', isLocked: true)]);
