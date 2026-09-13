@@ -9,7 +9,6 @@ import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/governorate.dart';
-import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/neighborhood.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/person_image.dart';
@@ -73,25 +72,23 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<void> initialize(int? personId) async {
     emit(const PersonWizardLoading());
 
-    // Kick the independent fetches off together, then await — the group and
-    // governorate lists are hard prerequisites (both required in Step 2), so a
-    // failure on either surfaces as an error screen with Retry rather than an
-    // empty picker the user can't get past.
-    final groupsFuture = _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
+    // Groups is local-first (row 7.2) — a local read can't fail the way a
+    // network call can, so it's no longer part of the prerequisite-failure
+    // check below; the governorate list (not yet migrated) remains the only
+    // hard-fail branch.
+    final groupsFuture = _groupRepository.watchGroups(limit: 50).first;
     final governoratesFuture = _governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50);
     final detailsFuture = personId == null ? null : _personRepository.getPersonById(personId);
 
-    final groupsResult = await groupsFuture;
+    final groups = await groupsFuture;
     final governoratesResult = await governoratesFuture;
 
-    final prereqFailure = groupsResult.fold<Failure?>((f) => f, (_) => null) ??
-        governoratesResult.fold<Failure?>((f) => f, (_) => null);
+    final prereqFailure = governoratesResult.fold<Failure?>((f) => f, (_) => null);
     if (prereqFailure != null) {
       emit(PersonWizardError(core.failureToMessage(prereqFailure)));
       return;
     }
 
-    final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
     final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
 
     if (personId == null) {

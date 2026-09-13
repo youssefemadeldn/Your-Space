@@ -79,11 +79,11 @@ void main() {
       );
 
   void stubReferenceLists({
-    Either<Failure, PaginatedResult<Group>>? groups,
+    List<Group>? groups,
     Either<Failure, PaginatedResult<Governorate>>? governorates,
   }) {
-    when(() => groupRepository.getGroups(pageIndex: any(named: 'pageIndex'), pageSize: any(named: 'pageSize')))
-        .thenAnswer((_) async => groups ?? Right(_page(const [Group(id: 1, name: 'Family')])));
+    when(() => groupRepository.watchGroups(limit: any(named: 'limit')))
+        .thenAnswer((_) => Stream.value(groups ?? const [Group(id: 1, name: 'Family')]));
     when(() => governorateRepository.getGovernorates(
           pageIndex: any(named: 'pageIndex'),
           pageSize: any(named: 'pageSize'),
@@ -129,8 +129,23 @@ void main() {
       await expectation;
     });
 
-    test('surfaces an error screen when the group list fails (no silent empty picker)', () async {
-      stubReferenceLists(groups: const Left(NetworkFailure()));
+    test('emits Ready with an empty group picker when the local cache has no groups yet', () async {
+      stubReferenceLists(groups: const []);
+
+      final expectation = expectLater(
+        cubit.stream,
+        emitsInOrder([
+          const PersonWizardLoading(),
+          isA<PersonWizardReady>().having((s) => s.availableGroups, 'availableGroups', isEmpty),
+        ]),
+      );
+
+      unawaited(cubit.initialize(null));
+      await expectation;
+    });
+
+    test('surfaces an error screen when the governorate list fails (no silent empty picker)', () async {
+      stubReferenceLists(governorates: const Left(NetworkFailure()));
 
       final expectation = expectLater(
         cubit.stream,

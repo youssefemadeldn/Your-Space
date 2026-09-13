@@ -23,7 +23,7 @@ class MockGroupRepository extends Mock implements GroupRepository {}
 /// (see the note in pubspec.yaml) to shortcut state injection — a subclass
 /// exposing `emit` is the standard workaround.
 class _TestGroupsListCubit extends GroupsListCubit {
-  _TestGroupsListCubit(super.groupRepository, super.dataRefreshBus);
+  _TestGroupsListCubit(super.groupRepository);
   void pushState(GroupsListState state) => emit(state);
 }
 
@@ -45,12 +45,12 @@ void main() {
 
     final groupRepository = MockGroupRepository();
     final dataRefreshBus = DataRefreshBus();
-    final listCubit = _TestGroupsListCubit(groupRepository, dataRefreshBus);
+    final listCubit = _TestGroupsListCubit(groupRepository);
     final actionCubit = GroupActionCubit(groupRepository, dataRefreshBus);
     addTearDown(listCubit.close);
     addTearDown(actionCubit.close);
 
-    listCubit.pushState(const GroupsListSuccess([], pageIndex: 1, hasNextPage: false));
+    listCubit.pushState(const GroupsListSuccess([], limit: 20, hasNextPage: false));
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -88,7 +88,7 @@ void main() {
       Group(id: 1, name: 'Family'),
       Group(id: 2, name: 'Close friends'),
     ];
-    listCubit.pushState(const GroupsListSuccess(groups, pageIndex: 1, hasNextPage: false));
+    listCubit.pushState(const GroupsListSuccess(groups, limit: 20, hasNextPage: false));
     await tester.pumpAndSettle();
     expect(find.text('Family'), findsOneWidget);
     expect(find.text('Close friends'), findsOneWidget);
