@@ -8,14 +8,12 @@ import 'package:injectable/injectable.dart';
 import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
-import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/entities/neighborhood.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
-import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
@@ -72,24 +70,15 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<void> initialize(int? personId) async {
     emit(const PersonWizardLoading());
 
-    // Groups is local-first (row 7.2) — a local read can't fail the way a
-    // network call can, so it's no longer part of the prerequisite-failure
-    // check below; the governorate list (not yet migrated) remains the only
-    // hard-fail branch.
+    // Groups (row 7.2) and Governorates (row 8.2) are both local-first now —
+    // a local read can't fail the way a network call can, so neither is part
+    // of a prerequisite-failure check anymore.
     final groupsFuture = _groupRepository.watchGroups(limit: 50).first;
-    final governoratesFuture = _governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50);
+    final governoratesFuture = _governorateRepository.watchGovernorates(limit: 50).first;
     final detailsFuture = personId == null ? null : _personRepository.getPersonById(personId);
 
     final groups = await groupsFuture;
-    final governoratesResult = await governoratesFuture;
-
-    final prereqFailure = governoratesResult.fold<Failure?>((f) => f, (_) => null);
-    if (prereqFailure != null) {
-      emit(PersonWizardError(core.failureToMessage(prereqFailure)));
-      return;
-    }
-
-    final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
+    final governorates = await governoratesFuture;
 
     if (personId == null) {
       emit(PersonWizardReady(
