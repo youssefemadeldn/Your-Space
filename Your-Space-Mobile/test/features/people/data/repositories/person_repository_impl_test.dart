@@ -7,12 +7,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
-import 'package:your_space_mobile/core/network/paginated_response.dart';
 import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart';
 import 'package:your_space_mobile/features/people/data/models/add_occasion_history_request.dart';
 import 'package:your_space_mobile/features/people/data/models/create_person_request.dart';
+import 'package:your_space_mobile/features/people/data/models/person_changes_response.dart';
 import 'package:your_space_mobile/features/people/data/models/person_details_response.dart';
 import 'package:your_space_mobile/features/people/data/models/person_occasion_history_response.dart';
 import 'package:your_space_mobile/features/people/data/models/person_response.dart';
@@ -61,6 +61,14 @@ void main() {
     when(() => local.savePerson(any())).thenAnswer((_) async {});
     when(() => local.savePersons(any())).thenAnswer((_) async {});
     when(() => local.applyPersonsSnapshot(any())).thenAnswer((_) async {});
+    when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 0);
+    when(
+      () => local.applyPersonChanges(
+        upserts: any(named: 'upserts'),
+        tombstoneIds: any(named: 'tombstoneIds'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => local.savePersonsSyncCursor(any())).thenAnswer((_) async {});
     when(
       () => local.queuePersonMutation(
         person: any(named: 'person'),
@@ -151,29 +159,113 @@ void main() {
   });
 
   group('refreshPersons', () {
-    test('loops every remote page and upserts the concatenated, mapped entities', () async {
-      when(() => remote.getPersons(pageIndex: 1, pageSize: 100)).thenAnswer(
-        (_) async => Right(PaginatedResponse(items: [_toResponse(1)], pageIndex: 1, totalPages: 2, totalItems: 2)),
-      );
-      when(() => remote.getPersons(pageIndex: 2, pageSize: 100)).thenAnswer(
-        (_) async => Right(PaginatedResponse(items: [_toResponse(2)], pageIndex: 2, totalPages: 2, totalItems: 2)),
+    test('single page, no more data: applies the page and persists its cursor', () async {
+      when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getPersonChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          PersonChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [5], cursor: 137, hasMore: false),
+        ),
       );
 
       final result = await repository.refreshPersons();
 
       expect(result, const Right(unit));
-      final captured = verify(() => local.applyPersonsSnapshot(captureAny())).captured.single as List<Person>;
-      expect(captured.map((p) => p.id), [1, 2]);
+      final captured = verify(
+        () => local.applyPersonChanges(
+          upserts: captureAny(named: 'upserts'),
+          tombstoneIds: captureAny(named: 'tombstoneIds'),
+        ),
+      ).captured;
+      expect((captured[0] as List<Person>).map((p) => p.id), [1]);
+      expect(captured[1], [5]);
+      verify(() => local.savePersonsSyncCursor(137)).called(1);
     });
 
-    test('stops and returns Left immediately on a failing page, without saving anything', () async {
-      const failure = NetworkFailure();
-      when(() => remote.getPersons(pageIndex: 1, pageSize: 100)).thenAnswer((_) async => const Left(failure));
+    test('multi-page loop threads the returned cursor forward as the next since', () async {
+      when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getPersonChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async =>
+            Right(PersonChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [], cursor: 50, hasMore: true)),
+      );
+      when(() => remote.getPersonChanges(since: 50, pageSize: 200)).thenAnswer(
+        (_) async =>
+            Right(PersonChangesResponse(upserts: [_toResponse(2)], tombstoneIds: const [], cursor: 90, hasMore: false)),
+      );
 
       final result = await repository.refreshPersons();
 
-      expect(result, const Left(failure));
-      verifyNever(() => local.applyPersonsSnapshot(any()));
+      expect(result, const Right(unit));
+      verify(() => remote.getPersonChanges(since: 0, pageSize: 200)).called(1);
+      verify(() => remote.getPersonChanges(since: 50, pageSize: 200)).called(1);
+      verify(
+        () => local.applyPersonChanges(upserts: any(named: 'upserts'), tombstoneIds: any(named: 'tombstoneIds')),
+      ).called(2);
+      verify(() => local.savePersonsSyncCursor(50)).called(1);
+      verify(() => local.savePersonsSyncCursor(90)).called(1);
+    });
+
+    test('first sync reads cursor 0 from local and sends it as since', () async {
+      when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getPersonChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async => const Right(PersonChangesResponse(upserts: [], tombstoneIds: [], cursor: 0, hasMore: false)),
+      );
+
+      final result = await repository.refreshPersons();
+
+      expect(result, const Right(unit));
+      verify(() => remote.getPersonChanges(since: 0, pageSize: 200)).called(1);
+    });
+
+    test('resumes from a previously stored cursor', () async {
+      when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 300);
+      when(() => remote.getPersonChanges(since: 300, pageSize: 200)).thenAnswer(
+        (_) async => const Right(PersonChangesResponse(upserts: [], tombstoneIds: [], cursor: 300, hasMore: false)),
+      );
+
+      final result = await repository.refreshPersons();
+
+      expect(result, const Right(unit));
+      verify(() => remote.getPersonChanges(since: 300, pageSize: 200)).called(1);
+    });
+
+    test(
+      'stops and returns Left immediately on a failing page, preserving prior pages\' persisted cursor',
+      () async {
+        when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 0);
+        when(() => remote.getPersonChanges(since: 0, pageSize: 200)).thenAnswer(
+          (_) async => Right(
+            PersonChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [], cursor: 50, hasMore: true),
+          ),
+        );
+        const failure = NetworkFailure();
+        when(() => remote.getPersonChanges(since: 50, pageSize: 200)).thenAnswer((_) async => const Left(failure));
+
+        final result = await repository.refreshPersons();
+
+        expect(result, const Left(failure));
+        verify(() => local.savePersonsSyncCursor(50)).called(1);
+        verify(
+          () => local.applyPersonChanges(upserts: any(named: 'upserts'), tombstoneIds: any(named: 'tombstoneIds')),
+        ).called(1);
+        verify(() => remote.getPersonChanges(since: 0, pageSize: 200)).called(1);
+        verify(() => remote.getPersonChanges(since: 50, pageSize: 200)).called(1);
+        verifyNever(() => remote.getPersonChanges(since: 90, pageSize: 200));
+      },
+    );
+
+    test('stops after the defensive page cap when the server always says hasMore', () async {
+      when(() => local.getPersonsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getPersonChanges(since: any(named: 'since'), pageSize: 200)).thenAnswer((invocation) async {
+        final since = invocation.namedArguments[#since] as int;
+        return Right(PersonChangesResponse(upserts: const [], tombstoneIds: const [], cursor: since + 1, hasMore: true));
+      });
+
+      final result = await repository.refreshPersons();
+
+      expect(result, const Right(unit));
+      verify(
+        () => local.savePersonsSyncCursor(any()),
+      ).called(50);
     });
   });
 

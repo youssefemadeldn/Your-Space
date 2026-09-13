@@ -94,21 +94,26 @@ class PersonRepositoryImpl implements PersonRepository {
 
   @override
   Future<Either<Failure, Unit>> refreshPersons() async {
-    const bulkPageSize = 100;
-    // Defensive cap (~5000 rows) — this data shape is "hundreds of rows"
-    // (design doc §1), never expected to trip.
+    const pageSize = 200;
+    // Defensive cap against a pathological `hasMore` loop — a healthy
+    // cursor sequence terminates on its own; this is insurance, not an
+    // expected limit (design doc §1: "hundreds of rows" per owner).
     const maxPages = 50;
-    final all = <Person>[];
-    for (var page = 1; page <= maxPages; page++) {
-      final result = await _remote.getPersons(pageIndex: page, pageSize: bulkPageSize);
+    var cursor = await _local.getPersonsSyncCursor();
+    for (var page = 0; page < maxPages; page++) {
+      final result = await _remote.getPersonChanges(since: cursor, pageSize: pageSize);
       if (result.isLeft()) {
         return result.fold(Left.new, (_) => throw StateError('unreachable'));
       }
-      final response = result.getOrElse(() => throw StateError('unreachable'));
-      all.addAll(response.items.map((r) => r.toEntity()));
-      if (response.pageIndex >= response.totalPages) break;
+      final changes = result.getOrElse(() => throw StateError('unreachable'));
+      await _local.applyPersonChanges(
+        upserts: changes.upserts.map((r) => r.toEntity()).toList(),
+        tombstoneIds: changes.tombstoneIds,
+      );
+      await _local.savePersonsSyncCursor(changes.cursor);
+      cursor = changes.cursor;
+      if (!changes.hasMore) break;
     }
-    await _local.applyPersonsSnapshot(all);
     return const Right(unit);
   }
 
