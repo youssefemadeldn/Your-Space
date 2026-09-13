@@ -85,8 +85,9 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     emit(const PeopleListLoading());
     final groupsResult = await _groupRepository.getGroups(pageIndex: 1, pageSize: _refPageSize);
     final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
-    final governoratesResult = await _governorateRepository.getGovernorates(pageIndex: 1, pageSize: _refPageSize);
-    final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
+    // Governorate is local-first (row 8.2) — a local read can't fail the way
+    // a network call can.
+    final governorates = await _governorateRepository.watchGovernorates(limit: _refPageSize).first;
 
     await _subscribeToPersons(
       groupId: null,
@@ -284,8 +285,9 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     final current = state;
     if (current is! PeopleListSuccess) return;
 
-    final governoratesResult = await _governorateRepository.getGovernorates(pageIndex: 1, pageSize: _refPageSize);
-    final governorates = governoratesResult.fold((_) => current.governorates, (p) => p.items);
+    // Governorate is local-first (row 8.2) — a local read can't fail the way
+    // a network call can.
+    final governorates = await _governorateRepository.watchGovernorates(limit: _refPageSize).first;
 
     var subGroups = current.subGroups;
     if (current.selectedGroupId != null) {

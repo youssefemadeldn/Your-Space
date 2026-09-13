@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
@@ -54,8 +53,9 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
     final groupProgress =
         progressResult.fold((_) => const <GroupGuestProgress>[], (progress) => progress.groups);
 
-    final governoratesResult = await _governorateRepository.getGovernorates(pageIndex: 1, pageSize: _refPageSize);
-    final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
+    // Governorate is local-first (row 8.2) — a local read can't fail the way
+    // a network call can.
+    final governorates = await _governorateRepository.watchGovernorates(limit: _refPageSize).first;
 
     final peopleResult = await _personRepository.getPersons(pageIndex: 1, pageSize: _pageSize);
     peopleResult.fold(

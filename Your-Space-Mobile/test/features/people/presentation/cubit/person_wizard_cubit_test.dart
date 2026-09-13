@@ -80,14 +80,12 @@ void main() {
 
   void stubReferenceLists({
     List<Group>? groups,
-    Either<Failure, PaginatedResult<Governorate>>? governorates,
+    List<Governorate>? governorates,
   }) {
     when(() => groupRepository.watchGroups(limit: any(named: 'limit')))
         .thenAnswer((_) => Stream.value(groups ?? const [Group(id: 1, name: 'Family')]));
-    when(() => governorateRepository.getGovernorates(
-          pageIndex: any(named: 'pageIndex'),
-          pageSize: any(named: 'pageSize'),
-        )).thenAnswer((_) async => governorates ?? Right(_page(const [Governorate(id: 1, name: 'Cairo')])));
+    when(() => governorateRepository.watchGovernorates(limit: any(named: 'limit')))
+        .thenAnswer((_) => Stream.value(governorates ?? const [Governorate(id: 1, name: 'Cairo')]));
   }
 
   setUpAll(() {
@@ -144,12 +142,16 @@ void main() {
       await expectation;
     });
 
-    test('surfaces an error screen when the governorate list fails (no silent empty picker)', () async {
-      stubReferenceLists(governorates: const Left(NetworkFailure()));
+    test('emits Ready with an empty governorate picker when the local cache has no governorates yet',
+        () async {
+      stubReferenceLists(governorates: const []);
 
       final expectation = expectLater(
         cubit.stream,
-        emitsInOrder([const PersonWizardLoading(), isA<PersonWizardError>()]),
+        emitsInOrder([
+          const PersonWizardLoading(),
+          isA<PersonWizardReady>().having((s) => s.availableGovernorates, 'availableGovernorates', isEmpty),
+        ]),
       );
 
       unawaited(cubit.initialize(null));

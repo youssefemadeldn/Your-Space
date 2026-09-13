@@ -121,9 +121,8 @@ void main() {
       (_) async =>
           const Right(PaginatedResult(items: [family, closeFriends], pageIndex: 1, totalPages: 1, totalItems: 2)),
     );
-    when(() => governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: <Governorate>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
-    );
+    when(() => governorateRepository.watchGovernorates(limit: 50))
+        .thenAnswer((_) => Stream.value(const <Governorate>[]));
     when(() => subGroupRepository.getSubGroups(groupId: family.id, pageIndex: 1, pageSize: 50)).thenAnswer(
       (_) async => const Right(PaginatedResult(items: <SubGroup>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
     );
