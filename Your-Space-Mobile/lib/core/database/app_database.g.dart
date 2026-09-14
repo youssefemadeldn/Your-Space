@@ -2036,6 +2036,461 @@ class GovernoratesTableCompanion
   }
 }
 
+class $CitiesTableTable extends CitiesTable
+    with TableInfo<$CitiesTableTable, CitiesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CitiesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameArMeta = const VerificationMeta('nameAr');
+  @override
+  late final GeneratedColumn<String> nameAr = GeneratedColumn<String>(
+    'name_ar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _governorateIdMeta = const VerificationMeta(
+    'governorateId',
+  );
+  @override
+  late final GeneratedColumn<int> governorateId = GeneratedColumn<int>(
+    'governorate_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDirtyMeta = const VerificationMeta(
+    'isDirty',
+  );
+  @override
+  late final GeneratedColumn<bool> isDirty = GeneratedColumn<bool>(
+    'is_dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    nameAr,
+    governorateId,
+    updatedAt,
+    isDeleted,
+    isDirty,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cities_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CitiesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('name_ar')) {
+      context.handle(
+        _nameArMeta,
+        nameAr.isAcceptableOrUnknown(data['name_ar']!, _nameArMeta),
+      );
+    }
+    if (data.containsKey('governorate_id')) {
+      context.handle(
+        _governorateIdMeta,
+        governorateId.isAcceptableOrUnknown(
+          data['governorate_id']!,
+          _governorateIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_governorateIdMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('is_dirty')) {
+      context.handle(
+        _isDirtyMeta,
+        isDirty.isAcceptableOrUnknown(data['is_dirty']!, _isDirtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CitiesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CitiesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      nameAr: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name_ar'],
+      ),
+      governorateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}governorate_id'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      isDirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dirty'],
+      )!,
+    );
+  }
+
+  @override
+  $CitiesTableTable createAlias(String alias) {
+    return $CitiesTableTable(attachedDatabase, alias);
+  }
+}
+
+class CitiesTableData extends DataClass implements Insertable<CitiesTableData> {
+  final int id;
+  final String name;
+  final String? nameAr;
+  final int governorateId;
+  final DateTime? updatedAt;
+  final bool isDeleted;
+  final bool isDirty;
+  const CitiesTableData({
+    required this.id,
+    required this.name,
+    this.nameAr,
+    required this.governorateId,
+    this.updatedAt,
+    required this.isDeleted,
+    required this.isDirty,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || nameAr != null) {
+      map['name_ar'] = Variable<String>(nameAr);
+    }
+    map['governorate_id'] = Variable<int>(governorateId);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_dirty'] = Variable<bool>(isDirty);
+    return map;
+  }
+
+  CitiesTableCompanion toCompanion(bool nullToAbsent) {
+    return CitiesTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      nameAr: nameAr == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nameAr),
+      governorateId: Value(governorateId),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      isDeleted: Value(isDeleted),
+      isDirty: Value(isDirty),
+    );
+  }
+
+  factory CitiesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CitiesTableData(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      nameAr: serializer.fromJson<String?>(json['nameAr']),
+      governorateId: serializer.fromJson<int>(json['governorateId']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isDirty: serializer.fromJson<bool>(json['isDirty']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'nameAr': serializer.toJson<String?>(nameAr),
+      'governorateId': serializer.toJson<int>(governorateId),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isDirty': serializer.toJson<bool>(isDirty),
+    };
+  }
+
+  CitiesTableData copyWith({
+    int? id,
+    String? name,
+    Value<String?> nameAr = const Value.absent(),
+    int? governorateId,
+    Value<DateTime?> updatedAt = const Value.absent(),
+    bool? isDeleted,
+    bool? isDirty,
+  }) => CitiesTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    nameAr: nameAr.present ? nameAr.value : this.nameAr,
+    governorateId: governorateId ?? this.governorateId,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isDirty: isDirty ?? this.isDirty,
+  );
+  CitiesTableData copyWithCompanion(CitiesTableCompanion data) {
+    return CitiesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
+      governorateId: data.governorateId.present
+          ? data.governorateId.value
+          : this.governorateId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isDirty: data.isDirty.present ? data.isDirty.value : this.isDirty,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CitiesTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('nameAr: $nameAr, ')
+          ..write('governorateId: $governorateId, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    nameAr,
+    governorateId,
+    updatedAt,
+    isDeleted,
+    isDirty,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CitiesTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.nameAr == this.nameAr &&
+          other.governorateId == this.governorateId &&
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.isDirty == this.isDirty);
+}
+
+class CitiesTableCompanion extends UpdateCompanion<CitiesTableData> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> nameAr;
+  final Value<int> governorateId;
+  final Value<DateTime?> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<bool> isDirty;
+  const CitiesTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.nameAr = const Value.absent(),
+    this.governorateId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  });
+  CitiesTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.nameAr = const Value.absent(),
+    required int governorateId,
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  }) : name = Value(name),
+       governorateId = Value(governorateId);
+  static Insertable<CitiesTableData> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? nameAr,
+    Expression<int>? governorateId,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<bool>? isDirty,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (nameAr != null) 'name_ar': nameAr,
+      if (governorateId != null) 'governorate_id': governorateId,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isDirty != null) 'is_dirty': isDirty,
+    });
+  }
+
+  CitiesTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String?>? nameAr,
+    Value<int>? governorateId,
+    Value<DateTime?>? updatedAt,
+    Value<bool>? isDeleted,
+    Value<bool>? isDirty,
+  }) {
+    return CitiesTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      nameAr: nameAr ?? this.nameAr,
+      governorateId: governorateId ?? this.governorateId,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isDirty: isDirty ?? this.isDirty,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (nameAr.present) {
+      map['name_ar'] = Variable<String>(nameAr.value);
+    }
+    if (governorateId.present) {
+      map['governorate_id'] = Variable<int>(governorateId.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (isDirty.present) {
+      map['is_dirty'] = Variable<bool>(isDirty.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CitiesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('nameAr: $nameAr, ')
+          ..write('governorateId: $governorateId, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTableTable extends OutboxTable
     with TableInfo<$OutboxTableTable, OutboxTableData> {
   @override
@@ -2889,6 +3344,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GroupsTableTable groupsTable = $GroupsTableTable(this);
   late final $GovernoratesTableTable governoratesTable =
       $GovernoratesTableTable(this);
+  late final $CitiesTableTable citiesTable = $CitiesTableTable(this);
   late final $OutboxTableTable outboxTable = $OutboxTableTable(this);
   late final $SyncStateTableTable syncStateTable = $SyncStateTableTable(this);
   @override
@@ -2899,6 +3355,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     personsTable,
     groupsTable,
     governoratesTable,
+    citiesTable,
     outboxTable,
     syncStateTable,
   ];
@@ -3909,6 +4366,249 @@ typedef $$GovernoratesTableTableProcessedTableManager =
       GovernoratesTableData,
       PrefetchHooks Function()
     >;
+typedef $$CitiesTableTableCreateCompanionBuilder =
+    CitiesTableCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<String?> nameAr,
+      required int governorateId,
+      Value<DateTime?> updatedAt,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+typedef $$CitiesTableTableUpdateCompanionBuilder =
+    CitiesTableCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String?> nameAr,
+      Value<int> governorateId,
+      Value<DateTime?> updatedAt,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+
+class $$CitiesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $CitiesTableTable> {
+  $$CitiesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nameAr => $composableBuilder(
+    column: $table.nameAr,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get governorateId => $composableBuilder(
+    column: $table.governorateId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CitiesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $CitiesTableTable> {
+  $$CitiesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nameAr => $composableBuilder(
+    column: $table.nameAr,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get governorateId => $composableBuilder(
+    column: $table.governorateId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CitiesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CitiesTableTable> {
+  $$CitiesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get nameAr =>
+      $composableBuilder(column: $table.nameAr, builder: (column) => column);
+
+  GeneratedColumn<int> get governorateId => $composableBuilder(
+    column: $table.governorateId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDirty =>
+      $composableBuilder(column: $table.isDirty, builder: (column) => column);
+}
+
+class $$CitiesTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CitiesTableTable,
+          CitiesTableData,
+          $$CitiesTableTableFilterComposer,
+          $$CitiesTableTableOrderingComposer,
+          $$CitiesTableTableAnnotationComposer,
+          $$CitiesTableTableCreateCompanionBuilder,
+          $$CitiesTableTableUpdateCompanionBuilder,
+          (
+            CitiesTableData,
+            BaseReferences<_$AppDatabase, $CitiesTableTable, CitiesTableData>,
+          ),
+          CitiesTableData,
+          PrefetchHooks Function()
+        > {
+  $$CitiesTableTableTableManager(_$AppDatabase db, $CitiesTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CitiesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CitiesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CitiesTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> nameAr = const Value.absent(),
+                Value<int> governorateId = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => CitiesTableCompanion(
+                id: id,
+                name: name,
+                nameAr: nameAr,
+                governorateId: governorateId,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<String?> nameAr = const Value.absent(),
+                required int governorateId,
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => CitiesTableCompanion.insert(
+                id: id,
+                name: name,
+                nameAr: nameAr,
+                governorateId: governorateId,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CitiesTableTable, CitiesTableData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $CitiesTableTable,
+                    CitiesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CitiesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CitiesTableTable,
+      CitiesTableData,
+      $$CitiesTableTableFilterComposer,
+      $$CitiesTableTableOrderingComposer,
+      $$CitiesTableTableAnnotationComposer,
+      $$CitiesTableTableCreateCompanionBuilder,
+      $$CitiesTableTableUpdateCompanionBuilder,
+      (
+        CitiesTableData,
+        BaseReferences<_$AppDatabase, $CitiesTableTable, CitiesTableData>,
+      ),
+      CitiesTableData,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxTableTableCreateCompanionBuilder =
     OutboxTableCompanion Function({
       Value<int> id,
@@ -4387,6 +5087,8 @@ class $AppDatabaseManager {
       $$GroupsTableTableTableManager(_db, _db.groupsTable);
   $$GovernoratesTableTableTableManager get governoratesTable =>
       $$GovernoratesTableTableTableManager(_db, _db.governoratesTable);
+  $$CitiesTableTableTableManager get citiesTable =>
+      $$CitiesTableTableTableManager(_db, _db.citiesTable);
   $$OutboxTableTableTableManager get outboxTable =>
       $$OutboxTableTableTableManager(_db, _db.outboxTable);
   $$SyncStateTableTableTableManager get syncStateTable =>
