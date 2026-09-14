@@ -29,6 +29,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const Governorate(id: 0, name: ''));
     registerFallbackValue(const CreateGovernorateRequest(name: ''));
+    registerFallbackValue(const <Governorate>[]);
   });
 
   setUp(() {
@@ -43,6 +44,7 @@ void main() {
         payloadJson: any(named: 'payloadJson'),
       ),
     ).thenAnswer((_) async => 99);
+    when(() => local.applyGovernoratesSnapshot(any())).thenAnswer((_) async {});
   });
 
   test('getGovernorates maps a paginated response to a PaginatedResult of entities', () async {
@@ -148,4 +150,36 @@ void main() {
       ).called(1);
     });
   });
+
+  group('refreshGovernorates', () {
+    test('loops every remote page and upserts the concatenated, mapped entities', () async {
+      when(() => remote.getGovernorates(pageIndex: 1, pageSize: 200)).thenAnswer(
+        (_) async =>
+            Right(PaginatedResponse(items: [_toResponse(1)], pageIndex: 1, totalPages: 2, totalItems: 2)),
+      );
+      when(() => remote.getGovernorates(pageIndex: 2, pageSize: 200)).thenAnswer(
+        (_) async =>
+            Right(PaginatedResponse(items: [_toResponse(2)], pageIndex: 2, totalPages: 2, totalItems: 2)),
+      );
+
+      final result = await repository.refreshGovernorates();
+
+      expect(result, const Right(unit));
+      final captured =
+          verify(() => local.applyGovernoratesSnapshot(captureAny())).captured.single as List<Governorate>;
+      expect(captured.map((g) => g.id), [1, 2]);
+    });
+
+    test('stops and returns Left immediately on a failing page, without saving anything', () async {
+      const failure = NetworkFailure();
+      when(() => remote.getGovernorates(pageIndex: 1, pageSize: 200)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.refreshGovernorates();
+
+      expect(result, const Left(failure));
+      verifyNever(() => local.applyGovernoratesSnapshot(any()));
+    });
+  });
 }
+
+GovernorateResponse _toResponse(int id) => GovernorateResponse(id: id, name: 'Governorate $id', isLocked: true);

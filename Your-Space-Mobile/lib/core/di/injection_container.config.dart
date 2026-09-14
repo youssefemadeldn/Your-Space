@@ -75,6 +75,8 @@ import 'package:your_space_mobile/features/classification/data/repositories/neig
     as _i412;
 import 'package:your_space_mobile/features/classification/data/repositories/subgroup_repository_impl.dart'
     as _i180;
+import 'package:your_space_mobile/features/classification/data/sync/governorate_collection_puller.dart'
+    as _i1067;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
     as _i774;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart'
@@ -435,6 +437,11 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i680.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () =>
+          _i1067.GovernorateCollectionPuller(gh<_i262.GovernorateRepository>()),
+      instanceName: 'governorate',
     );
     gh.factory<_i965.GroupActionCubit>(
       () => _i965.GroupActionCubit(gh<_i994.GroupRepository>()),
