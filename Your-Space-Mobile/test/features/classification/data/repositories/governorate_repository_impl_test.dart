@@ -11,6 +11,7 @@ import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/base_governorate_data_source.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/governorate_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/classification/data/models/create_governorate_request.dart';
+import 'package:your_space_mobile/features/classification/data/models/governorate_changes_response.dart';
 import 'package:your_space_mobile/features/classification/data/models/governorate_response.dart';
 import 'package:your_space_mobile/features/classification/data/repositories/governorate_repository_impl.dart';
 
@@ -45,6 +46,14 @@ void main() {
       ),
     ).thenAnswer((_) async => 99);
     when(() => local.applyGovernoratesSnapshot(any())).thenAnswer((_) async {});
+    when(() => local.getGovernoratesSyncCursor()).thenAnswer((_) async => 0);
+    when(
+      () => local.applyGovernorateChanges(
+        upserts: any(named: 'upserts'),
+        tombstoneIds: any(named: 'tombstoneIds'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => local.saveGovernoratesSyncCursor(any())).thenAnswer((_) async {});
   });
 
   test('getGovernorates maps a paginated response to a PaginatedResult of entities', () async {
@@ -152,32 +161,112 @@ void main() {
   });
 
   group('refreshGovernorates', () {
-    test('loops every remote page and upserts the concatenated, mapped entities', () async {
-      when(() => remote.getGovernorates(pageIndex: 1, pageSize: 200)).thenAnswer(
-        (_) async =>
-            Right(PaginatedResponse(items: [_toResponse(1)], pageIndex: 1, totalPages: 2, totalItems: 2)),
-      );
-      when(() => remote.getGovernorates(pageIndex: 2, pageSize: 200)).thenAnswer(
-        (_) async =>
-            Right(PaginatedResponse(items: [_toResponse(2)], pageIndex: 2, totalPages: 2, totalItems: 2)),
+    test('single page, no more data: applies the page and persists its cursor', () async {
+      when(() => local.getGovernoratesSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getGovernorateChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          GovernorateChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [5], cursor: 137, hasMore: false),
+        ),
       );
 
       final result = await repository.refreshGovernorates();
 
       expect(result, const Right(unit));
-      final captured =
-          verify(() => local.applyGovernoratesSnapshot(captureAny())).captured.single as List<Governorate>;
-      expect(captured.map((g) => g.id), [1, 2]);
+      final captured = verify(
+        () => local.applyGovernorateChanges(
+          upserts: captureAny(named: 'upserts'),
+          tombstoneIds: captureAny(named: 'tombstoneIds'),
+        ),
+      ).captured;
+      expect((captured[0] as List<Governorate>).map((g) => g.id), [1]);
+      expect(captured[1], [5]);
+      verify(() => local.saveGovernoratesSyncCursor(137)).called(1);
     });
 
-    test('stops and returns Left immediately on a failing page, without saving anything', () async {
-      const failure = NetworkFailure();
-      when(() => remote.getGovernorates(pageIndex: 1, pageSize: 200)).thenAnswer((_) async => const Left(failure));
+    test('multi-page loop threads the returned cursor forward as the next since', () async {
+      when(() => local.getGovernoratesSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getGovernorateChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          GovernorateChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [], cursor: 50, hasMore: true),
+        ),
+      );
+      when(() => remote.getGovernorateChanges(since: 50, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          GovernorateChangesResponse(upserts: [_toResponse(2)], tombstoneIds: const [], cursor: 90, hasMore: false),
+        ),
+      );
 
       final result = await repository.refreshGovernorates();
 
-      expect(result, const Left(failure));
-      verifyNever(() => local.applyGovernoratesSnapshot(any()));
+      expect(result, const Right(unit));
+      verify(() => remote.getGovernorateChanges(since: 0, pageSize: 200)).called(1);
+      verify(() => remote.getGovernorateChanges(since: 50, pageSize: 200)).called(1);
+      verify(
+        () => local.applyGovernorateChanges(
+          upserts: any(named: 'upserts'),
+          tombstoneIds: any(named: 'tombstoneIds'),
+        ),
+      ).called(2);
+      verify(() => local.saveGovernoratesSyncCursor(50)).called(1);
+      verify(() => local.saveGovernoratesSyncCursor(90)).called(1);
+    });
+
+    test('resumes from a previously stored cursor', () async {
+      when(() => local.getGovernoratesSyncCursor()).thenAnswer((_) async => 300);
+      when(() => remote.getGovernorateChanges(since: 300, pageSize: 200)).thenAnswer(
+        (_) async =>
+            const Right(GovernorateChangesResponse(upserts: [], tombstoneIds: [], cursor: 300, hasMore: false)),
+      );
+
+      final result = await repository.refreshGovernorates();
+
+      expect(result, const Right(unit));
+      verify(() => remote.getGovernorateChanges(since: 300, pageSize: 200)).called(1);
+    });
+
+    test(
+      'stops and returns Left immediately on a failing page, preserving prior pages\' persisted cursor',
+      () async {
+        when(() => local.getGovernoratesSyncCursor()).thenAnswer((_) async => 0);
+        when(() => remote.getGovernorateChanges(since: 0, pageSize: 200)).thenAnswer(
+          (_) async => Right(
+            GovernorateChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [], cursor: 50, hasMore: true),
+          ),
+        );
+        const failure = NetworkFailure();
+        when(() => remote.getGovernorateChanges(since: 50, pageSize: 200))
+            .thenAnswer((_) async => const Left(failure));
+
+        final result = await repository.refreshGovernorates();
+
+        expect(result, const Left(failure));
+        verify(() => local.saveGovernoratesSyncCursor(50)).called(1);
+        verify(
+          () => local.applyGovernorateChanges(
+            upserts: any(named: 'upserts'),
+            tombstoneIds: any(named: 'tombstoneIds'),
+          ),
+        ).called(1);
+        verify(() => remote.getGovernorateChanges(since: 0, pageSize: 200)).called(1);
+        verify(() => remote.getGovernorateChanges(since: 50, pageSize: 200)).called(1);
+        verifyNever(() => remote.getGovernorateChanges(since: 90, pageSize: 200));
+      },
+    );
+
+    test('stops after the defensive page cap when the server always says hasMore', () async {
+      when(() => local.getGovernoratesSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getGovernorateChanges(since: any(named: 'since'), pageSize: 200))
+          .thenAnswer((invocation) async {
+        final since = invocation.namedArguments[#since] as int;
+        return Right(
+          GovernorateChangesResponse(upserts: const [], tombstoneIds: const [], cursor: since + 1, hasMore: true),
+        );
+      });
+
+      final result = await repository.refreshGovernorates();
+
+      expect(result, const Right(unit));
+      verify(() => local.saveGovernoratesSyncCursor(any())).called(50);
     });
   });
 }

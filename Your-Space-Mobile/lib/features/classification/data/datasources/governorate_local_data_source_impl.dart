@@ -47,9 +47,8 @@ class GovernorateLocalDataSourceImpl {
   }
 
   /// Tier 1 upsert, no tombstoning — kept as a documented primitive for a
-  /// future caller that wants a plain bulk replace. Row 8.4/8.6's
-  /// `refreshGovernorates()` uses `applyGovernorateChanges`/
-  /// `applyGovernoratesSnapshot` instead.
+  /// future caller that wants a plain bulk replace. `refreshGovernorates()`
+  /// (Tier 3) uses `applyGovernorateChanges` (row 8.6) instead.
   Future<void> saveGovernorates(List<Governorate> governorates) => _db.batch(
         (batch) => batch.insertAllOnConflictUpdate(
           _db.governoratesTable,
@@ -133,9 +132,11 @@ class GovernorateLocalDataSourceImpl {
   ///    temp (negative) id is never a tombstone candidate; it was never on
   ///    the server to begin with
   ///
-  /// Not called by `GovernorateRepositoryImpl` yet — wired up by row 8.4's
-  /// `refreshGovernorates()`, same sequencing as `GroupLocalDataSourceImpl.
-  /// applyGroupsSnapshot` in row 7.2.
+  /// No longer used by `GovernorateRepositoryImpl.refreshGovernorates()`
+  /// since row 8.6 switched Governorate to real deltas
+  /// ([applyGovernorateChanges]) — kept as a documented full-snapshot
+  /// primitive, mirrors `GroupLocalDataSourceImpl.applyGroupsSnapshot`'s own
+  /// post-7.6 state.
   Future<void> applyGovernoratesSnapshot(List<Governorate> serverGovernorates) => _db.transaction(() async {
         final dirtyIds =
             (await (_db.select(_db.governoratesTable)..where((t) => t.isDirty.equals(true))).get())
@@ -155,11 +156,62 @@ class GovernorateLocalDataSourceImpl {
             .write(const GovernoratesTableCompanion(isDeleted: Value(true)));
       });
 
+  /// Tier 3 real delta application (design doc §6, row 8.6): [upserts] and
+  /// [tombstoneIds] are exactly what the server says changed on this page —
+  /// no absence inference, unlike [applyGovernoratesSnapshot]. Same
+  /// dirty-row conflict policy applies to both upserts and tombstones: a row
+  /// with a pending outbox entry is left untouched either way. Mirrors
+  /// `GroupLocalDataSourceImpl.applyGroupChanges`.
+  Future<void> applyGovernorateChanges({
+    required List<Governorate> upserts,
+    required List<int> tombstoneIds,
+  }) =>
+      _db.transaction(() async {
+        final dirtyIds =
+            (await (_db.select(_db.governoratesTable)..where((t) => t.isDirty.equals(true))).get())
+                .map((r) => r.id)
+                .toSet();
+
+        final toUpsert = upserts.where((g) => !dirtyIds.contains(g.id)).toList();
+        if (toUpsert.isNotEmpty) {
+          await _db.batch(
+            (batch) =>
+                batch.insertAllOnConflictUpdate(_db.governoratesTable, toUpsert.map(_toCompanion).toList()),
+          );
+        }
+
+        if (tombstoneIds.isNotEmpty) {
+          await (_db.update(_db.governoratesTable)
+                ..where((t) => t.id.isIn(tombstoneIds) & t.isDirty.equals(false)))
+              .write(const GovernoratesTableCompanion(isDeleted: Value(true)));
+        }
+      });
+
+  /// The stored Tier 3 watermark for Governorates (design doc §6, row 8.6).
+  /// `0` (the backend's own "since the beginning" default) when never synced
+  /// or when the stored value is somehow unparseable.
+  Future<int> getGovernoratesSyncCursor() async {
+    final row = await (_db.select(_db.syncStateTable)..where((t) => t.collection.equals(_syncCollection)))
+        .getSingleOrNull();
+    return int.tryParse(row?.cursor ?? '') ?? 0;
+  }
+
+  /// Persists the new watermark after a successful delta page. Only touches
+  /// the `cursor` column — `lastSyncedAt` is written separately by
+  /// `SyncService` once the whole pull cycle succeeds.
+  Future<void> saveGovernoratesSyncCursor(int cursor) =>
+      _db.into(_db.syncStateTable).insertOnConflictUpdate(
+            SyncStateTableCompanion.insert(collection: _syncCollection, cursor: Value(cursor.toString())),
+          );
+
+  static const _syncCollection = 'governorates';
+
   Governorate _toEntity(GovernoratesTableData row) => Governorate(
         id: row.id,
         name: row.name,
         nameAr: row.nameAr,
         isLocked: row.isLocked,
+        updatedAt: row.updatedAt,
       );
 
   GovernoratesTableCompanion _toCompanion(Governorate governorate, {bool isDirty = false}) =>
@@ -168,11 +220,13 @@ class GovernorateLocalDataSourceImpl {
         name: governorate.name,
         nameAr: Value(governorate.nameAr),
         isLocked: Value(governorate.isLocked),
-        // `updatedAt` is added once the backend exposes it (row 8.5/8.6) —
-        // nothing to set yet. Never soft-deleted here. `isDirty` defaults to
-        // false (a row that came from a confirmed remote round trip) —
-        // callers queuing a Tier 2 optimistic write pass `isDirty: true`
-        // explicitly.
+        // `updatedAt` comes from the server (design doc §6, row 8.5/8.6);
+        // still nullable because a locally-created draft (Tier 2 optimistic
+        // create, not yet synced) has none. Never soft-deleted here.
+        // `isDirty` defaults to false (a row that came from a confirmed
+        // remote round trip) — callers queuing a Tier 2 optimistic write
+        // pass `isDirty: true` explicitly.
+        updatedAt: Value(governorate.updatedAt),
         isDeleted: const Value(false),
         isDirty: Value(isDirty),
       );

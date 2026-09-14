@@ -7,6 +7,7 @@ import 'package:your_space_mobile/core/network/api_manager.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_governorate_request.dart';
+import '../models/governorate_changes_response.dart';
 import '../models/governorate_response.dart';
 import 'base_governorate_data_source.dart';
 
@@ -43,6 +44,23 @@ class GovernorateRemoteDataSourceImpl implements BaseGovernorateDataSource {
         fromJson: (json) => unwrapServiceResult(
           json,
           (inner) => GovernorateResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  @override
+  Future<Either<Failure, GovernorateChangesResponse>> getGovernorateChanges({
+    required int since,
+    required int pageSize,
+  }) =>
+      _api.get<GovernorateChangesResponse>(
+        path: '${ApiConstants.governorates}/changes',
+        queryParameters: {
+          'since': since,
+          'pageSize': pageSize,
+        },
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => GovernorateChangesResponse.fromJson(inner as Map<String, dynamic>),
         ),
       );
 }

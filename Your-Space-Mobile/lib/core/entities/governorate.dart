@@ -10,6 +10,7 @@ class Governorate extends Equatable {
   final String? nameAr;
   final bool isLocked;
   final int personCount;
+  final DateTime? updatedAt;
 
   const Governorate({
     required this.id,
@@ -17,8 +18,9 @@ class Governorate extends Equatable {
     this.nameAr,
     this.isLocked = false,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   @override
-  List<Object?> get props => [id, name, nameAr, isLocked, personCount];
+  List<Object?> get props => [id, name, nameAr, isLocked, personCount, updatedAt];
 }
