@@ -49,6 +49,26 @@ class CityRepositoryImpl implements CityRepository {
   Future<int> countCities({required int governorateId, String? search}) =>
       _local.countCities(governorateId: governorateId, search: search);
 
+  @override
+  Future<Either<Failure, Unit>> refreshCities() async {
+    const pageSize = 200;
+    // Defensive cap against a pathological loop — this data shape is meant
+    // to be small (a user's own custom cities), never expected to trip.
+    const maxPages = 50;
+    final all = <City>[];
+    for (var page = 1; page <= maxPages; page++) {
+      final result = await _remote.getAllMineCities(pageIndex: page, pageSize: pageSize);
+      if (result.isLeft()) {
+        return result.fold(Left.new, (_) => throw StateError('unreachable'));
+      }
+      final response = result.getOrElse(() => throw StateError('unreachable'));
+      all.addAll(response.items.map((r) => r.toEntity()));
+      if (response.pageIndex >= response.totalPages) break;
+    }
+    await _local.applyCitiesSnapshot(all);
+    return const Right(unit);
+  }
+
   int _newTempCityId() => -DateTime.now().microsecondsSinceEpoch;
 
   /// Builds the [City] draft + JSON-encoded create payload (governorateId

@@ -202,4 +202,47 @@ void main() {
     expect(await database.select(database.citiesTable).get(), isEmpty);
     expect(await database.select(database.outboxTable).get(), isEmpty);
   });
+
+  group('applyCitiesSnapshot', () {
+    test('upserts a server row that is not already dirty locally', () async {
+      await dataSource.applyCitiesSnapshot(const [City(id: 1, governorateId: 7, name: 'From Server')]);
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a clean positive-id row absent from the server list is soft-tombstoned', () async {
+      await dataSource.saveCity(const City(id: 1, governorateId: 7, name: 'Gone Server-Side'));
+
+      await dataSource.applyCitiesSnapshot(const []);
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isTrue);
+    });
+
+    test('a dirty row is not overwritten or tombstoned by a snapshot pull', () async {
+      await dataSource.queueCityMutation(
+        city: const City(id: 1, governorateId: 7, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyCitiesSnapshot(const [City(id: 1, governorateId: 7, name: 'Stale Server Copy')]);
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDeleted, isFalse);
+    });
+
+    test('a previously-tombstoned row that reappears in the server list is restored', () async {
+      await dataSource.saveCity(const City(id: 1, governorateId: 7, name: 'Was Deleted'));
+      await dataSource.applyCitiesSnapshot(const []);
+
+      await dataSource.applyCitiesSnapshot(const [City(id: 1, governorateId: 7, name: 'Back Again')]);
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.name, 'Back Again');
+    });
+  });
 }

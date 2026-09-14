@@ -79,6 +79,8 @@ import 'package:your_space_mobile/features/classification/data/repositories/neig
     as _i412;
 import 'package:your_space_mobile/features/classification/data/repositories/subgroup_repository_impl.dart'
     as _i180;
+import 'package:your_space_mobile/features/classification/data/sync/city_collection_puller.dart'
+    as _i975;
 import 'package:your_space_mobile/features/classification/data/sync/city_outbox_replayer.dart'
     as _i682;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_collection_puller.dart'
@@ -406,6 +408,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i180.SubGroupRepositoryImpl(
         gh<_i566.SubGroupRemoteDataSourceImpl>(),
       ),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i975.CityCollectionPuller(gh<_i881.CityRepository>()),
+      instanceName: 'city',
     );
     gh.factory<_i793.SubGroupActionCubit>(
       () => _i793.SubGroupActionCubit(
