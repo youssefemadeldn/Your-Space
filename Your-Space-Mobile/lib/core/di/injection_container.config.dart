@@ -79,6 +79,8 @@ import 'package:your_space_mobile/features/classification/data/repositories/neig
     as _i412;
 import 'package:your_space_mobile/features/classification/data/repositories/subgroup_repository_impl.dart'
     as _i180;
+import 'package:your_space_mobile/features/classification/data/sync/city_outbox_replayer.dart'
+    as _i682;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_collection_puller.dart'
     as _i1067;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
@@ -376,6 +378,16 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i477.SyncService>(),
       ),
     );
+    gh.lazySingleton<_i881.CityRepository>(
+      () => _i866.CityRepositoryImpl(
+        gh<_i97.BaseCityDataSource>(instanceName: 'remote'),
+        gh<_i741.CityLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
+      ),
+    );
+    gh.factory<_i837.CityActionCubit>(
+      () => _i837.CityActionCubit(gh<_i881.CityRepository>()),
+    );
     gh.lazySingleton<_i681.AuthRepository>(
       () => _i722.AuthRepositoryImpl(
         gh<_i1073.AuthRemoteDataSourceImpl>(),
@@ -414,6 +426,19 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       instanceName: 'group',
     );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i682.CityOutboxReplayer(
+        gh<_i97.BaseCityDataSource>(instanceName: 'remote'),
+        gh<_i741.CityLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'city',
+    );
+    gh.factory<_i493.CityListCubit>(
+      () => _i493.CityListCubit(
+        gh<_i881.CityRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
     gh.factory<_i391.EventDetailsCubit>(
       () => _i391.EventDetailsCubit(
         gh<_i219.EventRepository>(),
@@ -421,16 +446,21 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
+    gh.factory<_i512.PeopleListCubit>(
+      () => _i512.PeopleListCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i994.GroupRepository>(),
+        gh<_i133.SubGroupRepository>(),
+        gh<_i262.GovernorateRepository>(),
+        gh<_i881.CityRepository>(),
+        gh<_i680.NeighborhoodRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
+    );
     gh.lazySingleton<_i635.CollectionPuller>(
       () =>
           _i1067.GovernorateCollectionPuller(gh<_i262.GovernorateRepository>()),
       instanceName: 'governorate',
-    );
-    gh.lazySingleton<_i881.CityRepository>(
-      () => _i866.CityRepositoryImpl(
-        gh<_i97.BaseCityDataSource>(instanceName: 'remote'),
-        gh<_i741.CityLocalDataSourceImpl>(instanceName: 'local'),
-      ),
     );
     gh.factory<_i965.GroupActionCubit>(
       () => _i965.GroupActionCubit(gh<_i994.GroupRepository>()),
@@ -536,29 +566,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i291.ProfileFormCubit(
         gh<_i84.GetCurrentUserProfileUseCase>(),
         gh<_i681.AuthRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
-    gh.factory<_i837.CityActionCubit>(
-      () => _i837.CityActionCubit(
-        gh<_i881.CityRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
-    gh.factory<_i493.CityListCubit>(
-      () => _i493.CityListCubit(
-        gh<_i881.CityRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
-    gh.factory<_i512.PeopleListCubit>(
-      () => _i512.PeopleListCubit(
-        gh<_i571.PersonRepository>(),
-        gh<_i994.GroupRepository>(),
-        gh<_i133.SubGroupRepository>(),
-        gh<_i262.GovernorateRepository>(),
-        gh<_i881.CityRepository>(),
-        gh<_i680.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
     );

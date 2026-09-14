@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
+import 'package:your_space_mobile/core/sync/sync_service.dart';
 import '../../domain/repositories/base_city_repository.dart';
 import '../datasources/base_city_data_source.dart';
 import '../datasources/city_local_data_source_impl.dart';
@@ -14,10 +17,12 @@ import '../models/update_city_request.dart';
 class CityRepositoryImpl implements CityRepository {
   final BaseCityDataSource _remote;
   final CityLocalDataSourceImpl _local;
+  final SyncService _syncService;
 
   CityRepositoryImpl(
     @Named('remote') this._remote,
     @Named('local') this._local,
+    this._syncService,
   );
 
   @override
@@ -44,20 +49,42 @@ class CityRepositoryImpl implements CityRepository {
   Future<int> countCities({required int governorateId, String? search}) =>
       _local.countCities(governorateId: governorateId, search: search);
 
+  int _newTempCityId() => -DateTime.now().microsecondsSinceEpoch;
+
+  /// Builds the [City] draft + JSON-encoded create payload (governorateId
+  /// included alongside the request body — `CreateCityRequest.toJson()`
+  /// omits it since it's normally routed, but `CityOutboxReplayer` needs it
+  /// to call `BaseCityDataSource.createCity(governorateId, ...)`) and queues
+  /// both via the outbox. Shared by [createCity] and [createCityAndSync].
+  Future<(City, int)> _queueCreate({required int governorateId, required String name, String? nameAr}) async {
+    final city = City(id: _newTempCityId(), governorateId: governorateId, name: name, nameAr: nameAr);
+    final payloadJson = jsonEncode({
+      'governorateId': governorateId,
+      ...CreateCityRequest(name: name, nameAr: nameAr).toJson(),
+    });
+    final rowId = await _local.queueCityMutation(city: city, operation: 'create', payloadJson: payloadJson);
+    return (city, rowId);
+  }
+
   @override
   Future<Either<Failure, City>> createCity({
     required int governorateId,
     required String name,
     String? nameAr,
   }) async {
-    final result = await _remote.createCity(governorateId, CreateCityRequest(name: name, nameAr: nameAr));
-    if (result.isLeft()) return result.fold(Left.new, (_) => throw StateError('unreachable'));
-    final city = result.getOrElse(() => throw StateError('unreachable')).toEntity();
-    // Transitional Tier 1 write path (design doc §3) — superseded by the
-    // outbox once row 8.9 lands. Upserting on success keeps the local cache
-    // from going stale until the next Tier 3 pull.
-    await _local.saveCity(city);
+    final (city, _) = await _queueCreate(governorateId: governorateId, name: name, nameAr: nameAr);
     return Right(city);
+  }
+
+  @override
+  Future<Either<Failure, City>> createCityAndSync({
+    required int governorateId,
+    required String name,
+    String? nameAr,
+  }) async {
+    final (city, rowId) = await _queueCreate(governorateId: governorateId, name: name, nameAr: nameAr);
+    final result = await _syncService.replayRow(rowId);
+    return result.fold(Left.new, (payload) => Right(payload as City? ?? city));
   }
 
   @override
@@ -67,19 +94,18 @@ class CityRepositoryImpl implements CityRepository {
     required String name,
     String? nameAr,
   }) async {
-    final result =
-        await _remote.updateCity(governorateId, id, UpdateCityRequest(name: name, nameAr: nameAr));
-    if (result.isLeft()) return result.fold(Left.new, (_) => throw StateError('unreachable'));
-    final city = result.getOrElse(() => throw StateError('unreachable')).toEntity();
-    await _local.saveCity(city);
+    final city = City(id: id, governorateId: governorateId, name: name, nameAr: nameAr);
+    final payloadJson = jsonEncode({
+      'governorateId': governorateId,
+      ...UpdateCityRequest(name: name, nameAr: nameAr).toJson(),
+    });
+    await _local.queueCityMutation(city: city, operation: 'update', payloadJson: payloadJson);
     return Right(city);
   }
 
   @override
   Future<Either<Failure, Unit>> deleteCity({required int governorateId, required int id}) async {
-    final result = await _remote.deleteCity(governorateId, id);
-    if (result.isLeft()) return result;
-    await _local.deleteCityLocal(id);
-    return result;
+    await _local.queueDeletedCity(id, payloadJson: jsonEncode({'governorateId': governorateId}));
+    return const Right(unit);
   }
 }

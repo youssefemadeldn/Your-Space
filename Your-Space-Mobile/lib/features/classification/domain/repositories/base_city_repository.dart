@@ -25,6 +25,18 @@ abstract class CityRepository {
 
   Future<Either<Failure, City>> createCity({required int governorateId, required String name, String? nameAr});
 
+  /// Queues the create and immediately asks `SyncService` to replay it, so
+  /// the caller gets back a real, server-confirmed id (or a failure) rather
+  /// than an optimistic temp id — for offline inline-add chains (e.g. the
+  /// wizard's "add new city" affordance) that embed the returned id directly
+  /// into another entity's own payload, where reconciliation can't reach it.
+  /// Mirrors `GroupRepository.createGroupAndSync`.
+  Future<Either<Failure, City>> createCityAndSync({
+    required int governorateId,
+    required String name,
+    String? nameAr,
+  });
+
   Future<Either<Failure, City>> updateCity({
     required int governorateId,
     required int id,

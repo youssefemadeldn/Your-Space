@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
+import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/base_city_data_source.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/city_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/classification/data/models/city_response.dart';
@@ -16,9 +19,12 @@ class MockBaseCityDataSource extends Mock implements BaseCityDataSource {}
 
 class MockCityLocalDataSourceImpl extends Mock implements CityLocalDataSourceImpl {}
 
+class MockSyncService extends Mock implements SyncService {}
+
 void main() {
   late MockBaseCityDataSource remote;
   late MockCityLocalDataSourceImpl local;
+  late MockSyncService syncService;
   late CityRepositoryImpl repository;
 
   setUpAll(() {
@@ -30,9 +36,16 @@ void main() {
   setUp(() {
     remote = MockBaseCityDataSource();
     local = MockCityLocalDataSourceImpl();
-    repository = CityRepositoryImpl(remote, local);
-    when(() => local.saveCity(any())).thenAnswer((_) async {});
-    when(() => local.deleteCityLocal(any())).thenAnswer((_) async {});
+    syncService = MockSyncService();
+    repository = CityRepositoryImpl(remote, local, syncService);
+    when(
+      () => local.queueCityMutation(
+        city: any(named: 'city'),
+        operation: any(named: 'operation'),
+        payloadJson: any(named: 'payloadJson'),
+      ),
+    ).thenAnswer((_) async => 99);
+    when(() => local.queueDeletedCity(any(), payloadJson: any(named: 'payloadJson'))).thenAnswer((_) async {});
   });
 
   test('getCities maps a paginated response to a PaginatedResult of entities', () async {
@@ -85,52 +98,96 @@ void main() {
     expect(count, 5);
   });
 
-  test('createCity maps the response to an entity and saves it locally', () async {
-    when(() => remote.createCity(7, any()))
-        .thenAnswer((_) async => const Right(CityResponse(id: 5, governorateId: 7, name: 'Book club')));
+  group('createCity (pure optimistic path)', () {
+    test('queues a negative-id create via the outbox and returns immediately', () async {
+      final result = await repository.createCity(governorateId: 7, name: 'Book club');
 
-    final result = await repository.createCity(governorateId: 7, name: 'Book club');
+      expect(result.isRight(), isTrue);
+      final city = result.getOrElse(() => throw StateError('expected Right'));
+      expect(city.id, lessThan(0));
+      expect(city.governorateId, 7);
+      expect(city.name, 'Book club');
 
-    expect(result, const Right(City(id: 5, governorateId: 7, name: 'Book club')));
-    verify(() => local.saveCity(const City(id: 5, governorateId: 7, name: 'Book club'))).called(1);
+      final captured = verify(
+        () => local.queueCityMutation(
+          city: captureAny(named: 'city'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as City).id, lessThan(0));
+      expect(captured[1], 'create');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['governorateId'], 7);
+      expect(payload['name'], 'Book club');
+
+      verifyNever(() => remote.createCity(any(), any()));
+      verifyNever(() => syncService.replayRow(any()));
+    });
   });
 
-  test('createCity propagates a failure without touching local storage', () async {
-    const failure = NetworkFailure();
-    when(() => remote.createCity(7, any())).thenAnswer((_) async => const Left(failure));
+  group('createCityAndSync', () {
+    test('queues via the outbox then returns the real city on a successful immediate replay', () async {
+      const realCity = City(id: 5, governorateId: 7, name: 'Book club');
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Right(realCity));
 
-    final result = await repository.createCity(governorateId: 7, name: 'Book club');
+      final result = await repository.createCityAndSync(governorateId: 7, name: 'Book club');
 
-    expect(result, const Left(failure));
-    verifyNever(() => local.saveCity(any()));
+      expect(result, const Right(realCity));
+      verify(() => syncService.replayRow(99)).called(1);
+    });
+
+    test('the queued row is not rolled back when the immediate replay fails', () async {
+      const failure = NetworkFailure();
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.createCityAndSync(governorateId: 7, name: 'Book club');
+
+      expect(result, const Left(failure));
+      verify(
+        () => local.queueCityMutation(
+          city: any(named: 'city'),
+          operation: 'create',
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      ).called(1);
+    });
   });
 
-  test('updateCity maps the response to an entity and saves it locally', () async {
-    when(() => remote.updateCity(7, 1, any()))
-        .thenAnswer((_) async => const Right(CityResponse(id: 1, governorateId: 7, name: 'Maadi (Updated)')));
+  group('updateCity (pure optimistic path)', () {
+    test('queues an update against the given id via the outbox and returns immediately', () async {
+      final result = await repository.updateCity(governorateId: 7, id: 1, name: 'Maadi (Updated)');
 
-    final result = await repository.updateCity(governorateId: 7, id: 1, name: 'Maadi (Updated)');
+      expect(result, isA<Right<Failure, City>>());
+      final captured = verify(
+        () => local.queueCityMutation(
+          city: captureAny(named: 'city'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as City).id, 1);
+      expect(captured[1], 'update');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['governorateId'], 7);
+      expect(payload['name'], 'Maadi (Updated)');
 
-    expect(result, const Right(City(id: 1, governorateId: 7, name: 'Maadi (Updated)')));
-    verify(() => local.saveCity(const City(id: 1, governorateId: 7, name: 'Maadi (Updated)'))).called(1);
+      verifyNever(() => remote.updateCity(any(), any(), any()));
+    });
   });
 
-  test('deleteCity removes the row locally after a successful remote delete', () async {
-    when(() => remote.deleteCity(7, 1)).thenAnswer((_) async => const Right(unit));
+  group('deleteCity (pure optimistic path)', () {
+    test('queues a delete via the outbox and returns immediately with no remote call', () async {
+      final result = await repository.deleteCity(governorateId: 7, id: 1);
 
-    final result = await repository.deleteCity(governorateId: 7, id: 1);
+      expect(result, const Right(unit));
+      final captured = verify(() => local.queueDeletedCity(captureAny(), payloadJson: captureAny(named: 'payloadJson')))
+          .captured;
+      expect(captured[0], 1);
+      final payload = jsonDecode(captured[1] as String) as Map<String, dynamic>;
+      expect(payload['governorateId'], 7);
 
-    expect(result, const Right(unit));
-    verify(() => local.deleteCityLocal(1)).called(1);
-  });
-
-  test('deleteCity propagates a failure without touching local storage', () async {
-    const failure = NetworkFailure();
-    when(() => remote.deleteCity(7, 1)).thenAnswer((_) async => const Left(failure));
-
-    final result = await repository.deleteCity(governorateId: 7, id: 1);
-
-    expect(result, const Left(failure));
-    verifyNever(() => local.deleteCityLocal(any()));
+      verifyNever(() => remote.deleteCity(any(), any()));
+    });
   });
 }

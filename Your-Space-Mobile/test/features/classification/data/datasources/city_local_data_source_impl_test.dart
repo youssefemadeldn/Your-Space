@@ -111,4 +111,95 @@ void main() {
     final cities = await dataSource.watchCities(governorateId: 7, limit: 10).first;
     expect(cities, isEmpty);
   });
+
+  test('queueCityMutation writes a dirty row and appends one outbox row', () async {
+    final rowId = await dataSource.queueCityMutation(
+      city: const City(id: -1, governorateId: 7, name: 'Book club'),
+      operation: 'create',
+      payloadJson: '{"governorateId":7,"name":"Book club"}',
+    );
+
+    final cities = await dataSource.watchCities(governorateId: 7, limit: 10).first;
+    expect(cities.single.name, 'Book club');
+    final outboxRows = await database.select(database.outboxTable).get();
+    expect(outboxRows.single.id, rowId);
+    expect(outboxRows.single.entityType, 'city');
+    expect(outboxRows.single.operation, 'create');
+  });
+
+  test('confirmSyncedCity overwrites the row and removes the outbox row', () async {
+    final rowId = await dataSource.queueCityMutation(
+      city: const City(id: 1, governorateId: 7, name: 'Maadi'),
+      operation: 'update',
+      payloadJson: '{}',
+    );
+
+    await dataSource.confirmSyncedCity(
+      const City(id: 1, governorateId: 7, name: 'Maadi (Confirmed)'),
+      replayedOutboxRowId: rowId,
+    );
+
+    final cities = await dataSource.watchCities(governorateId: 7, limit: 10).first;
+    expect(cities.single.name, 'Maadi (Confirmed)');
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
+
+  test('reconcileCreatedCity swaps the temp id for the real one and clears the outbox row', () async {
+    final rowId = await dataSource.queueCityMutation(
+      city: const City(id: -42, governorateId: 7, name: 'Book club'),
+      operation: 'create',
+      payloadJson: '{}',
+    );
+
+    await dataSource.reconcileCreatedCity(
+      tempId: -42,
+      realCity: const City(id: 5, governorateId: 7, name: 'Book club'),
+      replayedOutboxRowId: rowId,
+    );
+
+    final cities = await dataSource.watchCities(governorateId: 7, limit: 10).first;
+    expect(cities.map((c) => c.id), [5]);
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
+
+  group('queueDeletedCity', () {
+    test('a real (positive) id is soft-tombstoned and queued for the outbox', () async {
+      await dataSource.saveCity(const City(id: 1, governorateId: 7, name: 'Maadi'));
+
+      await dataSource.queueDeletedCity(1, payloadJson: '{"governorateId":7}');
+
+      final cities = await dataSource.watchCities(governorateId: 7, limit: 10).first;
+      expect(cities, isEmpty);
+      final outboxRows = await database.select(database.outboxTable).get();
+      expect(outboxRows.single.entityType, 'city');
+      expect(outboxRows.single.operation, 'delete');
+      expect(outboxRows.single.entityId, 1);
+    });
+
+    test('a never-synced temp (negative) id is removed locally with no outbox row', () async {
+      final rowId = await dataSource.queueCityMutation(
+        city: const City(id: -7, governorateId: 7, name: 'Book club'),
+        operation: 'create',
+        payloadJson: '{}',
+      );
+
+      await dataSource.queueDeletedCity(-7, payloadJson: '{"governorateId":7}');
+
+      final cities = await dataSource.watchAllCities(limit: 10).first;
+      expect(cities.where((c) => c.id == -7), isEmpty);
+      final outboxRows = await database.select(database.outboxTable).get();
+      expect(outboxRows.where((r) => r.id == rowId), isEmpty);
+    });
+  });
+
+  test('confirmDeletedCity hard-removes the tombstoned row and its outbox row', () async {
+    await dataSource.saveCity(const City(id: 1, governorateId: 7, name: 'Maadi'));
+    await dataSource.queueDeletedCity(1, payloadJson: '{"governorateId":7}');
+    final outboxRowId = (await database.select(database.outboxTable).get()).single.id;
+
+    await dataSource.confirmDeletedCity(1, replayedOutboxRowId: outboxRowId);
+
+    expect(await database.select(database.citiesTable).get(), isEmpty);
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
 }

@@ -167,6 +167,52 @@ void main() {
       final remainingOutbox = await database.select(database.outboxTable).get();
       expect(remainingOutbox, isEmpty);
     });
+
+    test(
+      'row 8.9: rewrites a dependent CitiesTable row and a still-queued city outbox payload referencing the '
+      'temp governorate id',
+      () async {
+        const tempId = -777;
+        final governorateRowId = await dataSource.queueGovernorateMutation(
+          governorate: const Governorate(id: tempId, name: 'Offline Governorate'),
+          operation: 'create',
+          payloadJson: '{"name":"Offline Governorate"}',
+        );
+        await database.into(database.citiesTable).insert(
+              CitiesTableCompanion.insert(
+                id: const Value(-1),
+                name: 'Offline City',
+                governorateId: tempId,
+                isDirty: const Value(true),
+              ),
+            );
+        await database.into(database.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'city',
+                entityId: -1,
+                operation: 'create',
+                payloadJson: '{"governorateId":$tempId,"name":"Offline City"}',
+              ),
+            );
+
+        const realGovernorate = Governorate(id: 999, name: 'Offline Governorate');
+        await dataSource.reconcileCreatedGovernorate(
+          tempId: tempId,
+          realGovernorate: realGovernorate,
+          replayedOutboxRowId: governorateRowId,
+        );
+
+        final cityRow =
+            await (database.select(database.citiesTable)..where((t) => t.id.equals(-1))).getSingle();
+        expect(cityRow.governorateId, 999);
+
+        final cityOutboxRow = (await (database.select(database.outboxTable)
+                  ..where((t) => t.entityType.equals('city')))
+                .get())
+            .single;
+        expect(cityOutboxRow.payloadJson, contains('"governorateId":999'));
+      },
+    );
   });
 
   group('applyGovernoratesSnapshot', () {
