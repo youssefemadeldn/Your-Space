@@ -73,6 +73,26 @@ public class CityService(
             new PaginatedResultDto<CityProfileDto>(items, pagination.PageIndex, pagination.PageSize, totalItems, totalPages));
     }
 
+    public async Task<ServiceResult<PaginatedResultDto<CityProfileDto>>> GetAllMineAsync(
+        string ownerUserId, string? search, PaginationSpecification pagination)
+    {
+        logger.LogInformation("Fetching all cities for user {UserId} (flat, governorate-agnostic)", ownerUserId);
+
+        var repo = unitOfWork.Repository<City, int>();
+        var totalItems = await repo.CountWithSpecAsync(new CityWithSpecs(ownerUserId, search));
+        var cities = await repo.ListAllWithSpecAsync(new CityWithSpecs(ownerUserId, search, pagination));
+
+        // No NeighborhoodCount/PersonCount enrichment here — this feeds the mobile Tier 1 bulk
+        // sync (design doc §11 row 8.8), which never reads either field (they're server-computed,
+        // not cached locally, design doc §8). The richer nested GetAllAsync above keeps computing
+        // both for the management screen.
+        var items = cities.Select(mapper.Map<CityProfileDto>).ToList();
+
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pagination.PageSize);
+        return ServiceResult<PaginatedResultDto<CityProfileDto>>.Ok(
+            new PaginatedResultDto<CityProfileDto>(items, pagination.PageIndex, pagination.PageSize, totalItems, totalPages));
+    }
+
     public async Task<ServiceResult<CityDetailsDto>> CreateAsync(string ownerUserId, int governorateId, CreateCityDto dto)
     {
         // A locked/global governorate is still a valid parent for a user's own City — only the

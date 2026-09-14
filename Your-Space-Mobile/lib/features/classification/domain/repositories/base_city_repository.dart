@@ -12,6 +12,17 @@ abstract class CityRepository {
     required int pageSize,
   });
 
+  /// Tier 1 read path for `CityListCubit`/`PersonWizardCubit`/
+  /// `PeopleListCubit`/`AddGuestsListCubit` (local-first, CLAUDE.md rule 7)
+  /// — reads local drift only, never touches the network. `limit` grows as
+  /// `loadMore()` is called; the caller resubscribes rather than tracking an
+  /// offset (see `doc/local-first-sync-design.md` §3).
+  Stream<List<City>> watchCities({required int governorateId, String? search, required int limit});
+
+  /// One-shot exact count for the same filter set, local-only — backs
+  /// `hasNextPage` without a `length == limit` heuristic.
+  Future<int> countCities({required int governorateId, String? search});
+
   Future<Either<Failure, City>> createCity({required int governorateId, required String name, String? nameAr});
 
   Future<Either<Failure, City>> updateCity({

@@ -45,4 +45,25 @@ public class CityWithSpecs : BaseSpecification<City>
             && c.GovernorateId == governorateId
             && c.DeletedAt == null
             && (string.IsNullOrWhiteSpace(search) || c.Name.Contains(search));
+
+    // Count for the flat "all mine" list — governorate-agnostic (doc/local-first-sync-design.md
+    // §11 row 8.8: mobile's Tier 1 bulk sync needs every city the owner has, not one governorate
+    // at a time).
+    public CityWithSpecs(string ownerUserId, string? search)
+        : base(BuildFlatPredicate(ownerUserId, search))
+    {
+    }
+
+    // Paginated list for the flat "all mine" endpoint.
+    public CityWithSpecs(string ownerUserId, string? search, PaginationSpecification paging)
+        : base(BuildFlatPredicate(ownerUserId, search))
+    {
+        ApplyOrderBy(c => c.Name);
+        ApplyPaging(paging.PageSize * (paging.PageIndex - 1), paging.PageSize);
+    }
+
+    private static Expression<Func<City, bool>> BuildFlatPredicate(string ownerUserId, string? search)
+        => c => c.OwnerUserId == ownerUserId
+            && c.DeletedAt == null
+            && (string.IsNullOrWhiteSpace(search) || c.Name.Contains(search));
 }
