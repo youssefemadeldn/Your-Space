@@ -16,12 +16,13 @@ void main() {
     expect(await database.select(database.personsTable).get(), isEmpty);
     expect(await database.select(database.groupsTable).get(), isEmpty);
     expect(await database.select(database.governoratesTable).get(), isEmpty);
+    expect(await database.select(database.citiesTable).get(), isEmpty);
     expect(await database.select(database.outboxTable).get(), isEmpty);
     expect(await database.select(database.syncStateTable).get(), isEmpty);
   });
 
   test('OutboxTable.lastAttemptAt is reachable', () async {
-    expect(database.schemaVersion, 4);
+    expect(database.schemaVersion, 5);
 
     final id = await database.into(database.outboxTable).insert(
           OutboxTableCompanion.insert(
@@ -37,7 +38,7 @@ void main() {
   });
 
   test('schema is at v3 and GroupsTable is reachable', () async {
-    expect(database.schemaVersion, 4);
+    expect(database.schemaVersion, 5);
 
     final id = await database.into(database.groupsTable).insert(
           GroupsTableCompanion.insert(id: const Value(1), name: 'Family'),
@@ -49,7 +50,7 @@ void main() {
   });
 
   test('schema is at v4 and GovernoratesTable is reachable', () async {
-    expect(database.schemaVersion, 4);
+    expect(database.schemaVersion, 5);
 
     final id = await database.into(database.governoratesTable).insert(
           GovernoratesTableCompanion.insert(id: const Value(1), name: 'Cairo', isLocked: const Value(true)),
@@ -58,6 +59,19 @@ void main() {
         await (database.select(database.governoratesTable)..where((t) => t.id.equals(id))).getSingle();
     expect(row.name, 'Cairo');
     expect(row.isLocked, isTrue);
+    expect(row.isDeleted, isFalse);
+    expect(row.isDirty, isFalse);
+  });
+
+  test('schema is at v5 and CitiesTable is reachable', () async {
+    expect(database.schemaVersion, 5);
+
+    final id = await database.into(database.citiesTable).insert(
+          CitiesTableCompanion.insert(id: const Value(1), name: 'Nasr City', governorateId: 1),
+        );
+    final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(id))).getSingle();
+    expect(row.name, 'Nasr City');
+    expect(row.governorateId, 1);
     expect(row.isDeleted, isFalse);
     expect(row.isDirty, isFalse);
   });
