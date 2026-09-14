@@ -15,4 +15,9 @@ public class CityProfileDto
     // Add-Guests-by-city tab caption — people whose CityId matches, inclusive of ones that also
     // have a NeighborhoodId set underneath it.
     public required int PersonCount { get; set; }
+
+    // Delta-sync fields (doc/local-first-sync-design.md §6, row 8.11) — needed by the mobile
+    // client's local drift cache the same way GroupProfileDto's already are.
+    public required DateTime UpdatedAt { get; set; }
+    public required long SyncVersion { get; set; }
 }

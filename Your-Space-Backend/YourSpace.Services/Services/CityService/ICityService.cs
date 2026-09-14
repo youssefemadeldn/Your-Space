@@ -16,4 +16,8 @@ public interface ICityService
     // row 8.8) — governorate-agnostic, no NeighborhoodCount/PersonCount enrichment (those stay
     // on the richer nested GetAllAsync the management screen uses).
     Task<ServiceResult<PaginatedResultDto<CityProfileDto>>> GetAllMineAsync(string ownerUserId, string? search, PaginationSpecification pagination);
+
+    // Delta-sync pull (doc/local-first-sync-design.md §6, row 8.11). `since` is the caller's
+    // last-seen SyncVersion cursor (0 on a first-ever sync); `pageSize` is clamped server-side.
+    Task<ServiceResult<CityChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize);
 }
