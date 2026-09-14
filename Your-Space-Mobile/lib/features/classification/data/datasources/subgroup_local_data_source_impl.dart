@@ -185,6 +185,35 @@ class SubGroupLocalDataSourceImpl {
         await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
       });
 
+  /// Tier 3 "full refetch as delta" (design doc §6, row 8.16). [serverSubGroups]
+  /// is the complete, just-fetched owned collection. Diffs it against local
+  /// drift by id in one transaction:
+  ///  - a row with `isDirty == true` is left untouched — it has a pending
+  ///    outbox entry, so the local edit is presumed newer
+  ///  - every other server row is upserted (clean: not dirty, not deleted)
+  ///  - every local row with id > 0, isDirty == false, whose id is absent
+  ///    from [serverSubGroups] is soft-tombstoned (`isDeleted = true`) — a
+  ///    temp (negative) id is never a tombstone candidate; it was never on
+  ///    the server to begin with
+  /// Mirrors `CityLocalDataSourceImpl.applyCitiesSnapshot` exactly.
+  Future<void> applySubGroupsSnapshot(List<SubGroup> serverSubGroups) => _db.transaction(() async {
+        final dirtyIds = (await (_db.select(_db.subGroupsTable)..where((t) => t.isDirty.equals(true)))
+                .get())
+            .map((r) => r.id)
+            .toSet();
+        final toUpsert = serverSubGroups.where((s) => !dirtyIds.contains(s.id)).toList();
+        await _db.batch(
+          (batch) => batch.insertAllOnConflictUpdate(_db.subGroupsTable, toUpsert.map(_toCompanion).toList()),
+        );
+
+        final serverIds = serverSubGroups.map((s) => s.id).toSet();
+        await (_db.update(_db.subGroupsTable)
+              ..where(
+                (t) => t.id.isBiggerThanValue(0) & t.isDirty.equals(false) & t.id.isNotIn(serverIds),
+              ))
+            .write(const SubGroupsTableCompanion(isDeleted: Value(true)));
+      });
+
   SubGroup _toEntity(SubGroupsTableData row) => SubGroup(
         id: row.id,
         groupId: row.groupId,
