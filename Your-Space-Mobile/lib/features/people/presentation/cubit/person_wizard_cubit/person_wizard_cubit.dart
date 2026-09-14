@@ -316,7 +316,11 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<int?> addCityInline(String name) async {
     final current = state;
     if (current is! PersonWizardReady || current.governorateId == null) return null;
-    final result = await _cityRepository.createCity(governorateId: current.governorateId!, name: name);
+    // createCityAndSync, not createCity: same reasoning as addGovernorateInline
+    // above — this id gets embedded directly into the in-progress person's
+    // own `cityId`, a value City's own reconciliation can't reach once it's
+    // sitting inside an already-built Person payload.
+    final result = await _cityRepository.createCityAndSync(governorateId: current.governorateId!, name: name);
     return result.fold((failure) => null, (city) {
       _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(

@@ -78,11 +78,113 @@ class CityLocalDataSourceImpl {
       _db.into(_db.citiesTable).insertOnConflictUpdate(_toCompanion(city));
 
   /// No remote equivalent — hard-removes the local row after a successful
-  /// remote delete. Transitional Tier 1 write path (design doc §3 has no
-  /// tombstone concept yet — that's Tier 3); superseded by an outbox-driven
-  /// soft-tombstone once row 8.9 lands.
+  /// remote delete. Superseded for City's own delete path by the outbox
+  /// (row 8.9, [queueDeletedCity]/[confirmDeletedCity]) — kept as a
+  /// documented primitive, mirrors `GovernorateLocalDataSourceImpl.
+  /// saveGovernorate`'s own post-outbox retention.
   Future<void> deleteCityLocal(int id) =>
       (_db.delete(_db.citiesTable)..where((t) => t.id.equals(id))).go();
+
+  /// Tier 2 optimistic write (design doc §5): writes [city] into CitiesTable
+  /// (marked dirty) and appends one OutboxTable row, in the same drift
+  /// transaction. Returns the new outbox row's id so the repository's
+  /// `createCityAndSync` can ask `SyncService` to replay this specific row
+  /// immediately. Mirrors `GroupLocalDataSourceImpl.queueGroupMutation`;
+  /// unlike Governorate, City has both `'create'` and `'update'` — see
+  /// [queueDeletedCity] for the separate delete path.
+  Future<int> queueCityMutation({
+    required City city,
+    required String operation, // 'create' | 'update'
+    required String payloadJson,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.citiesTable).insertOnConflictUpdate(
+              _toCompanion(city, isDirty: true),
+            );
+        return _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'city',
+                entityId: city.id,
+                operation: operation,
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'update' syncs successfully: overwrites the
+  /// local row with the server-confirmed copy (clears `isDirty`) and
+  /// removes the now-done outbox row, in one transaction. Mirrors
+  /// `GroupLocalDataSourceImpl.confirmSyncedGroup`.
+  Future<void> confirmSyncedCity(City city, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await _db.into(_db.citiesTable).insertOnConflictUpdate(_toCompanion(city));
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realCity].id
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///  4. rewrite any dependent `NeighborhoodsTable` row (and any still-queued
+  ///     `entityType='neighborhood'` outbox payload) that references [tempId]
+  ///     — see row 8.21, Neighborhood's own Tier 2 step, which is what
+  ///     actually adds this 4th step; nothing depends on City's temp id yet
+  ///     at row 8.9. Mirrors `GroupLocalDataSourceImpl.reconcileCreatedGroup`.
+  Future<void> reconcileCreatedCity({
+    required int tempId,
+    required City realCity,
+    required int replayedOutboxRowId,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.citiesTable).insertOnConflictUpdate(_toCompanion(realCity));
+        await (_db.delete(_db.citiesTable)..where((t) => t.id.equals(tempId))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 optimistic delete (design doc §5) — City is Row 8's first
+  /// delete-through-outbox entity, so this shape is new (no precedent to
+  /// mirror; both `GroupOutboxReplayer`/`PersonOutboxReplayer`'s `'delete'`
+  /// branch is still the unimplemented "fails loudly" default). Two cases:
+  ///  - [id] negative (a never-synced temp row, created and deleted offline
+  ///    in the same session): the server has never heard of it, so just
+  ///    remove the local row **and** its still-pending `'create'` outbox
+  ///    row — no network round trip needed, ever.
+  ///  - [id] positive (a real, previously-synced row): optimistically
+  ///    tombstone it (`isDeleted: true`, `isDirty: true` — disappears from
+  ///    `watchCities` immediately via its existing `isDeleted.equals(false)`
+  ///    filter) and append a `'delete'` outbox row for `SyncService` to
+  ///    replay in the background. [payloadJson] carries `governorateId` —
+  ///    `CityOutboxReplayer` needs it for `BaseCityDataSource.deleteCity`'s
+  ///    nested route, and it isn't derivable from [id] alone.
+  Future<void> queueDeletedCity(int id, {required String payloadJson}) => _db.transaction(() async {
+        if (id < 0) {
+          await (_db.delete(_db.citiesTable)..where((t) => t.id.equals(id))).go();
+          await (_db.delete(_db.outboxTable)
+                ..where((t) => t.entityType.equals('city') & t.entityId.equals(id)))
+              .go();
+          return;
+        }
+        await (_db.update(_db.citiesTable)..where((t) => t.id.equals(id)))
+            .write(const CitiesTableCompanion(isDeleted: Value(true), isDirty: Value(true)));
+        await _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'city',
+                entityId: id,
+                operation: 'delete',
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'delete' syncs successfully: hard-removes the
+  /// local row (the optimistic tombstone from [queueDeletedCity] is no
+  /// longer needed once the server confirms it's gone) and removes the
+  /// outbox row, in one transaction.
+  Future<void> confirmDeletedCity(int id, {required int replayedOutboxRowId}) => _db.transaction(() async {
+        await (_db.delete(_db.citiesTable)..where((t) => t.id.equals(id))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
 
   City _toEntity(CitiesTableData row) => City(
         id: row.id,

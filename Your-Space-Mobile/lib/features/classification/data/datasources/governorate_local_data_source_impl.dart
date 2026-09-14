@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
 
@@ -107,9 +109,12 @@ class GovernorateLocalDataSourceImpl {
   ///  2. delete the temp-id row
   ///  3. delete the just-replayed outbox row
   ///  4. rewrite any dependent `CitiesTable` row (and any still-queued
-  ///     `entityType='city'` outbox payload) that references [tempId] — see
-  ///     row 8.9, City's own Tier 2 step, which is what actually adds this
-  ///     4th step; nothing depends on Governorate's temp id yet at row 8.3.
+  ///     `entityType='city'` outbox payload) that references [tempId] — the
+  ///     wizard's offline "add governorate, then immediately add city under
+  ///     it" chain (row 8.9). A city outbox payload's `governorateId` field
+  ///     is decoded, patched, and re-encoded rather than string-replaced —
+  ///     `payloadJson` also carries `name`/`nameAr`, which could coincidentally
+  ///     contain digits matching [tempId].
   Future<void> reconcileCreatedGovernorate({
     required int tempId,
     required Governorate realGovernorate,
@@ -119,6 +124,20 @@ class GovernorateLocalDataSourceImpl {
         await _db.into(_db.governoratesTable).insertOnConflictUpdate(_toCompanion(realGovernorate));
         await (_db.delete(_db.governoratesTable)..where((t) => t.id.equals(tempId))).go();
         await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+
+        await (_db.update(_db.citiesTable)..where((t) => t.governorateId.equals(tempId)))
+            .write(CitiesTableCompanion(governorateId: Value(realGovernorate.id)));
+
+        final pendingCityRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('city') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingCityRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['governorateId'] != tempId) continue;
+          payload['governorateId'] = realGovernorate.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
       });
 
   /// Tier 3 "full refetch as delta" (design doc §6): [serverGovernorates] is
