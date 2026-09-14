@@ -45,4 +45,11 @@ abstract class SubGroupRepository {
   });
 
   Future<Either<Failure, Unit>> deleteSubGroup({required int groupId, required int id});
+
+  /// Tier 3 interim pull (design doc §6, row 8.16): fetches every page of the
+  /// caller's own subgroups via the flat `GET /subgroups` endpoint and
+  /// reconciles them into the local drift store via `applySubGroupsSnapshot`.
+  /// Superseded by a real cursor-based delta once row 8.18 lands. Mirrors
+  /// `CityRepository.refreshCities()`.
+  Future<Either<Failure, Unit>> refreshSubGroups();
 }

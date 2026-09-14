@@ -31,6 +31,7 @@ void main() {
     registerFallbackValue(const SubGroup(id: 0, groupId: 0, name: ''));
     registerFallbackValue(const CreateSubGroupRequest(name: ''));
     registerFallbackValue(const UpdateSubGroupRequest(name: ''));
+    registerFallbackValue(const <SubGroup>[]);
   });
 
   setUp(() {
@@ -189,6 +190,45 @@ void main() {
       expect(payload['groupId'], 7);
 
       verifyNever(() => remote.deleteSubGroup(any(), any()));
+    });
+  });
+
+  group('refreshSubGroups', () {
+    test('loops every remote page and applies the concatenated, mapped entities as a snapshot', () async {
+      when(() => local.applySubGroupsSnapshot(any())).thenAnswer((_) async {});
+      when(() => remote.getAllMineSubGroups(search: any(named: 'search'), pageIndex: 1, pageSize: 200)).thenAnswer(
+        (_) async => const Right(PaginatedResponse(
+          items: [SubGroupResponse(id: 1, groupId: 7, name: 'Immediate Family')],
+          pageIndex: 1,
+          totalPages: 2,
+          totalItems: 2,
+        )),
+      );
+      when(() => remote.getAllMineSubGroups(search: any(named: 'search'), pageIndex: 2, pageSize: 200)).thenAnswer(
+        (_) async => const Right(PaginatedResponse(
+          items: [SubGroupResponse(id: 2, groupId: 7, name: 'University Friends')],
+          pageIndex: 2,
+          totalPages: 2,
+          totalItems: 2,
+        )),
+      );
+
+      final result = await repository.refreshSubGroups();
+
+      expect(result, const Right(unit));
+      final captured = verify(() => local.applySubGroupsSnapshot(captureAny())).captured.single as List<SubGroup>;
+      expect(captured.map((s) => s.id), [1, 2]);
+    });
+
+    test('stops and returns Left immediately on a failing page, without saving anything', () async {
+      const failure = NetworkFailure();
+      when(() => remote.getAllMineSubGroups(search: any(named: 'search'), pageIndex: 1, pageSize: 200))
+          .thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.refreshSubGroups();
+
+      expect(result, const Left(failure));
+      verifyNever(() => local.applySubGroupsSnapshot(any()));
     });
   });
 }

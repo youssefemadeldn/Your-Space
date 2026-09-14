@@ -91,6 +91,8 @@ import 'package:your_space_mobile/features/classification/data/sync/governorate_
     as _i1067;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
     as _i774;
+import 'package:your_space_mobile/features/classification/data/sync/subgroup_collection_puller.dart'
+    as _i643;
 import 'package:your_space_mobile/features/classification/data/sync/subgroup_outbox_replayer.dart'
     as _i1023;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart'
@@ -344,6 +346,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
         gh<_i477.SyncService>(),
       ),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i643.SubGroupCollectionPuller(gh<_i133.SubGroupRepository>()),
+      instanceName: 'subgroup',
     );
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
