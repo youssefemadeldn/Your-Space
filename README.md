@@ -39,95 +39,123 @@
 <table>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/01-login.png" width="180" alt="Login"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/01-onboarding.png" width="180" alt="Onboarding"><br>
+<sub>Onboarding</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/02-login.png" width="180" alt="Login"><br>
 <sub>Login</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/02-register.png" width="180" alt="Register (with gender field)"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/03-register.png" width="180" alt="Register (with gender field)"><br>
 <sub>Register</sub>
-</td>
-<td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/03-confirm-email-otp.png" width="180" alt="Confirm email (OTP)"><br>
-<sub>Confirm email (OTP)</sub>
 </td>
 </tr>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/04-forgot-password.png" width="180" alt="Forgot password"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/04-confirm-email-otp.png" width="180" alt="Confirm email (OTP)"><br>
+<sub>Confirm email (OTP)</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/05-forgot-password.png" width="180" alt="Forgot password"><br>
 <sub>Forgot password</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/05-reset-password.png" width="180" alt="Reset password"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/06-reset-password.png" width="180" alt="Reset password"><br>
 <sub>Reset password</sub>
-</td>
-<td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/06-change-password.png" width="180" alt="Change password (authenticated)"><br>
-<sub>Change password</sub>
 </td>
 </tr>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/07-home.png" width="180" alt="Home"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/07-change-password.png" width="180" alt="Change password (authenticated)"><br>
+<sub>Change password</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/08-home.png" width="180" alt="Home"><br>
 <sub>Home</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/08-groups-list.png" width="180" alt="Groups — list"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/09-groups-list.png" width="180" alt="Groups — list"><br>
 <sub>Groups — list</sub>
-</td>
-<td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/09-create-group.png" width="180" alt="Create group (bottom sheet)"><br>
-<sub>Create group</sub>
 </td>
 </tr>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/10-people-list.png" width="180" alt="People — list"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/10-create-group.png" width="180" alt="Create group (bottom sheet)"><br>
+<sub>Create group</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/11-people-list.png" width="180" alt="People — list"><br>
 <sub>People — list</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/11-add-person-wizard.png" width="180" alt="Add person — 4-step wizard"><br>
-<sub>Add person (wizard)</sub>
-</td>
-<td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/12-person-details.png" width="180" alt="Person details & occasion history"><br>
-<sub>Person details & history</sub>
+<img src="Your-Space-Mobile/doc/design/screenshots/12-add-person-wizard-step1.png" width="180" alt="Add person wizard — step 1 of 4 (basic identity)"><br>
+<sub>Add person — step 1/4</sub>
 </td>
 </tr>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/13-add-occasion.png" width="180" alt="Add occasion (reciprocity)"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/13-add-person-wizard-step2.png" width="180" alt="Add person wizard — step 2 of 4 (classification & location)"><br>
+<sub>Add person — step 2/4</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/14-add-person-wizard-step3.png" width="180" alt="Add person wizard — step 3 of 4 (family & relationships)"><br>
+<sub>Add person — step 3/4</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/15-add-person-wizard-step4.png" width="180" alt="Add person wizard — step 4 of 4 (notes)"><br>
+<sub>Add person — step 4/4</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/16-person-details.png" width="180" alt="Person details & occasion history"><br>
+<sub>Person details & history</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/17-add-occasion.png" width="180" alt="Add occasion (reciprocity)"><br>
 <sub>Add occasion</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/14-events-list.png" width="180" alt="Events — list"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/18-settings.png" width="180" alt="Settings"><br>
+<sub>Settings</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/19-classification-management.png" width="180" alt="Classification management (subgroups / cities / neighborhoods)"><br>
+<sub>Classification management</sub>
+</td>
+<td align="center" width="200">
+<img src="Your-Space-Mobile/doc/design/screenshots/20-events-list.png" width="180" alt="Events — list"><br>
 <sub>Events — list</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/15-create-event.png" width="180" alt="Create event"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/21-create-event.png" width="180" alt="Create event"><br>
 <sub>Create event</sub>
 </td>
 </tr>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/16-event-details.png" width="180" alt="Event details (progress dashboard)"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/22-event-details.png" width="180" alt="Event details (progress dashboard)"><br>
 <sub>Event details</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/17-event-guests.png" width="180" alt="Event guests — filter & status"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/23-event-guests.png" width="180" alt="Event guests — filter & status"><br>
 <sub>Event guests</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/18-add-guests-people.png" width="180" alt="Add guests — People tab"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/24-add-guests-people.png" width="180" alt="Add guests — People tab"><br>
 <sub>Add guests — People tab</sub>
 </td>
 </tr>
 <tr>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/19-add-guests-group.png" width="180" alt="Add guests — By group tab"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/25-add-guests-group.png" width="180" alt="Add guests — By group tab"><br>
 <sub>Add guests — By group tab</sub>
 </td>
 <td align="center" width="200">
-<img src="Your-Space-Mobile/doc/design/screenshots/20-reciprocity-suggestions.png" width="180" alt="Reciprocity suggestions"><br>
+<img src="Your-Space-Mobile/doc/design/screenshots/26-reciprocity-suggestions.png" width="180" alt="Reciprocity suggestions"><br>
 <sub>Reciprocity suggestions</sub>
 </td>
 </tr>
