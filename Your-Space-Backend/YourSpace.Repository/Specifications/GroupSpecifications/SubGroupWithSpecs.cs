@@ -45,4 +45,25 @@ public class SubGroupWithSpecs : BaseSpecification<SubGroup>
             && s.GroupId == groupId
             && s.DeletedAt == null
             && (string.IsNullOrWhiteSpace(search) || s.Name.Contains(search));
+
+    // Count for the flat "all mine" list — group-agnostic (doc/local-first-sync-design.md §11
+    // row 8.14: mobile's Tier 1 bulk sync needs every subgroup the owner has, not one group at
+    // a time).
+    public SubGroupWithSpecs(string ownerUserId, string? search)
+        : base(BuildFlatPredicate(ownerUserId, search))
+    {
+    }
+
+    // Paginated list for the flat "all mine" endpoint.
+    public SubGroupWithSpecs(string ownerUserId, string? search, PaginationSpecification paging)
+        : base(BuildFlatPredicate(ownerUserId, search))
+    {
+        ApplyOrderBy(s => s.Name);
+        ApplyPaging(paging.PageSize * (paging.PageIndex - 1), paging.PageSize);
+    }
+
+    private static Expression<Func<SubGroup, bool>> BuildFlatPredicate(string ownerUserId, string? search)
+        => s => s.OwnerUserId == ownerUserId
+            && s.DeletedAt == null
+            && (string.IsNullOrWhiteSpace(search) || s.Name.Contains(search));
 }

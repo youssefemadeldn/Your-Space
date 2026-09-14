@@ -18,6 +18,17 @@ class SubGroup extends Equatable {
     this.personCount = 0,
   });
 
+  /// Used by `SubGroupListCubit` to merge the one-shot server-computed
+  /// `personCount` (design doc §8) onto a locally-cached row before
+  /// display — the local drift cache never stores this field itself.
+  SubGroup copyWith({int? personCount}) => SubGroup(
+        id: id,
+        groupId: groupId,
+        name: name,
+        nameAr: nameAr,
+        personCount: personCount ?? this.personCount,
+      );
+
   @override
   List<Object?> get props => [id, groupId, name, nameAr, personCount];
 }

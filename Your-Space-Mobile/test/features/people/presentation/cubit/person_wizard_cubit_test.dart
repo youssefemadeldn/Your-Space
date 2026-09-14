@@ -253,11 +253,8 @@ void main() {
     Future<void> readyForSubmit() async {
       stubReferenceLists();
       await cubit.initialize(null);
-      when(() => subGroupRepository.getSubGroups(
-            groupId: any(named: 'groupId'),
-            pageIndex: any(named: 'pageIndex'),
-            pageSize: any(named: 'pageSize'),
-          )).thenAnswer((_) async => Right(_page(const [])));
+      when(() => subGroupRepository.watchSubGroups(groupId: any(named: 'groupId'), limit: any(named: 'limit')))
+          .thenAnswer((_) => Stream.value(const []));
       when(() => cityRepository.watchCities(governorateId: any(named: 'governorateId'), limit: any(named: 'limit')))
           .thenAnswer((_) => Stream.value(const []));
       await cubit.selectGroup(1);

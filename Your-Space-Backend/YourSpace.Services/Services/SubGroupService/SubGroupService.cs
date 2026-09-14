@@ -67,6 +67,25 @@ public class SubGroupService(
             new PaginatedResultDto<SubGroupProfileDto>(items, pagination.PageIndex, pagination.PageSize, totalItems, totalPages));
     }
 
+    public async Task<ServiceResult<PaginatedResultDto<SubGroupProfileDto>>> GetAllMineAsync(
+        string ownerUserId, string? search, PaginationSpecification pagination)
+    {
+        logger.LogInformation("Fetching all subgroups for user {UserId} (flat, group-agnostic)", ownerUserId);
+
+        var repo = unitOfWork.Repository<SubGroup, int>();
+        var totalItems = await repo.CountWithSpecAsync(new SubGroupWithSpecs(ownerUserId, search));
+        var subGroups = await repo.ListAllWithSpecAsync(new SubGroupWithSpecs(ownerUserId, search, pagination));
+
+        // No PersonCount enrichment here — this feeds the mobile Tier 1 bulk sync (design doc
+        // §11 row 8.14), which never reads it (server-computed, not cached locally, design doc
+        // §8). The richer nested GetAllAsync above keeps computing it for the management screen.
+        var items = subGroups.Select(mapper.Map<SubGroupProfileDto>).ToList();
+
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pagination.PageSize);
+        return ServiceResult<PaginatedResultDto<SubGroupProfileDto>>.Ok(
+            new PaginatedResultDto<SubGroupProfileDto>(items, pagination.PageIndex, pagination.PageSize, totalItems, totalPages));
+    }
+
     public async Task<ServiceResult<SubGroupDetailsDto>> CreateAsync(string ownerUserId, int groupId, CreateSubGroupDto dto)
     {
         var groupRepo = unitOfWork.Repository<Group, int>();

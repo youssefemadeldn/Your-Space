@@ -24,6 +24,17 @@ public class SubGroupsController(ISubGroupService subGroupService) : ControllerB
         return new ResultActionResult<PaginatedResultDto<SubGroupProfileDto>>(result);
     }
 
+    // Flat "all mine" pull (doc/local-first-sync-design.md §11 row 8.14) — group-agnostic,
+    // feeds the mobile Tier 1 bulk sync. Route override (absolute path, no {groupId} segment)
+    // on this same controller rather than a separate one, since the service method and DTO are
+    // identical to GetAll above.
+    [HttpGet("~/api/v{version:apiVersion}/subgroups")]
+    public async Task<IActionResult> GetAllMine([FromQuery] string? search, [FromQuery] PaginationSpecification pagination)
+    {
+        var result = await subGroupService.GetAllMineAsync(GetUserId(), search, pagination);
+        return new ResultActionResult<PaginatedResultDto<SubGroupProfileDto>>(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int groupId, int id)
     {

@@ -95,11 +95,10 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
   Future<void> loadSubGroupsForGroup(int groupId) async {
     final current = state;
     if (current is! AddGuestsListSuccess) return;
-    final result = await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: _refPageSize);
-    result.fold(
-      (_) {},
-      (page) => emit(current.copyWith(subGroupOptions: page.items)),
-    );
+    // SubGroup is local-first (row 8.14) — a local read can't fail the way a
+    // network call can.
+    final subGroups = await _subGroupRepository.watchSubGroups(groupId: groupId, limit: _refPageSize).first;
+    emit(current.copyWith(subGroupOptions: subGroups));
   }
 
   /// Populates the "by city" tab's child list (and the "by neighborhood"

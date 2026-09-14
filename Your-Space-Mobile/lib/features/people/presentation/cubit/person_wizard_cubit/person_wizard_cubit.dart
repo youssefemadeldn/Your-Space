@@ -11,7 +11,6 @@ import 'package:your_space_mobile/core/entities/neighborhood.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
-import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
@@ -137,12 +136,10 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
           originalRelationshipIds: details.relationships.map((r) => r.id).toSet(),
         );
 
-        // Cascade-preload the pickers so an edit view shows the right options already.
-        final subGroupsResult =
-            await _subGroupRepository.getSubGroups(groupId: person.groupId, pageIndex: 1, pageSize: 50);
-        ready = ready.copyWith(
-          availableSubGroups: subGroupsResult.fold((_) => const <SubGroup>[], (p) => p.items),
-        );
+        // SubGroup is local-first (row 8.14) — a local read can't fail the
+        // way a network call can.
+        final subGroups = await _subGroupRepository.watchSubGroups(groupId: person.groupId, limit: 50).first;
+        ready = ready.copyWith(availableSubGroups: subGroups);
 
         // City is local-first (row 8.8) — a local read can't fail the way a
         // network call can.
@@ -226,8 +223,8 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
 
   Future<void> selectGroup(int groupId) async {
     _updateReady((r) => r.copyWith(groupId: groupId, clearSubGroup: true));
-    final result = await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: 50);
-    _updateReady((r) => r.copyWith(availableSubGroups: result.fold((_) => const [], (p) => p.items)));
+    final subGroups = await _subGroupRepository.watchSubGroups(groupId: groupId, limit: 50).first;
+    _updateReady((r) => r.copyWith(availableSubGroups: subGroups));
   }
 
   /// Inline "+ Add new group" from the Step 2 group picker — mirrors

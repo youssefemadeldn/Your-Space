@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart';
 
@@ -11,12 +13,25 @@ import 'subgroup_list_state.dart';
 
 const _pageSize = 20;
 
+/// SubGroup is local-first (CLAUDE.md Architecture rule 7, row 8.14): the
+/// list is read from a reactive drift `Stream` via `watchSubGroups()` —
+/// mirrors `CityListCubit`'s `_subscribeToCities` pattern.
+/// `DataScope.classification` is still subscribed to here (Neighborhood
+/// hasn't migrated yet) — its inline "add new" notifications still need to
+/// trigger a `refresh()` here until row 8.20 retires the scope entirely.
+///
+/// `personCount` is server-computed (design doc §8) — not cached locally,
+/// so it's fetched once per `load()`/`refresh()` via the existing nested
+/// `getSubGroups` endpoint (unchanged, still group-scoped) and merged onto
+/// the locally-cached rows via `SubGroup.copyWith` before emitting.
 @injectable
 class SubGroupListCubit extends Cubit<SubGroupListState> {
   final SubGroupRepository _subGroupRepository;
   final DataRefreshBus _dataRefreshBus;
   Timer? _searchDebounce;
+  StreamSubscription<List<SubGroup>>? _subGroupsSubscription;
   late final StreamSubscription<DataScope> _refreshSubscription;
+  Map<int, int> _personCounts = const {};
 
   SubGroupListCubit(this._subGroupRepository, this._dataRefreshBus) : super(const SubGroupListInitial()) {
     _refreshSubscription = _dataRefreshBus.stream.listen((scope) {
@@ -26,19 +41,11 @@ class SubGroupListCubit extends Cubit<SubGroupListState> {
 
   Future<void> load(int groupId) async {
     emit(const SubGroupListLoading());
-    final result =
-        await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: _pageSize);
-    result.fold(
-      (failure) => emit(SubGroupListError(core.failureToMessage(failure))),
-      (page) => emit(SubGroupListSuccess(
-        subGroups: page.items,
-        groupId: groupId,
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-      )),
-    );
+    _personCounts = await _fetchPersonCounts(groupId);
+    await _subscribeToSubGroups(groupId: groupId, search: null, limit: _pageSize);
   }
 
+  /// Debounced — bound directly to every keystroke in the search field.
   void search(String query) {
     if (state is! SubGroupListSuccess) return;
     _searchDebounce?.cancel();
@@ -48,22 +55,10 @@ class SubGroupListCubit extends Cubit<SubGroupListState> {
   Future<void> _performSearch(String query) async {
     final current = state;
     if (current is! SubGroupListSuccess) return;
-    final search = query.isEmpty ? null : query;
-    final result = await _subGroupRepository.getSubGroups(
+    await _subscribeToSubGroups(
       groupId: current.groupId,
-      search: search,
-      pageIndex: 1,
-      pageSize: _pageSize,
-    );
-    result.fold(
-      (failure) => emit(SubGroupListError(core.failureToMessage(failure))),
-      (page) => emit(SubGroupListSuccess(
-        subGroups: page.items,
-        groupId: current.groupId,
-        search: search,
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-      )),
+      search: query.isEmpty ? null : query,
+      limit: _pageSize,
     );
   }
 
@@ -71,49 +66,93 @@ class SubGroupListCubit extends Cubit<SubGroupListState> {
     final current = state;
     if (current is! SubGroupListSuccess || !current.hasNextPage || current.isLoadingMore) return;
     emit(current.copyWith(isLoadingMore: true));
-    final result = await _subGroupRepository.getSubGroups(
+    await _subscribeToSubGroups(
       groupId: current.groupId,
       search: current.search,
-      pageIndex: current.pageIndex + 1,
-      pageSize: _pageSize,
-    );
-    result.fold(
-      (failure) => emit(current.copyWith(
+      limit: current.limit + _pageSize,
+      onError: (_) => emit(current.copyWith(
         isLoadingMore: false,
-        loadMoreErrorMessage: core.failureToMessage(failure),
+        loadMoreErrorMessage: core.failureToMessage(const CacheFailure()),
         loadMoreErrorId: current.loadMoreErrorId + 1,
-      )),
-      (page) => emit(current.copyWith(
-        subGroups: [...current.subGroups, ...page.items],
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-        isLoadingMore: false,
       )),
     );
   }
 
-  /// Re-fetches page 1 — triggered by [DataRefreshBus] on a `classification`
-  /// scope notification (e.g. this same screen's own action cubit, or the
-  /// wizard's inline "+ Add new" elsewhere) and by pull-to-refresh.
+  /// Re-fetches the counts and re-subscribes — the drift `Stream` already
+  /// re-emits on upsert/tombstone, so this is mainly here to refresh
+  /// `personCount` (server-computed, design doc §8) and to satisfy the
+  /// `DataScope.classification` notification path above.
   Future<void> refresh() async {
     final current = state;
     if (current is! SubGroupListSuccess) return;
-    final result = await _subGroupRepository.getSubGroups(
-      groupId: current.groupId,
-      search: current.search,
-      pageIndex: 1,
-      pageSize: _pageSize,
+    _personCounts = await _fetchPersonCounts(current.groupId);
+    await _subscribeToSubGroups(groupId: current.groupId, search: current.search, limit: current.limit);
+  }
+
+  /// Cancels any existing local subscription and resubscribes to
+  /// `watchSubGroups(groupId: ..., search: search, limit: limit)`. Every
+  /// emission also resolves `hasNextPage` via a one-shot `countSubGroups`
+  /// call before building the next [SubGroupListSuccess], and merges the
+  /// already-fetched [_personCounts] onto each row. Mirrors
+  /// `CityListCubit._subscribeToCities`.
+  Future<void> _subscribeToSubGroups({
+    required int groupId,
+    required String? search,
+    required int limit,
+    void Function(Object error)? onError,
+  }) async {
+    await _subGroupsSubscription?.cancel();
+    final done = Completer<void>();
+
+    void handleError(Object error) {
+      if (onError != null) {
+        onError(error);
+      } else {
+        emit(SubGroupListError(core.failureToMessage(const CacheFailure())));
+      }
+      if (!done.isCompleted) done.complete();
+    }
+
+    _subGroupsSubscription =
+        _subGroupRepository.watchSubGroups(groupId: groupId, search: search, limit: limit).listen(
+      (subGroups) async {
+        try {
+          final total = await _subGroupRepository.countSubGroups(groupId: groupId, search: search);
+          final withCounts = subGroups
+              .map((s) => s.copyWith(personCount: _personCounts[s.id] ?? s.personCount))
+              .toList();
+          emit(SubGroupListSuccess(
+            subGroups: withCounts,
+            groupId: groupId,
+            search: search,
+            limit: limit,
+            hasNextPage: subGroups.length < total,
+          ));
+          if (!done.isCompleted) done.complete();
+        } catch (error) {
+          handleError(error);
+        }
+      },
+      onError: (Object error) => handleError(error),
     );
-    result.fold(
-      (_) {},
-      (page) =>
-          emit(current.copyWith(subGroups: page.items, pageIndex: page.pageIndex, hasNextPage: page.hasNextPage)),
-    );
+    await done.future;
+  }
+
+  /// One-shot: `PersonCount` is server-computed (design doc §8), not cached
+  /// locally. Reuses the existing nested `getSubGroups` endpoint (still
+  /// group-scoped, unchanged this row) purely to read each row's count — a
+  /// bounded single page is enough given Classification's expected low
+  /// cardinality per group. A failure here is swallowed: the local stream
+  /// still renders, just without fresh counts until the next load/refresh.
+  Future<Map<int, int>> _fetchPersonCounts(int groupId) async {
+    final result = await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: 200);
+    return result.fold((_) => const {}, (page) => {for (final s in page.items) s.id: s.personCount});
   }
 
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
+    _subGroupsSubscription?.cancel();
     _refreshSubscription.cancel();
     return super.close();
   }

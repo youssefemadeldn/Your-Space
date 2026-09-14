@@ -123,9 +123,8 @@ void main() {
     );
     when(() => governorateRepository.watchGovernorates(limit: 50))
         .thenAnswer((_) => Stream.value(const <Governorate>[]));
-    when(() => subGroupRepository.getSubGroups(groupId: family.id, pageIndex: 1, pageSize: 50)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: <SubGroup>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
-    );
+    when(() => subGroupRepository.watchSubGroups(groupId: family.id, limit: 50))
+        .thenAnswer((_) => Stream.value(const <SubGroup>[]));
     when(() => personRepository.refreshPersons()).thenAnswer((_) async => const Right(unit));
   });
 

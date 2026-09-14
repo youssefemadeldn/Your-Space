@@ -132,8 +132,7 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     if (current is! PeopleListSuccess) return;
     var subGroups = const <SubGroup>[];
     if (groupId != null) {
-      final result = await _subGroupRepository.getSubGroups(groupId: groupId, pageIndex: 1, pageSize: _refPageSize);
-      subGroups = result.fold((_) => const <SubGroup>[], (p) => p.items);
+      subGroups = await _subGroupRepository.watchSubGroups(groupId: groupId, limit: _refPageSize).first;
     }
     await _subscribeToPersons(
       groupId: groupId,
@@ -291,12 +290,9 @@ class PeopleListCubit extends Cubit<PeopleListState> {
 
     var subGroups = current.subGroups;
     if (current.selectedGroupId != null) {
-      final result = await _subGroupRepository.getSubGroups(
-        groupId: current.selectedGroupId!,
-        pageIndex: 1,
-        pageSize: _refPageSize,
-      );
-      subGroups = result.fold((_) => current.subGroups, (p) => p.items);
+      // SubGroup is local-first (row 8.14) — a local read can't fail the way
+      // a network call can.
+      subGroups = await _subGroupRepository.watchSubGroups(groupId: current.selectedGroupId!, limit: _refPageSize).first;
     }
 
     var cities = current.cities;

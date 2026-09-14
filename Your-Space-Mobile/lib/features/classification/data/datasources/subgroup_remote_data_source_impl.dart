@@ -9,15 +9,18 @@ import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_subgroup_request.dart';
 import '../models/subgroup_response.dart';
 import '../models/update_subgroup_request.dart';
+import 'base_subgroup_data_source.dart';
 
-@lazySingleton
-class SubGroupRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseSubGroupDataSource)
+class SubGroupRemoteDataSourceImpl implements BaseSubGroupDataSource {
   final ApiManager _api;
 
   SubGroupRemoteDataSourceImpl(this._api);
 
   String _basePath(int groupId) => '${ApiConstants.groups}/$groupId/${ApiConstants.subgroupsSegment}';
 
+  @override
   Future<Either<Failure, PaginatedResponse<SubGroupResponse>>> getSubGroups({
     required int groupId,
     String? search,
@@ -36,6 +39,25 @@ class SubGroupRemoteDataSourceImpl {
         ),
       );
 
+  @override
+  Future<Either<Failure, PaginatedResponse<SubGroupResponse>>> getAllMineSubGroups({
+    String? search,
+    required int pageIndex,
+    required int pageSize,
+  }) =>
+      _api.get<PaginatedResponse<SubGroupResponse>>(
+        path: ApiConstants.subgroups,
+        queryParameters: {'search': ?search, 'pageIndex': pageIndex, 'pageSize': pageSize},
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => PaginatedResponse.fromJson(
+            inner as Map<String, dynamic>,
+            (item) => SubGroupResponse.fromJson(item as Map<String, dynamic>),
+          ),
+        ),
+      );
+
+  @override
   Future<Either<Failure, SubGroupResponse>> createSubGroup(int groupId, CreateSubGroupRequest request) =>
       _api.post<SubGroupResponse>(
         path: _basePath(groupId),
@@ -46,6 +68,7 @@ class SubGroupRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, SubGroupResponse>> updateSubGroup(int groupId, int id, UpdateSubGroupRequest request) =>
       _api.put<SubGroupResponse>(
         path: '${_basePath(groupId)}/$id',
@@ -56,6 +79,7 @@ class SubGroupRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, Unit>> deleteSubGroup(int groupId, int id) => _api.delete<Unit>(
         path: '${_basePath(groupId)}/$id',
         fromJson: (_) => unit,

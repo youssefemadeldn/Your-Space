@@ -20,9 +20,19 @@ final class SubGroupListSuccess extends SubGroupListState {
   final List<SubGroup> subGroups;
   final int groupId;
   final String? search;
-  final int pageIndex;
+
+  /// How many rows the local `watchSubGroups` query is currently asking for
+  /// (grows by the page size on `loadMore()`) — a local read window, not a
+  /// server page index (Tier 1, design doc §3).
+  final int limit;
   final bool hasNextPage;
   final bool isLoadingMore;
+
+  /// One-shot signal for a failed `loadMore()`. [loadMoreErrorId] increments
+  /// on every failure so a screen listener can fire exactly once per failure
+  /// (via `listenWhen` comparing the id) without needing to clear
+  /// [loadMoreErrorMessage] back to null afterward — nullable fields can't be
+  /// reset through a standard `?? this.field` copyWith anyway.
   final String? loadMoreErrorMessage;
   final int loadMoreErrorId;
 
@@ -30,7 +40,7 @@ final class SubGroupListSuccess extends SubGroupListState {
     required this.subGroups,
     required this.groupId,
     this.search,
-    required this.pageIndex,
+    required this.limit,
     required this.hasNextPage,
     this.isLoadingMore = false,
     this.loadMoreErrorMessage,
@@ -39,7 +49,7 @@ final class SubGroupListSuccess extends SubGroupListState {
 
   SubGroupListSuccess copyWith({
     List<SubGroup>? subGroups,
-    int? pageIndex,
+    int? limit,
     bool? hasNextPage,
     bool? isLoadingMore,
     String? loadMoreErrorMessage,
@@ -49,7 +59,7 @@ final class SubGroupListSuccess extends SubGroupListState {
         subGroups: subGroups ?? this.subGroups,
         groupId: groupId,
         search: search,
-        pageIndex: pageIndex ?? this.pageIndex,
+        limit: limit ?? this.limit,
         hasNextPage: hasNextPage ?? this.hasNextPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
         loadMoreErrorMessage: loadMoreErrorMessage ?? this.loadMoreErrorMessage,
@@ -57,8 +67,16 @@ final class SubGroupListSuccess extends SubGroupListState {
       );
 
   @override
-  List<Object?> get props =>
-      [subGroups, groupId, search, pageIndex, hasNextPage, isLoadingMore, loadMoreErrorMessage, loadMoreErrorId];
+  List<Object?> get props => [
+        subGroups,
+        groupId,
+        search,
+        limit,
+        hasNextPage,
+        isLoadingMore,
+        loadMoreErrorMessage,
+        loadMoreErrorId,
+      ];
 }
 
 final class SubGroupListError extends SubGroupListState {
