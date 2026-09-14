@@ -41,6 +41,26 @@ class GovernorateRepositoryImpl implements GovernorateRepository {
   @override
   Future<int> countGovernorates({String? search}) => _local.countGovernorates(search: search);
 
+  @override
+  Future<Either<Failure, Unit>> refreshGovernorates() async {
+    const pageSize = 200;
+    // Defensive cap — this data shape is meant to be small (27 global rows
+    // + a user's own custom ones), never expected to trip.
+    const maxPages = 50;
+    final all = <Governorate>[];
+    for (var page = 1; page <= maxPages; page++) {
+      final result = await _remote.getGovernorates(pageIndex: page, pageSize: pageSize);
+      if (result.isLeft()) {
+        return result.fold(Left.new, (_) => throw StateError('unreachable'));
+      }
+      final response = result.getOrElse(() => throw StateError('unreachable'));
+      all.addAll(response.items.map((r) => r.toEntity()));
+      if (response.pageIndex >= response.totalPages) break;
+    }
+    await _local.applyGovernoratesSnapshot(all);
+    return const Right(unit);
+  }
+
   int _newTempGovernorateId() => -DateTime.now().microsecondsSinceEpoch;
 
   /// Builds the [Governorate] draft + JSON-encoded [CreateGovernorateRequest]
