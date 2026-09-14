@@ -6,6 +6,7 @@ using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
 using YourSpace.Repository.Specifications.Paginated;
+using YourSpace.Repository.Sync;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using CityServiceImpl = YourSpace.Services.Services.CityService.CityService;
 
@@ -29,6 +30,7 @@ public class CityService_GetAllAsyncTests
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        Mock.Of<ISyncVersionProvider>(),
         Mock.Of<ILogger<CityServiceImpl>>());
 
     [Fact]

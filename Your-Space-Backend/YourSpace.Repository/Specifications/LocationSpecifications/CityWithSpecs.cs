@@ -66,4 +66,16 @@ public class CityWithSpecs : BaseSpecification<City>
         => c => c.OwnerUserId == ownerUserId
             && c.DeletedAt == null
             && (string.IsNullOrWhiteSpace(search) || c.Name.Contains(search));
+
+    // Delta-sync "changes since" query (doc/local-first-sync-design.md §6) — deliberately no
+    // DeletedAt filter: tombstones (soft-deleted rows) must be included so the caller can tell
+    // the client to remove them. Ordered by SyncVersion, not CreatedAt/UpdatedAt, so the cursor
+    // stays unambiguous even for two rows written in the same millisecond. Mirrors
+    // `GroupWithSpecs`'s own delta ctor.
+    public CityWithSpecs(string ownerUserId, long since, int pageSize)
+        : base(c => c.OwnerUserId == ownerUserId && c.SyncVersion > since)
+    {
+        ApplyOrderBy(c => c.SyncVersion);
+        ApplyPaging(0, pageSize);
+    }
 }

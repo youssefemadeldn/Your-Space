@@ -33,7 +33,7 @@ public static class MockDataSeeder
         await SeedGroupsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedSubGroupsAsync(context, activeUserId, lockedUserId);
         await SeedGovernoratesAsync(context, activeUserId, syncVersionProvider);
-        await SeedCitiesAsync(context, activeUserId);
+        await SeedCitiesAsync(context, activeUserId, syncVersionProvider);
         await SeedNeighborhoodsAsync(context, activeUserId);
         await SeedPersonsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedPersonImagesAsync(context, activeUserId);
@@ -287,7 +287,7 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedCitiesAsync(YourSpaceDbContext context, string activeUserId)
+    private static async Task SeedCitiesAsync(YourSpaceDbContext context, string activeUserId, ISyncVersionProvider syncVersionProvider)
     {
         if (await context.Cities.AnyAsync())
         {
@@ -297,12 +297,24 @@ public static class MockDataSeeder
         var cairo = await context.Governorates.SingleAsync(g => g.OwnerUserId == null && g.Name == "Cairo");
         var giza = await context.Governorates.SingleAsync(g => g.OwnerUserId == null && g.Name == "Giza");
 
-        await context.Cities.AddRangeAsync(
-            new City { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = "Nasr City", NameAr = "مدينة نصر" }, // normal case
-            new City { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = "Heliopolis", NameAr = "مصر الجديدة" }, // normal case
-            new City { OwnerUserId = activeUserId, GovernorateId = giza.Id, Name = "6th of October", NameAr = "السادس من أكتوبر" }, // normal case, different parent
-            new City { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = new string('E', 200) }); // edge case — max-length name
+        var cities = new List<City>
+        {
+            new() { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = "Nasr City", NameAr = "مدينة نصر" }, // normal case
+            new() { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = "Heliopolis", NameAr = "مصر الجديدة" }, // normal case
+            new() { OwnerUserId = activeUserId, GovernorateId = giza.Id, Name = "6th of October", NameAr = "السادس من أكتوبر" }, // normal case, different parent
+            new() { OwnerUserId = activeUserId, GovernorateId = cairo.Id, Name = new string('E', 200) } // edge case — max-length name
+        };
 
+        // Seeding inserts directly via the DbContext, bypassing CityService — so SyncVersion
+        // (which CityService assigns on every real write, doc/local-first-sync-design.md §6)
+        // must be assigned here too, or every seeded row would be stuck at the column default
+        // and collide with each other under a `WHERE SyncVersion > @since` delta-sync query.
+        foreach (var city in cities)
+        {
+            city.SyncVersion = await syncVersionProvider.NextValueAsync("Cities_SyncVersion_seq");
+        }
+
+        await context.Cities.AddRangeAsync(cities);
         await context.SaveChangesAsync();
     }
 

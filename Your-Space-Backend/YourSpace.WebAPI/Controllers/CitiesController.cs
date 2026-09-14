@@ -36,6 +36,15 @@ public class CitiesController(ICityService cityService) : ControllerBase
         return new ResultActionResult<PaginatedResultDto<CityProfileDto>>(result);
     }
 
+    // Delta-sync pull (doc/local-first-sync-design.md §6, row 8.11) — sibling flat action
+    // alongside GetAllMine above, same route-override convention.
+    [HttpGet("~/api/v{version:apiVersion}/cities/changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await cityService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<CityChangesDto>(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int governorateId, int id)
     {

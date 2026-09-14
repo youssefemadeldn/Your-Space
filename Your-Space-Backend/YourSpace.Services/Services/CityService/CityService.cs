@@ -6,6 +6,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.LocationSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.CityService.Dtos;
@@ -16,14 +17,25 @@ public class CityService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<CityService> logger) : ICityService
 {
+    // Postgres sequence backing City.SyncVersion (doc/local-first-sync-design.md §6) — one per
+    // synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "Cities_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is "small, low cardinality"
+    // (design doc §1/§2), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "City.NotFound";
         public const string GovernorateNotFound = "City.GovernorateNotFound";
         public const string HasActiveNeighborhoods = "City.HasActiveNeighborhoods";
         public const string HasActivePersons = "City.HasActivePersons";
+        public const string SinceInvalid = "City.Since.Invalid";
     }
 
     public async Task<ServiceResult<CityDetailsDto>> GetDetailsAsync(string ownerUserId, int governorateId, int id)
@@ -113,7 +125,8 @@ public class CityService(
             OwnerUserId = ownerUserId,
             GovernorateId = governorateId,
             Name = dto.Name,
-            NameAr = dto.NameAr
+            NameAr = dto.NameAr,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(city);
@@ -144,6 +157,7 @@ public class CityService(
         }
 
         city.UpdatedAt = DateTime.UtcNow;
+        city.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(city);
         await unitOfWork.SaveChangesAsync();
 
@@ -180,10 +194,41 @@ public class CityService(
 
         city.DeletedAt = DateTime.UtcNow;
         city.UpdatedAt = DateTime.UtcNow;
+        city.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(city);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("City {CityId} soft-deleted for governorate {GovernorateId}, user {UserId}", id, governorateId, ownerUserId);
         return ServiceResult.Ok("City deleted successfully.");
+    }
+
+    public async Task<ServiceResult<CityChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<CityChangesDto>.Fail(localizer["City.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<City, int>();
+        var rows = await repo.ListAllWithSpecAsync(new CityWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(c => c.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(c => c.DeletedAt != null).Select(c => c.Id).ToList();
+
+        var upserts = upsertRows.Select(mapper.Map<CityProfileDto>).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(c => c.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<CityChangesDto>.Ok(new CityChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 }

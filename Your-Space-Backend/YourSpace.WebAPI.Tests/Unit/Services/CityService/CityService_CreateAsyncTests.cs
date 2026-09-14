@@ -4,6 +4,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.CityService.Dtos;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using CityServiceImpl = YourSpace.Services.Services.CityService.CityService;
@@ -15,17 +16,20 @@ public class CityService_CreateAsyncTests
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Governorate, int>> _governorateRepo = new();
     private readonly Mock<IGenericRepository<City, int>> _cityRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public CityService_CreateAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Governorate, int>()).Returns(_governorateRepo.Object);
         _unitOfWork.Setup(u => u.Repository<City, int>()).Returns(_cityRepo.Object);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private CityServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<CityServiceImpl>>());
 
     [Fact]

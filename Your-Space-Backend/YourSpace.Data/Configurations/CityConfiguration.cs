@@ -13,6 +13,10 @@ public class CityConfiguration : IEntityTypeConfiguration<City>
         builder.HasIndex(c => c.OwnerUserId);
         builder.HasIndex(c => c.GovernorateId);
 
+        // Backs CityWithSpecs's delta-sync "changes since" query (doc/local-first-sync-design.md
+        // §6): WHERE OwnerUserId = @p0 AND SyncVersion > @p1, ORDER BY SyncVersion.
+        builder.HasIndex(c => new { c.OwnerUserId, c.SyncVersion });
+
         builder.HasOne(c => c.Owner)
             .WithMany()
             .HasForeignKey(c => c.OwnerUserId)
