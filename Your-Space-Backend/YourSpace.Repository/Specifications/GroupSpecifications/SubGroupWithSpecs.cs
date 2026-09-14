@@ -66,4 +66,16 @@ public class SubGroupWithSpecs : BaseSpecification<SubGroup>
         => s => s.OwnerUserId == ownerUserId
             && s.DeletedAt == null
             && (string.IsNullOrWhiteSpace(search) || s.Name.Contains(search));
+
+    // Delta-sync "changes since" query (doc/local-first-sync-design.md §6) — deliberately no
+    // DeletedAt filter: tombstones (soft-deleted rows) must be included so the caller can tell
+    // the client to remove them. Ordered by SyncVersion, not CreatedAt/UpdatedAt, so the cursor
+    // stays unambiguous even for two rows written in the same millisecond. Mirrors
+    // `CityWithSpecs`'s own delta ctor.
+    public SubGroupWithSpecs(string ownerUserId, long since, int pageSize)
+        : base(s => s.OwnerUserId == ownerUserId && s.SyncVersion > since)
+    {
+        ApplyOrderBy(s => s.SyncVersion);
+        ApplyPaging(0, pageSize);
+    }
 }

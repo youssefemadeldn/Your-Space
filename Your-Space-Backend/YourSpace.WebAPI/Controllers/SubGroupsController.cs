@@ -35,6 +35,15 @@ public class SubGroupsController(ISubGroupService subGroupService) : ControllerB
         return new ResultActionResult<PaginatedResultDto<SubGroupProfileDto>>(result);
     }
 
+    // Delta-sync "changes since" pull (doc/local-first-sync-design.md §6 row 8.17) — sibling flat
+    // action alongside GetAllMine above, same route-override convention.
+    [HttpGet("~/api/v{version:apiVersion}/subgroups/changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await subGroupService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<SubGroupChangesDto>(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int groupId, int id)
     {

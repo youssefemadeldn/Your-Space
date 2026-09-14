@@ -4,6 +4,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.SubGroupService.Dtos;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using SubGroupServiceImpl = YourSpace.Services.Services.SubGroupService.SubGroupService;
@@ -14,16 +15,19 @@ public class SubGroupService_UpdateAsyncTests
 {
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Data.Entities.SubGroup, int>> _subGroupRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public SubGroupService_UpdateAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Data.Entities.SubGroup, int>()).Returns(_subGroupRepo.Object);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private SubGroupServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<SubGroupServiceImpl>>());
 
     [Fact]
