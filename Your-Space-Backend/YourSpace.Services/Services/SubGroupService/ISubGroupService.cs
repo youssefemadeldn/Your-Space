@@ -16,4 +16,8 @@ public interface ISubGroupService
     // row 8.14) — group-agnostic, no PersonCount enrichment (that stays on the richer nested
     // GetAllAsync the management screen uses).
     Task<ServiceResult<PaginatedResultDto<SubGroupProfileDto>>> GetAllMineAsync(string ownerUserId, string? search, PaginationSpecification pagination);
+
+    // Delta-sync pull (doc/local-first-sync-design.md §6, row 8.17) — everything the owner's
+    // subgroups changed since `since`, one page at a time.
+    Task<ServiceResult<SubGroupChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize);
 }

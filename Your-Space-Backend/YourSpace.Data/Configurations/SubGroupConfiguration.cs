@@ -13,6 +13,10 @@ public class SubGroupConfiguration : IEntityTypeConfiguration<SubGroup>
         builder.HasIndex(s => s.OwnerUserId);
         builder.HasIndex(s => s.GroupId);
 
+        // Delta-sync "changes since" query (doc/local-first-sync-design.md §6, row 8.17):
+        // WHERE OwnerUserId = @p0 AND SyncVersion > @p1, ORDER BY SyncVersion.
+        builder.HasIndex(s => new { s.OwnerUserId, s.SyncVersion });
+
         builder.HasOne(s => s.Owner)
             .WithMany()
             .HasForeignKey(s => s.OwnerUserId)

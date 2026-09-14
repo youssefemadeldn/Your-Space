@@ -31,7 +31,7 @@ public static class MockDataSeeder
         await SeedPasswordResetCodesAsync(context, activeUserId, lockedUserId);
 
         await SeedGroupsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
-        await SeedSubGroupsAsync(context, activeUserId, lockedUserId);
+        await SeedSubGroupsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedGovernoratesAsync(context, activeUserId, syncVersionProvider);
         await SeedCitiesAsync(context, activeUserId, syncVersionProvider);
         await SeedNeighborhoodsAsync(context, activeUserId);
@@ -241,7 +241,7 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedSubGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    private static async Task SeedSubGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
         if (await context.SubGroups.AnyAsync())
         {
@@ -251,12 +251,24 @@ public static class MockDataSeeder
         var relatives = await context.Groups.SingleAsync(g => g.OwnerUserId == activeUserId && g.Name == "Relatives");
         var lockedUserGroup = await context.Groups.SingleAsync(g => g.OwnerUserId == lockedUserId);
 
-        await context.SubGroups.AddRangeAsync(
-            new SubGroup { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = "Immediate Family", NameAr = "العائلة المباشرة" }, // normal case
-            new SubGroup { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = "Extended Family", NameAr = "العائلة الممتدة" }, // normal case
-            new SubGroup { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = new string('D', 200) }, // edge case — max-length name
-            new SubGroup { OwnerUserId = lockedUserId, GroupId = lockedUserGroup.Id, Name = "Locked User's Subgroup" });
+        var subGroups = new List<SubGroup>
+        {
+            new() { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = "Immediate Family", NameAr = "العائلة المباشرة" }, // normal case
+            new() { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = "Extended Family", NameAr = "العائلة الممتدة" }, // normal case
+            new() { OwnerUserId = activeUserId, GroupId = relatives.Id, Name = new string('D', 200) }, // edge case — max-length name
+            new() { OwnerUserId = lockedUserId, GroupId = lockedUserGroup.Id, Name = "Locked User's Subgroup" }
+        };
 
+        // Seeding inserts directly via the DbContext, bypassing SubGroupService — so SyncVersion
+        // (which SubGroupService assigns on every real write, doc/local-first-sync-design.md §6)
+        // must be assigned here too, or every seeded row would be stuck at the column default
+        // and collide with each other under a `WHERE SyncVersion > @since` delta-sync query.
+        foreach (var subGroup in subGroups)
+        {
+            subGroup.SyncVersion = await syncVersionProvider.NextValueAsync("SubGroups_SyncVersion_seq");
+        }
+
+        await context.SubGroups.AddRangeAsync(subGroups);
         await context.SaveChangesAsync();
     }
 

@@ -4,6 +4,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using SubGroupServiceImpl = YourSpace.Services.Services.SubGroupService.SubGroupService;
@@ -24,6 +25,7 @@ public class SubGroupService_GetAllMineAsyncTests
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        Mock.Of<ISyncVersionProvider>(),
         Mock.Of<ILogger<SubGroupServiceImpl>>());
 
     [Fact]

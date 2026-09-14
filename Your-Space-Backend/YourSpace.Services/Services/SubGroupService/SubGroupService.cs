@@ -6,6 +6,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.GroupSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.SubGroupService.Dtos;
@@ -16,13 +17,24 @@ public class SubGroupService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<SubGroupService> logger) : ISubGroupService
 {
+    // Postgres sequence backing SubGroup.SyncVersion (doc/local-first-sync-design.md §6) — one
+    // per synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "SubGroups_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is "small, low cardinality"
+    // (design doc §1/§2), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "SubGroup.NotFound";
         public const string GroupNotFound = "SubGroup.GroupNotFound";
         public const string HasActivePersons = "SubGroup.HasActivePersons";
+        public const string SinceInvalid = "SubGroup.Since.Invalid";
     }
 
     public async Task<ServiceResult<SubGroupDetailsDto>> GetDetailsAsync(string ownerUserId, int groupId, int id)
@@ -104,7 +116,8 @@ public class SubGroupService(
             OwnerUserId = ownerUserId,
             GroupId = groupId,
             Name = dto.Name,
-            NameAr = dto.NameAr
+            NameAr = dto.NameAr,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(subGroup);
@@ -135,6 +148,7 @@ public class SubGroupService(
         }
 
         subGroup.UpdatedAt = DateTime.UtcNow;
+        subGroup.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(subGroup);
         await unitOfWork.SaveChangesAsync();
 
@@ -163,10 +177,41 @@ public class SubGroupService(
 
         subGroup.DeletedAt = DateTime.UtcNow;
         subGroup.UpdatedAt = DateTime.UtcNow;
+        subGroup.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(subGroup);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("SubGroup {SubGroupId} soft-deleted for group {GroupId}, user {UserId}", id, groupId, ownerUserId);
         return ServiceResult.Ok("Subgroup deleted successfully.");
+    }
+
+    public async Task<ServiceResult<SubGroupChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<SubGroupChangesDto>.Fail(localizer["SubGroup.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<SubGroup, int>();
+        var rows = await repo.ListAllWithSpecAsync(new SubGroupWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(s => s.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(s => s.DeletedAt != null).Select(s => s.Id).ToList();
+
+        var upserts = upsertRows.Select(mapper.Map<SubGroupProfileDto>).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(s => s.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<SubGroupChangesDto>.Ok(new SubGroupChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 }
