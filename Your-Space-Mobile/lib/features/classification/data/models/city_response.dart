@@ -10,6 +10,7 @@ class CityResponse {
   final String? nameAr;
   final int neighborhoodCount;
   final int personCount;
+  final DateTime? updatedAt;
 
   const CityResponse({
     required this.id,
@@ -18,6 +19,7 @@ class CityResponse {
     this.nameAr,
     this.neighborhoodCount = 0,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   factory CityResponse.fromJson(Map<String, dynamic> json) => CityResponse(
@@ -27,6 +29,7 @@ class CityResponse {
         nameAr: json['nameAr'] as String?,
         neighborhoodCount: json['neighborhoodCount'] as int? ?? 0,
         personCount: json['personCount'] as int? ?? 0,
+        updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
 
   City toEntity() => City(
@@ -36,5 +39,6 @@ class CityResponse {
         nameAr: nameAr,
         neighborhoodCount: neighborhoodCount,
         personCount: personCount,
+        updatedAt: updatedAt,
       );
 }

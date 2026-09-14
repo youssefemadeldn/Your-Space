@@ -9,6 +9,7 @@ class City extends Equatable {
   final String? nameAr;
   final int neighborhoodCount;
   final int personCount;
+  final DateTime? updatedAt;
 
   const City({
     required this.id,
@@ -17,6 +18,7 @@ class City extends Equatable {
     this.nameAr,
     this.neighborhoodCount = 0,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   /// Used by `CityListCubit` to merge the one-shot server-computed
@@ -29,8 +31,10 @@ class City extends Equatable {
         nameAr: nameAr,
         neighborhoodCount: neighborhoodCount ?? this.neighborhoodCount,
         personCount: personCount ?? this.personCount,
+        updatedAt: updatedAt,
       );
 
   @override
-  List<Object?> get props => [id, governorateId, name, nameAr, neighborhoodCount, personCount];
+  List<Object?> get props =>
+      [id, governorateId, name, nameAr, neighborhoodCount, personCount, updatedAt];
 }

@@ -6,6 +6,7 @@ import 'package:your_space_mobile/core/network/api_envelope.dart';
 import 'package:your_space_mobile/core/network/api_manager.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
+import '../models/city_changes_response.dart';
 import '../models/city_response.dart';
 import '../models/create_city_request.dart';
 import '../models/update_city_request.dart';
@@ -84,5 +85,22 @@ class CityRemoteDataSourceImpl implements BaseCityDataSource {
   Future<Either<Failure, Unit>> deleteCity(int governorateId, int id) => _api.delete<Unit>(
         path: '${_basePath(governorateId)}/$id',
         fromJson: (_) => unit,
+      );
+
+  @override
+  Future<Either<Failure, CityChangesResponse>> getCityChanges({
+    required int since,
+    required int pageSize,
+  }) =>
+      _api.get<CityChangesResponse>(
+        path: '${ApiConstants.cities}/changes',
+        queryParameters: {
+          'since': since,
+          'pageSize': pageSize,
+        },
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => CityChangesResponse.fromJson(inner as Map<String, dynamic>),
+        ),
       );
 }
