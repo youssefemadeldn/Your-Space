@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
+import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/base_subgroup_data_source.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/subgroup_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/classification/data/models/create_subgroup_request.dart';
@@ -16,9 +19,12 @@ class MockBaseSubGroupDataSource extends Mock implements BaseSubGroupDataSource 
 
 class MockSubGroupLocalDataSourceImpl extends Mock implements SubGroupLocalDataSourceImpl {}
 
+class MockSyncService extends Mock implements SyncService {}
+
 void main() {
   late MockBaseSubGroupDataSource remote;
   late MockSubGroupLocalDataSourceImpl local;
+  late MockSyncService syncService;
   late SubGroupRepositoryImpl repository;
 
   setUpAll(() {
@@ -30,9 +36,16 @@ void main() {
   setUp(() {
     remote = MockBaseSubGroupDataSource();
     local = MockSubGroupLocalDataSourceImpl();
-    repository = SubGroupRepositoryImpl(remote, local);
-    when(() => local.saveSubGroup(any())).thenAnswer((_) async {});
-    when(() => local.deleteSubGroupLocal(any())).thenAnswer((_) async {});
+    syncService = MockSyncService();
+    repository = SubGroupRepositoryImpl(remote, local, syncService);
+    when(
+      () => local.queueSubGroupMutation(
+        subGroup: any(named: 'subGroup'),
+        operation: any(named: 'operation'),
+        payloadJson: any(named: 'payloadJson'),
+      ),
+    ).thenAnswer((_) async => 99);
+    when(() => local.queueDeletedSubGroup(any(), payloadJson: any(named: 'payloadJson'))).thenAnswer((_) async {});
   });
 
   test('getSubGroups maps a paginated response to a PaginatedResult of entities', () async {
@@ -85,53 +98,97 @@ void main() {
     expect(count, 5);
   });
 
-  test('createSubGroup maps the response to an entity and saves it locally', () async {
-    when(() => remote.createSubGroup(7, any()))
-        .thenAnswer((_) async => const Right(SubGroupResponse(id: 5, groupId: 7, name: 'Book club')));
+  group('createSubGroup (pure optimistic path)', () {
+    test('queues a negative-id create via the outbox and returns immediately', () async {
+      final result = await repository.createSubGroup(groupId: 7, name: 'Book club');
 
-    final result = await repository.createSubGroup(groupId: 7, name: 'Book club');
+      expect(result.isRight(), isTrue);
+      final subGroup = result.getOrElse(() => throw StateError('expected Right'));
+      expect(subGroup.id, lessThan(0));
+      expect(subGroup.groupId, 7);
+      expect(subGroup.name, 'Book club');
 
-    expect(result, const Right(SubGroup(id: 5, groupId: 7, name: 'Book club')));
-    verify(() => local.saveSubGroup(const SubGroup(id: 5, groupId: 7, name: 'Book club'))).called(1);
+      final captured = verify(
+        () => local.queueSubGroupMutation(
+          subGroup: captureAny(named: 'subGroup'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as SubGroup).id, lessThan(0));
+      expect(captured[1], 'create');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['groupId'], 7);
+      expect(payload['name'], 'Book club');
+
+      verifyNever(() => remote.createSubGroup(any(), any()));
+      verifyNever(() => syncService.replayRow(any()));
+    });
   });
 
-  test('createSubGroup propagates a failure without touching local storage', () async {
-    const failure = NetworkFailure();
-    when(() => remote.createSubGroup(7, any())).thenAnswer((_) async => const Left(failure));
+  group('createSubGroupAndSync', () {
+    test('queues via the outbox then returns the real subgroup on a successful immediate replay', () async {
+      const realSubGroup = SubGroup(id: 5, groupId: 7, name: 'Book club');
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Right(realSubGroup));
 
-    final result = await repository.createSubGroup(groupId: 7, name: 'Book club');
+      final result = await repository.createSubGroupAndSync(groupId: 7, name: 'Book club');
 
-    expect(result, const Left(failure));
-    verifyNever(() => local.saveSubGroup(any()));
+      expect(result, const Right(realSubGroup));
+      verify(() => syncService.replayRow(99)).called(1);
+    });
+
+    test('the queued row is not rolled back when the immediate replay fails', () async {
+      const failure = NetworkFailure();
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.createSubGroupAndSync(groupId: 7, name: 'Book club');
+
+      expect(result, const Left(failure));
+      verify(
+        () => local.queueSubGroupMutation(
+          subGroup: any(named: 'subGroup'),
+          operation: 'create',
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      ).called(1);
+    });
   });
 
-  test('updateSubGroup maps the response to an entity and saves it locally', () async {
-    when(() => remote.updateSubGroup(7, 1, any())).thenAnswer(
-      (_) async => const Right(SubGroupResponse(id: 1, groupId: 7, name: 'Immediate Family (Updated)')),
-    );
+  group('updateSubGroup (pure optimistic path)', () {
+    test('queues an update against the given id via the outbox and returns immediately', () async {
+      final result = await repository.updateSubGroup(groupId: 7, id: 1, name: 'Immediate Family (Updated)');
 
-    final result = await repository.updateSubGroup(groupId: 7, id: 1, name: 'Immediate Family (Updated)');
+      expect(result, isA<Right<Failure, SubGroup>>());
+      final captured = verify(
+        () => local.queueSubGroupMutation(
+          subGroup: captureAny(named: 'subGroup'),
+          operation: captureAny(named: 'operation'),
+          payloadJson: captureAny(named: 'payloadJson'),
+        ),
+      ).captured;
+      expect((captured[0] as SubGroup).id, 1);
+      expect(captured[1], 'update');
+      final payload = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      expect(payload['groupId'], 7);
+      expect(payload['name'], 'Immediate Family (Updated)');
 
-    expect(result, const Right(SubGroup(id: 1, groupId: 7, name: 'Immediate Family (Updated)')));
-    verify(() => local.saveSubGroup(const SubGroup(id: 1, groupId: 7, name: 'Immediate Family (Updated)'))).called(1);
+      verifyNever(() => remote.updateSubGroup(any(), any(), any()));
+    });
   });
 
-  test('deleteSubGroup removes the row locally after a successful remote delete', () async {
-    when(() => remote.deleteSubGroup(7, 1)).thenAnswer((_) async => const Right(unit));
+  group('deleteSubGroup (pure optimistic path)', () {
+    test('queues a delete via the outbox and returns immediately with no remote call', () async {
+      final result = await repository.deleteSubGroup(groupId: 7, id: 1);
 
-    final result = await repository.deleteSubGroup(groupId: 7, id: 1);
+      expect(result, const Right(unit));
+      final captured =
+          verify(() => local.queueDeletedSubGroup(captureAny(), payloadJson: captureAny(named: 'payloadJson')))
+              .captured;
+      expect(captured[0], 1);
+      final payload = jsonDecode(captured[1] as String) as Map<String, dynamic>;
+      expect(payload['groupId'], 7);
 
-    expect(result, const Right(unit));
-    verify(() => local.deleteSubGroupLocal(1)).called(1);
-  });
-
-  test('deleteSubGroup propagates a failure without touching local storage', () async {
-    const failure = NetworkFailure();
-    when(() => remote.deleteSubGroup(7, 1)).thenAnswer((_) async => const Left(failure));
-
-    final result = await repository.deleteSubGroup(groupId: 7, id: 1);
-
-    expect(result, const Left(failure));
-    verifyNever(() => local.deleteSubGroupLocal(any()));
+      verifyNever(() => remote.deleteSubGroup(any(), any()));
+    });
   });
 }

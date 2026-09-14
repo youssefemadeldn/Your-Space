@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
 
@@ -101,14 +103,23 @@ class GroupLocalDataSourceImpl {
   ///  1. insert the confirmed server row under [realGroup].id
   ///  2. delete the temp-id row
   ///  3. delete the just-replayed outbox row
+  ///  4. rewrite any dependent `SubGroupsTable` row (and any still-queued
+  ///     `entityType='subgroup'` outbox payload) that references [tempId] —
+  ///     the wizard's offline "add group, then immediately add subgroup
+  ///     under it" chain (row 8.15, SubGroup's own Tier 2 step, which is
+  ///     what actually adds this 4th step — SubGroup is Group's first real
+  ///     dependent; nothing depended on Group's temp id before this row).
+  ///     A subgroup outbox payload's `groupId` field is decoded, patched,
+  ///     and re-encoded rather than string-replaced — `payloadJson` also
+  ///     carries `name`/`nameAr`, which could coincidentally contain digits
+  ///     matching [tempId] — mirrors `GovernorateLocalDataSourceImpl.
+  ///     reconcileCreatedGovernorate`'s own row 8.9 addition.
   ///
-  /// Unlike `PersonLocalDataSourceImpl.reconcileCreatedPerson`, no step 4
-  /// (cross-entity FK-rewrite of other pending outbox rows referencing this
-  /// tempId) is needed here — Groups' only analogous risk (a pending
-  /// Person-create outbox row referencing a Group's tempId) is sidestepped
-  /// by `GroupRepositoryImpl.createGroupAndSync`, which the wizard's inline
-  /// "add new group" flow uses specifically to resolve the real id
-  /// synchronously *before* building the person's own payload.
+  /// The person-create risk `PersonLocalDataSourceImpl.reconcileCreatedPerson`
+  /// guards against doesn't apply symmetrically here: `GroupRepositoryImpl.
+  /// createGroupAndSync` (used by the wizard's inline "add new group" flow)
+  /// resolves the real id synchronously before a person payload embeds it,
+  /// so no pending Person-create outbox row ever references a Group tempId.
   Future<void> reconcileCreatedGroup({
     required int tempId,
     required Group realGroup,
@@ -118,6 +129,20 @@ class GroupLocalDataSourceImpl {
         await _db.into(_db.groupsTable).insertOnConflictUpdate(_toCompanion(realGroup));
         await (_db.delete(_db.groupsTable)..where((t) => t.id.equals(tempId))).go();
         await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+
+        await (_db.update(_db.subGroupsTable)..where((t) => t.groupId.equals(tempId)))
+            .write(SubGroupsTableCompanion(groupId: Value(realGroup.id)));
+
+        final pendingSubGroupRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('subgroup') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingSubGroupRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['groupId'] != tempId) continue;
+          payload['groupId'] = realGroup.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
       });
 
   /// Tier 3 "full refetch as delta" (design doc §6). No longer used by

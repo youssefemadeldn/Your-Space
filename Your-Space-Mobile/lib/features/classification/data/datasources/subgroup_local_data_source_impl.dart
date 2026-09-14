@@ -77,10 +77,113 @@ class SubGroupLocalDataSourceImpl {
       _db.into(_db.subGroupsTable).insertOnConflictUpdate(_toCompanion(subGroup));
 
   /// No remote equivalent — hard-removes the local row after a successful
-  /// remote delete. Transitional Tier 1 write path; superseded by an
-  /// outbox-driven soft-tombstone once row 8.15 lands.
+  /// remote delete. Superseded for SubGroup's own delete path by the outbox
+  /// (row 8.15, [queueDeletedSubGroup]/[confirmDeletedSubGroup]) — kept as a
+  /// documented primitive, mirrors `CityLocalDataSourceImpl.saveCity`'s own
+  /// post-outbox retention.
   Future<void> deleteSubGroupLocal(int id) =>
       (_db.delete(_db.subGroupsTable)..where((t) => t.id.equals(id))).go();
+
+  /// Tier 2 optimistic write (design doc §5): writes [subGroup] into
+  /// SubGroupsTable (marked dirty) and appends one OutboxTable row, in the
+  /// same drift transaction. Returns the new outbox row's id so the
+  /// repository's `createSubGroupAndSync` can ask `SyncService` to replay
+  /// this specific row immediately. Mirrors `CityLocalDataSourceImpl.
+  /// queueCityMutation`; unlike Governorate, SubGroup has both `'create'`
+  /// and `'update'` — see [queueDeletedSubGroup] for the separate delete path.
+  Future<int> queueSubGroupMutation({
+    required SubGroup subGroup,
+    required String operation, // 'create' | 'update'
+    required String payloadJson,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.subGroupsTable).insertOnConflictUpdate(
+              _toCompanion(subGroup, isDirty: true),
+            );
+        return _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'subgroup',
+                entityId: subGroup.id,
+                operation: operation,
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'update' syncs successfully: overwrites the
+  /// local row with the server-confirmed copy (clears `isDirty`) and
+  /// removes the now-done outbox row, in one transaction. Mirrors
+  /// `CityLocalDataSourceImpl.confirmSyncedCity`.
+  Future<void> confirmSyncedSubGroup(SubGroup subGroup, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await _db.into(_db.subGroupsTable).insertOnConflictUpdate(_toCompanion(subGroup));
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realSubGroup].id
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///
+  /// Unlike `CityLocalDataSourceImpl.reconcileCreatedCity`, no step 4
+  /// (dependent-table FK rewrite) is needed here — SubGroup has no
+  /// dependent entity of its own in Row 8 (it's a leaf, same as Governorate
+  /// before City existed). Mirrors `GroupLocalDataSourceImpl.
+  /// reconcileCreatedGroup`'s own pre-8.15 shape.
+  Future<void> reconcileCreatedSubGroup({
+    required int tempId,
+    required SubGroup realSubGroup,
+    required int replayedOutboxRowId,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.subGroupsTable).insertOnConflictUpdate(_toCompanion(realSubGroup));
+        await (_db.delete(_db.subGroupsTable)..where((t) => t.id.equals(tempId))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 optimistic delete (design doc §5) — mirrors
+  /// `CityLocalDataSourceImpl.queueDeletedCity` exactly. Two cases:
+  ///  - [id] negative (a never-synced temp row, created and deleted offline
+  ///    in the same session): the server has never heard of it, so just
+  ///    remove the local row **and** its still-pending `'create'` outbox
+  ///    row — no network round trip needed, ever.
+  ///  - [id] positive (a real, previously-synced row): optimistically
+  ///    tombstone it (`isDeleted: true`, `isDirty: true` — disappears from
+  ///    `watchSubGroups` immediately via its existing
+  ///    `isDeleted.equals(false)` filter) and append a `'delete'` outbox row
+  ///    for `SyncService` to replay in the background. [payloadJson] carries
+  ///    `groupId` — `SubGroupOutboxReplayer` needs it for
+  ///    `BaseSubGroupDataSource.deleteSubGroup`'s nested route, and it isn't
+  ///    derivable from [id] alone.
+  Future<void> queueDeletedSubGroup(int id, {required String payloadJson}) => _db.transaction(() async {
+        if (id < 0) {
+          await (_db.delete(_db.subGroupsTable)..where((t) => t.id.equals(id))).go();
+          await (_db.delete(_db.outboxTable)
+                ..where((t) => t.entityType.equals('subgroup') & t.entityId.equals(id)))
+              .go();
+          return;
+        }
+        await (_db.update(_db.subGroupsTable)..where((t) => t.id.equals(id)))
+            .write(const SubGroupsTableCompanion(isDeleted: Value(true), isDirty: Value(true)));
+        await _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'subgroup',
+                entityId: id,
+                operation: 'delete',
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'delete' syncs successfully: hard-removes the
+  /// local row (the optimistic tombstone from [queueDeletedSubGroup] is no
+  /// longer needed once the server confirms it's gone) and removes the
+  /// outbox row, in one transaction.
+  Future<void> confirmDeletedSubGroup(int id, {required int replayedOutboxRowId}) => _db.transaction(() async {
+        await (_db.delete(_db.subGroupsTable)..where((t) => t.id.equals(id))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
 
   SubGroup _toEntity(SubGroupsTableData row) => SubGroup(
         id: row.id,
@@ -97,8 +200,8 @@ class SubGroupLocalDataSourceImpl {
         // `updatedAt` is added once the backend exposes it (row 8.17/8.18) —
         // nothing to set yet. Never soft-deleted here. `isDirty` defaults to
         // false (a row that came from a confirmed remote round trip) —
-        // callers queuing a Tier 2 optimistic write (row 8.15) pass
-        // `isDirty: true` explicitly.
+        // callers queuing a Tier 2 optimistic write pass `isDirty: true`
+        // explicitly.
         isDeleted: const Value(false),
         isDirty: Value(isDirty),
       );

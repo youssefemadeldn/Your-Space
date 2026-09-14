@@ -259,7 +259,12 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<int?> addSubGroupInline(String name) async {
     final current = state;
     if (current is! PersonWizardReady || current.groupId == null) return null;
-    final result = await _subGroupRepository.createSubGroup(groupId: current.groupId!, name: name);
+    // createSubGroupAndSync, not createSubGroup: same reasoning as
+    // addCityInline above — this id gets embedded directly into the
+    // in-progress person's own `subGroupId`, a value SubGroup's own
+    // reconciliation can't reach once it's sitting inside an already-built
+    // Person payload.
+    final result = await _subGroupRepository.createSubGroupAndSync(groupId: current.groupId!, name: name);
     return result.fold((failure) => null, (subGroup) {
       _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(

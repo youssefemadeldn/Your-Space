@@ -136,6 +136,48 @@ void main() {
       final remainingOutbox = await database.select(database.outboxTable).get();
       expect(remainingOutbox, isEmpty);
     });
+
+    test(
+      'row 8.15: rewrites a dependent SubGroupsTable row and a still-queued subgroup outbox payload '
+      'referencing the temp group id',
+      () async {
+        const tempId = -777;
+        final groupRowId = await dataSource.queueGroupMutation(
+          group: const Group(id: tempId, name: 'Offline Group'),
+          operation: 'create',
+          payloadJson: '{"name":"Offline Group"}',
+        );
+        await database.into(database.subGroupsTable).insert(
+              SubGroupsTableCompanion.insert(
+                id: const Value(-1),
+                name: 'Offline SubGroup',
+                groupId: tempId,
+                isDirty: const Value(true),
+              ),
+            );
+        await database.into(database.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'subgroup',
+                entityId: -1,
+                operation: 'create',
+                payloadJson: '{"groupId":$tempId,"name":"Offline SubGroup"}',
+              ),
+            );
+
+        const realGroup = Group(id: 999, name: 'Offline Group');
+        await dataSource.reconcileCreatedGroup(tempId: tempId, realGroup: realGroup, replayedOutboxRowId: groupRowId);
+
+        final subGroupRow =
+            await (database.select(database.subGroupsTable)..where((t) => t.id.equals(-1))).getSingle();
+        expect(subGroupRow.groupId, 999);
+
+        final subGroupOutboxRow = (await (database.select(database.outboxTable)
+                  ..where((t) => t.entityType.equals('subgroup')))
+                .get())
+            .single;
+        expect(subGroupOutboxRow.payloadJson, contains('"groupId":999'));
+      },
+    );
   });
 
   group('applyGroupsSnapshot', () {

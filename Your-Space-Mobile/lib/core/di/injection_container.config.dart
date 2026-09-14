@@ -91,6 +91,8 @@ import 'package:your_space_mobile/features/classification/data/sync/governorate_
     as _i1067;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
     as _i774;
+import 'package:your_space_mobile/features/classification/data/sync/subgroup_outbox_replayer.dart'
+    as _i1023;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart'
     as _i881;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart'
@@ -286,22 +288,18 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i566.SubGroupRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i1023.SubGroupOutboxReplayer(
+        gh<_i148.BaseSubGroupDataSource>(instanceName: 'remote'),
+        gh<_i363.SubGroupLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'subgroup',
+    );
     gh.lazySingleton<_i133.SubGroupRepository>(
       () => _i180.SubGroupRepositoryImpl(
         gh<_i148.BaseSubGroupDataSource>(instanceName: 'remote'),
         gh<_i363.SubGroupLocalDataSourceImpl>(instanceName: 'local'),
-      ),
-    );
-    gh.factory<_i793.SubGroupActionCubit>(
-      () => _i793.SubGroupActionCubit(
-        gh<_i133.SubGroupRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
-    );
-    gh.factory<_i157.SubGroupListCubit>(
-      () => _i157.SubGroupListCubit(
-        gh<_i133.SubGroupRepository>(),
-        gh<_i215.DataRefreshBus>(),
+        gh<_i477.SyncService>(),
       ),
     );
     gh.lazySingleton<_i498.BasePersonDataSource>(
@@ -349,6 +347,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
+    );
+    gh.factory<_i793.SubGroupActionCubit>(
+      () => _i793.SubGroupActionCubit(gh<_i133.SubGroupRepository>()),
     );
     gh.lazySingleton<_i635.CollectionPuller>(
       () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
@@ -434,6 +435,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i635.CollectionPuller>(
       () => _i975.CityCollectionPuller(gh<_i881.CityRepository>()),
       instanceName: 'city',
+    );
+    gh.factory<_i157.SubGroupListCubit>(
+      () => _i157.SubGroupListCubit(
+        gh<_i133.SubGroupRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
     );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i1011.GroupOutboxReplayer(
