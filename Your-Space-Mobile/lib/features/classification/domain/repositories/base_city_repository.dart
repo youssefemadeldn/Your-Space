@@ -23,6 +23,14 @@ abstract class CityRepository {
   /// `hasNextPage` without a `length == limit` heuristic.
   Future<int> countCities({required int governorateId, String? search});
 
+  /// Tier 3 background pull (design doc §6, row 8.10) — "full refetch as
+  /// delta" interim mode, since the backend has no `since`/cursor support
+  /// for City yet (that lands in 8.11/8.12). Called by `CityCollectionPuller`
+  /// from `SyncService`'s background pull cadence, never awaited from a
+  /// cubit or screen. Mirrors `GovernorateRepository.refreshGovernorates()`'s
+  /// own pre-8.6 interim shape.
+  Future<Either<Failure, Unit>> refreshCities();
+
   Future<Either<Failure, City>> createCity({required int governorateId, required String name, String? nameAr});
 
   /// Queues the create and immediately asks `SyncService` to replay it, so

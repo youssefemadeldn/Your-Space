@@ -31,6 +31,7 @@ void main() {
     registerFallbackValue(const City(id: 0, governorateId: 0, name: ''));
     registerFallbackValue(const CreateCityRequest(name: ''));
     registerFallbackValue(const UpdateCityRequest(name: ''));
+    registerFallbackValue(const <City>[]);
   });
 
   setUp(() {
@@ -188,6 +189,45 @@ void main() {
       expect(payload['governorateId'], 7);
 
       verifyNever(() => remote.deleteCity(any(), any()));
+    });
+  });
+
+  group('refreshCities', () {
+    test('loops every remote page and applies the concatenated, mapped entities as a snapshot', () async {
+      when(() => local.applyCitiesSnapshot(any())).thenAnswer((_) async {});
+      when(() => remote.getAllMineCities(search: any(named: 'search'), pageIndex: 1, pageSize: 200)).thenAnswer(
+        (_) async => const Right(PaginatedResponse(
+          items: [CityResponse(id: 1, governorateId: 7, name: 'Maadi')],
+          pageIndex: 1,
+          totalPages: 2,
+          totalItems: 2,
+        )),
+      );
+      when(() => remote.getAllMineCities(search: any(named: 'search'), pageIndex: 2, pageSize: 200)).thenAnswer(
+        (_) async => const Right(PaginatedResponse(
+          items: [CityResponse(id: 2, governorateId: 7, name: 'Nasr City')],
+          pageIndex: 2,
+          totalPages: 2,
+          totalItems: 2,
+        )),
+      );
+
+      final result = await repository.refreshCities();
+
+      expect(result, const Right(unit));
+      final captured = verify(() => local.applyCitiesSnapshot(captureAny())).captured.single as List<City>;
+      expect(captured.map((c) => c.id), [1, 2]);
+    });
+
+    test('stops and returns Left immediately on a failing page, without saving anything', () async {
+      const failure = NetworkFailure();
+      when(() => remote.getAllMineCities(search: any(named: 'search'), pageIndex: 1, pageSize: 200))
+          .thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.refreshCities();
+
+      expect(result, const Left(failure));
+      verifyNever(() => local.applyCitiesSnapshot(any()));
     });
   });
 }
