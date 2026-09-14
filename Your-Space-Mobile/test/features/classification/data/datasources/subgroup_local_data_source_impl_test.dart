@@ -120,4 +120,95 @@ void main() {
     final subGroups = await dataSource.watchSubGroups(groupId: 7, limit: 10).first;
     expect(subGroups, isEmpty);
   });
+
+  test('queueSubGroupMutation writes a dirty row and appends one outbox row', () async {
+    final rowId = await dataSource.queueSubGroupMutation(
+      subGroup: const SubGroup(id: -1, groupId: 7, name: 'Book club'),
+      operation: 'create',
+      payloadJson: '{"groupId":7,"name":"Book club"}',
+    );
+
+    final subGroups = await dataSource.watchSubGroups(groupId: 7, limit: 10).first;
+    expect(subGroups.single.name, 'Book club');
+    final outboxRows = await database.select(database.outboxTable).get();
+    expect(outboxRows.single.id, rowId);
+    expect(outboxRows.single.entityType, 'subgroup');
+    expect(outboxRows.single.operation, 'create');
+  });
+
+  test('confirmSyncedSubGroup overwrites the row and removes the outbox row', () async {
+    final rowId = await dataSource.queueSubGroupMutation(
+      subGroup: const SubGroup(id: 1, groupId: 7, name: 'Immediate Family'),
+      operation: 'update',
+      payloadJson: '{}',
+    );
+
+    await dataSource.confirmSyncedSubGroup(
+      const SubGroup(id: 1, groupId: 7, name: 'Immediate Family (Confirmed)'),
+      replayedOutboxRowId: rowId,
+    );
+
+    final subGroups = await dataSource.watchSubGroups(groupId: 7, limit: 10).first;
+    expect(subGroups.single.name, 'Immediate Family (Confirmed)');
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
+
+  test('reconcileCreatedSubGroup swaps the temp id for the real one and clears the outbox row', () async {
+    final rowId = await dataSource.queueSubGroupMutation(
+      subGroup: const SubGroup(id: -42, groupId: 7, name: 'Book club'),
+      operation: 'create',
+      payloadJson: '{}',
+    );
+
+    await dataSource.reconcileCreatedSubGroup(
+      tempId: -42,
+      realSubGroup: const SubGroup(id: 5, groupId: 7, name: 'Book club'),
+      replayedOutboxRowId: rowId,
+    );
+
+    final subGroups = await dataSource.watchSubGroups(groupId: 7, limit: 10).first;
+    expect(subGroups.map((s) => s.id), [5]);
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
+
+  group('queueDeletedSubGroup', () {
+    test('a real (positive) id is soft-tombstoned and queued for the outbox', () async {
+      await dataSource.saveSubGroup(const SubGroup(id: 1, groupId: 7, name: 'Immediate Family'));
+
+      await dataSource.queueDeletedSubGroup(1, payloadJson: '{"groupId":7}');
+
+      final subGroups = await dataSource.watchSubGroups(groupId: 7, limit: 10).first;
+      expect(subGroups, isEmpty);
+      final outboxRows = await database.select(database.outboxTable).get();
+      expect(outboxRows.single.entityType, 'subgroup');
+      expect(outboxRows.single.operation, 'delete');
+      expect(outboxRows.single.entityId, 1);
+    });
+
+    test('a never-synced temp (negative) id is removed locally with no outbox row', () async {
+      final rowId = await dataSource.queueSubGroupMutation(
+        subGroup: const SubGroup(id: -7, groupId: 7, name: 'Book club'),
+        operation: 'create',
+        payloadJson: '{}',
+      );
+
+      await dataSource.queueDeletedSubGroup(-7, payloadJson: '{"groupId":7}');
+
+      final subGroups = await dataSource.watchAllSubGroups(limit: 10).first;
+      expect(subGroups.where((s) => s.id == -7), isEmpty);
+      final outboxRows = await database.select(database.outboxTable).get();
+      expect(outboxRows.where((r) => r.id == rowId), isEmpty);
+    });
+  });
+
+  test('confirmDeletedSubGroup hard-removes the tombstoned row and its outbox row', () async {
+    await dataSource.saveSubGroup(const SubGroup(id: 1, groupId: 7, name: 'Immediate Family'));
+    await dataSource.queueDeletedSubGroup(1, payloadJson: '{"groupId":7}');
+    final outboxRowId = (await database.select(database.outboxTable).get()).single.id;
+
+    await dataSource.confirmDeletedSubGroup(1, replayedOutboxRowId: outboxRowId);
+
+    expect(await database.select(database.subGroupsTable).get(), isEmpty);
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
 }

@@ -25,6 +25,18 @@ abstract class SubGroupRepository {
 
   Future<Either<Failure, SubGroup>> createSubGroup({required int groupId, required String name, String? nameAr});
 
+  /// Queues the create and immediately asks `SyncService` to replay it, so
+  /// the caller gets back a real, server-confirmed id (or a failure) rather
+  /// than an optimistic temp id — for offline inline-add chains (e.g. the
+  /// wizard's "add new subgroup" affordance) that embed the returned id
+  /// directly into another entity's own payload, where reconciliation can't
+  /// reach it. Mirrors `CityRepository.createCityAndSync`.
+  Future<Either<Failure, SubGroup>> createSubGroupAndSync({
+    required int groupId,
+    required String name,
+    String? nameAr,
+  });
+
   Future<Either<Failure, SubGroup>> updateSubGroup({
     required int groupId,
     required int id,
