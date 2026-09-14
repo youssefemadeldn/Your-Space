@@ -67,13 +67,86 @@ Unchanged — still in sync with `lib/core/theme/`.
 code→canvas pass. Outstanding items across the whole design set:
 
 - Small within-artboard drift not hand-patched (per skill): Auth Register gender field
-  (authored as `2c`), Groups Arabic-name + "Manage subgroups", Home greeting line + stale
-  "Soon" badge, Person details Notes section, Event details "Reciprocity suggestions" CTA.
-- **No canvas file exists** for `onboarding`, `settings`, and the `classification`
-  management screens (Subgroups / Cities / Neighborhoods) — these need a dedicated Claude
-  Design pass to create the `.dc.html`; a code→canvas sync cannot.
+  (authored as `2c`), Groups Arabic-name + "Manage subgroups", Person details Notes
+  section, Event details "Reciprocity suggestions" CTA. (Home's greeting-header + stale
+  "Soon" badge drift was fixed as an explicit exception in the 2026-09-12 entry below.)
 - All newly authored artboards (`2c` in Auth, the 4 wizard steps + filters sheet in Core,
-  the 6-tab Add guests in Events) are flagged **unverified** and need a Claude Design review.
+  the 6-tab Add guests in Events, `0` Onboarding + `5`/`6` Settings/Classification in the
+  2026-09-12 entry below) are flagged **unverified** and need a Claude Design review.
+
+## 2026-09-12 — full-repo sync: bottom nav, 3 new artboards, Home drift confirmed
+
+Full run across all three canvases against current code (`/sync-design-screens-from-code-to-desing`,
+no feature arg). Token CSS re-checked exhaustively (`colors.css` / `typography.css` /
+`shape.css` against `AppColors` / `AppTextStyles` / `AppShadows`) — byte-for-byte match,
+no `motion.css` in this project, nothing to change.
+
+### Copy/state synced (existing artboards)
+
+- **Core Screens.dc.html** `nav` array — added the 5th **Settings** tab
+  (`{icon:'settings', label:t.settings}`), matching `AppBottomNav`'s 5-item
+  `_icons`/`_routes`/`_labelKeys` (`app_bottom_nav.dart:20-36`), which grew from 4 to 5
+  tabs since this canvas was built. Added `settings:'Settings'`/`'الإعدادات'` to both
+  `strings()` branches.
+- **Event Screens.dc.html** — same `nav` array addition + `settings` string, so the shared
+  bottom nav renders correctly on every Events-tab frame too.
+- No other existing-artboard copy changes — Auth Flow (Login/Register/OTP/Forgot/Reset/
+  Change-password) and the rest of Core Screens/Event Screens still match
+  `assets/translations/en.json` verbatim.
+
+### New artboards — **unverified, needs Claude Design review**
+
+- **`0 · Onboarding`** (Auth Flow.dc.html, before Login) — one representative frame (page 1
+  of 3): skip button, icon + title + body, dots indicator, Next CTA. Phone-chrome cloned
+  from the Login frame. Copy from `onboarding.skip/next/page1Title/page1Body`. Pages 2–3
+  intentionally not authored (identical pattern, different icon/copy) — curated scope per
+  the earlier screenshot-capture session's convention.
+- **`5 (current build) · Settings`** (Core Screens.dc.html) — avatar + replace-photo row,
+  a form card (First name / Last name / Phone / Save changes), and an actions card
+  (Change password / Log out / Delete account), bottom nav with Settings active. Copy from
+  `settings.*` + `auth.firstName/lastName/phone` + `common.saveChanges`. Composed entirely
+  from existing Card/Input/Button/ListTile imports — no new components.
+- **`6 (current build) · Classification management`** (Core Screens.dc.html) — one screen
+  shape (AppBar + parent-info row + search + list + create sheet + empty state) reused for
+  Subgroups/Cities/Neighborhoods via a new `classificationKind` data-props enum
+  (`Subgroup`/`City`/`Neighborhood`, default `Subgroup`), mirroring how
+  `Subgroup/City/NeighborhoodManagementScreen` in code share one body shape. Copy from the
+  three `classification.subgroup|city|neighborhood.*` blocks via a new `clsText(ar)` helper
+  on `DCLogic`. Cloned from the Groups-list/create-sheet frame pattern.
+
+### Structural drift — fixed as an explicit exception
+
+> حدث اختلاف في الهيكل بين التصميم الأصلي (Artboard) والكود الحقيقي (Real Code)؛ حيث أضاف
+> البرمجيون رأسًا يحتوي على (الصورة الشخصية + تحية حسب الوقت + أيقونة الإشعارات)، وشيّروا
+> النصوص الفرعية للبطاقات من نصوص وصفية إلى عدادات حية. مع العلم أن قاعدة المساعد (Skill)
+> تمنع إعادة هيكلة التصميم.
+
+- **Home** (Core Screens.dc.html, frames 1–2, "Default" and "Brand-new user"): initially
+  reported only, per the skill's copy/state-only scope. The user then explicitly authorized
+  an exception to restructure this one artboard. Applied:
+  - Replaced the logo-only header with an `Avatar` (initials) + a new `{{ t.greeting }}`
+    line (time-of-day greeting, e.g. "Good morning" / "صباح الخير") above the existing
+    `{{ t.hi }}` name line, plus a trailing `IconButton` (`notifications`) — matching
+    `home_screen.dart`'s `_header` (`AppAvatar` + `_greetingKey().tr()` + `home.hiName` +
+    a static notification bell). Applied to **both** frames — real code renders the same
+    `_header` regardless of empty/non-empty state.
+  - Groups/People/Events list-tile subtitles changed from descriptive copy
+    (`groupsSub`/`peopleSub`/`eventsSub`) to live-count placeholders ("6"/"48"/"3"),
+    matching `$groupsCount`/`$peopleCount`/`$eventsCount` in code. The Events row's custom
+    "Soon" `Badge` markup was replaced with a plain `ListTile` (icon `event`, count
+    subtitle, chevron via the component's own trailing default) — the events feature has
+    shipped, so "Soon" no longer matches the app.
+  - The empty-state frame's two 0/0 stat cards were **removed** — real code shows the
+    header + `EmptyStateWidget` only when `groupsCount == 0`, no stat row at all.
+  - `strings()`: removed the now-unused `hiSubFull`, `hiSubEmpty`, `groupsSub`, `peopleSub`,
+    `eventsSub`, `soon` keys (both branches); added `greeting`.
+  - Well-formedness re-verified after the edit (script re-parses, 262/262 `<div>` and
+    186/186 `<x-import>` tags balanced) and both frames re-screenshotted to confirm the
+    render matches code.
+
+### Token CSS
+
+Unchanged — re-verified against `lib/core/theme/*.dart`, still an exact match.
 
 ### Recommended next step
 

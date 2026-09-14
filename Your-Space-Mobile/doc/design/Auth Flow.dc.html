@@ -19,11 +19,33 @@
 </helmet>
 <div style="min-height:100vh;padding:36px 40px 56px;display:flex;flex-direction:column;gap:28px;align-items:flex-start">
   <div style="background:var(--surface);border-radius:16px;box-shadow:var(--shadow-soft);padding:20px 24px;max-width:1100px;display:flex;flex-direction:column;gap:8px">
-    <span style="font:var(--text-title-lg);color:var(--text-primary)">Auth flow — 1 Login · 2 Register · 3 Confirm email · 4 Forgot · 5 Reset · 6 Change password (settings)</span>
+    <span style="font:var(--text-title-lg);color:var(--text-primary)">Auth flow — 0 Onboarding · 1 Login · 2 Register · 3 Confirm email · 4 Forgot · 5 Reset · 6 Change password (settings)</span>
     <span style="font:var(--text-body-md);color:var(--text-secondary)">Fields and rules match the backend contract exactly: RegisterDto (FirstName, LastName, Email, PhoneNumber intl format, Password, ConfirmPassword), 6-digit OTP with 5 attempts (Otp.Invalid/LockedOut inline), anti-enumeration copy on forgot-password, Auth.Register.EmailExists inline under email, network failures → error Snackbar. Components reused from Login as approved; new here: the OTP input, built on the Input pattern.</span>
     <span style="font:var(--text-body-sm);color:var(--text-hint)">Try it: log in with password "password123" (an email containing "unverified" routes to Confirm email) · OTP "123456" verifies · register with an email containing "exists" → email-taken error · Change password accepts current password "password123" · Tweaks: Arabic/RTL, simulate network error.</span>
   </div>
   <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">0 · Onboarding — page 1 of 3 (unverified — needs Claude Design review)</span>
+      <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 26px 0;font:700 15px var(--font-body);color:var(--text-primary)"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+        <div style="display:flex;justify-content:flex-end;padding:8px 16px 0">
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" on-click="{{ noop }}" hint-size="70px,40px">{{ t.onbSkip }}</x-import>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:0 32px;text-align:center">
+          <span style="width:96px;height:96px;border-radius:50%;background:var(--brand-red-soft);display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:44px;color:var(--brand-primary)">groups</span></span>
+          <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.onbPage1Title }}</span>
+          <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.onbPage1Body }}</span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;padding-bottom:24px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--brand-primary)"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--divider)"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--divider)"></span>
+        </div>
+        <div style="padding:0 24px 24px">
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.onbNext }}</x-import>
+        </div>
+      </div>
+    </div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">1 · Login — default</span>
       <div dir="{{ dir }}" style="width:390px;height:880px;background:var(--surface);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
@@ -483,7 +505,8 @@ class Component extends DCLogic {
       regDoneMsg:'تم إنشاء حسابك! التالي: تأكيد بريدك الإلكتروني.',rpDoneMsg:'تمت إعادة تعيين كلمة المرور — سجّل الدخول بكلمتك الجديدة.',cpDoneMsg:'تم تحديث كلمة المرور. يرجى تسجيل الدخول مرة أخرى.',
       remember:'تذكرني',forgot:'نسيت كلمة المرور؟',noAccount:'ليس لديك حساب؟',signUp:'أنشئ حسابًا',
       loginError:'البريد الإلكتروني أو كلمة المرور غير صحيحة',loginDoneMsg:'أهلاً بعودتك! هنا تُفتح الشاشة الرئيسية.',
-      unvTitle:'أكّد بريدك الإلكتروني',unvBody:'حسابك لم يتم تأكيده بعد.',backLogin:'العودة لتسجيل الدخول'
+      unvTitle:'أكّد بريدك الإلكتروني',unvBody:'حسابك لم يتم تأكيده بعد.',backLogin:'العودة لتسجيل الدخول',
+      onbSkip:'تخطي',onbNext:'التالي',onbPage1Title:'أشخاصك، منظّمون',onbPage1Body:'حافظ على تنظيم كل صديق وفرد من العائلة ومعارفك في مجموعات — والآن مجموعات فرعية — لتعرف دائمًا من هو من، بالضبط عندما تحتاج إليهم.'
     }:{
       firstName:'First name',lastName:'Last name',email:'Email',phone:'Phone number',phoneOptional:'Phone number (optional)',genderOptional:'Gender (optional)',genderMale:'Male',genderFemale:'Female',
       password:'Password',confirmPassword:'Confirm password',newPassword:'New password',confirmNewPassword:'Confirm new password',currentPassword:'Current password',
@@ -499,7 +522,8 @@ class Component extends DCLogic {
       regDoneMsg:'Account created! Next: confirm your email.',rpDoneMsg:'Password reset — log in with your new password.',cpDoneMsg:'Password updated. Please log in again.',
       remember:'Remember me',forgot:'Forgot password?',noAccount:"Don't have an account?",signUp:'Sign up',
       loginError:'Incorrect email or password',loginDoneMsg:'Welcome back! This is where Home would load.',
-      unvTitle:'Confirm your email',unvBody:"Your account isn't verified yet.",backLogin:'Back to log in'
+      unvTitle:'Confirm your email',unvBody:"Your account isn't verified yet.",backLogin:'Back to log in',
+      onbSkip:'Skip',onbNext:'Next',onbPage1Title:'Your People, Organized',onbPage1Body:"Keep every friend, family member, and contact organized into groups — and now subgroups — so you always know who's who, right when you need them."
     };
   }
   strong(p){ return p.length>=8&&/[A-Z]/.test(p)&&/[a-z]/.test(p)&&/\d/.test(p)&&/[^A-Za-z0-9]/.test(p); }
