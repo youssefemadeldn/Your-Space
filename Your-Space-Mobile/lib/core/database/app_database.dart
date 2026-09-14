@@ -7,6 +7,7 @@ import 'tables/governorates_table.dart';
 import 'tables/groups_table.dart';
 import 'tables/outbox_table.dart';
 import 'tables/persons_table.dart';
+import 'tables/subgroups_table.dart';
 import 'tables/sync_state_table.dart';
 
 part 'app_database.g.dart';
@@ -19,7 +20,15 @@ part 'app_database.g.dart';
 /// enough; no `@preResolve` async DI wiring is needed.
 @lazySingleton
 @DriftDatabase(
-  tables: [PersonsTable, GroupsTable, GovernoratesTable, CitiesTable, OutboxTable, SyncStateTable],
+  tables: [
+    PersonsTable,
+    GroupsTable,
+    GovernoratesTable,
+    CitiesTable,
+    SubGroupsTable,
+    OutboxTable,
+    SyncStateTable,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -29,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,6 +68,12 @@ class AppDatabase extends _$AppDatabase {
           // rollout for City — same reasoning as above, no shipped users yet).
           if (from < 5) {
             await m.createTable(citiesTable);
+          }
+          // v5 -> v6: SubGroupsTable, Classification's row 8.13 (local-first
+          // rollout for SubGroup — same reasoning as above, no shipped users
+          // yet).
+          if (from < 6) {
+            await m.createTable(subGroupsTable);
           }
         },
       );
