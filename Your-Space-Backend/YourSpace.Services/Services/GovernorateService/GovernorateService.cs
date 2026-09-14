@@ -6,6 +6,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.LocationSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.GovernorateService.Dtos;
@@ -16,8 +17,18 @@ public class GovernorateService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<GovernorateService> logger) : IGovernorateService
 {
+    // Postgres sequence backing Governorate.SyncVersion (doc/local-first-sync-design.md §6) — one
+    // per synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "Governorates_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is small (27 global rows +
+    // a user's own custom ones), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "Governorate.NotFound";
@@ -25,6 +36,7 @@ public class GovernorateService(
         public const string NotOwned = "Governorate.NotOwned";
         public const string HasActiveCities = "Governorate.HasActiveCities";
         public const string HasActivePersons = "Governorate.HasActivePersons";
+        public const string SinceInvalid = "Governorate.Since.Invalid";
     }
 
     public async Task<ServiceResult<GovernorateDetailsDto>> GetDetailsAsync(string ownerUserId, int id)
@@ -77,7 +89,8 @@ public class GovernorateService(
             OwnerUserId = ownerUserId,
             IsLocked = false,
             Name = dto.Name,
-            NameAr = dto.NameAr
+            NameAr = dto.NameAr,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(governorate);
@@ -114,6 +127,7 @@ public class GovernorateService(
         }
 
         governorate.UpdatedAt = DateTime.UtcNow;
+        governorate.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(governorate);
         await unitOfWork.SaveChangesAsync();
 
@@ -156,11 +170,47 @@ public class GovernorateService(
 
         governorate.DeletedAt = DateTime.UtcNow;
         governorate.UpdatedAt = DateTime.UtcNow;
+        governorate.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(governorate);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("Governorate {GovernorateId} soft-deleted for user {UserId}", id, ownerUserId);
         return ServiceResult.Ok("Governorate deleted successfully.");
+    }
+
+    public async Task<ServiceResult<GovernorateChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<GovernorateChangesDto>.Fail(localizer["Governorate.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<Governorate, int>();
+        var rows = await repo.ListAllWithSpecAsync(new GovernorateWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(g => g.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(g => g.DeletedAt != null).Select(g => g.Id).ToList();
+
+        // PersonCount isn't part of the delta-sync payload's shape — every other
+        // GovernorateProfileDto mapping call in this service sets it explicitly after mapping
+        // (a batch person-count query), but a changes page has no such context and the mobile
+        // client's local cache never reads it (design doc §8: server-computed values stay
+        // network-only, never cached) — left at the AutoMapper default (0).
+        var upserts = upsertRows.Select(mapper.Map<GovernorateProfileDto>).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(g => g.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<GovernorateChangesDto>.Ok(new GovernorateChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 
     // Returns a non-null "reason" result when editing is blocked (locked seeded row, or — as

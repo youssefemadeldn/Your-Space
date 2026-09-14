@@ -32,6 +32,16 @@ public class GovernoratesController(IGovernorateService governorateService) : Co
         return new ResultActionResult<GovernorateDetailsDto>(result);
     }
 
+    // Delta-sync pull (doc/local-first-sync-design.md §6) — row 8.5 of the delivery plan. `since`
+    // is the caller's last-seen SyncVersion cursor (0 on a first-ever sync); `pageSize` is
+    // clamped server-side in GovernorateService.
+    [HttpGet("changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await governorateService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<GovernorateChangesDto>(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateGovernorateDto dto)
     {

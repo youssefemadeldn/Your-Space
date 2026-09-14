@@ -32,7 +32,7 @@ public static class MockDataSeeder
 
         await SeedGroupsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedSubGroupsAsync(context, activeUserId, lockedUserId);
-        await SeedGovernoratesAsync(context, activeUserId);
+        await SeedGovernoratesAsync(context, activeUserId, syncVersionProvider);
         await SeedCitiesAsync(context, activeUserId);
         await SeedNeighborhoodsAsync(context, activeUserId);
         await SeedPersonsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
@@ -264,7 +264,7 @@ public static class MockDataSeeder
     // in every environment before this runs — all this adds is the dev-only edge case: one
     // user-owned custom row, exercising the "global OR mine" visibility rule and the
     // not-locked/fully-editable path (CLAUDE.md Rule 9).
-    private static async Task SeedGovernoratesAsync(YourSpaceDbContext context, string activeUserId)
+    private static async Task SeedGovernoratesAsync(YourSpaceDbContext context, string activeUserId, ISyncVersionProvider syncVersionProvider)
     {
         const string customName = "Custom Region (Seed)";
         if (await context.Governorates.AnyAsync(g => g.OwnerUserId == activeUserId && g.Name == customName))
@@ -272,8 +272,18 @@ public static class MockDataSeeder
             return;
         }
 
-        await context.Governorates.AddAsync(
-            new Governorate { OwnerUserId = activeUserId, IsLocked = false, Name = customName });
+        // Seeding inserts directly via the DbContext, bypassing GovernorateService — so
+        // SyncVersion (which GovernorateService assigns on every real write,
+        // doc/local-first-sync-design.md §6) must be assigned here too, or this seeded row would
+        // be stuck at the column default and collide with the global rows under a
+        // `WHERE SyncVersion > @since` delta-sync query.
+        await context.Governorates.AddAsync(new Governorate
+        {
+            OwnerUserId = activeUserId,
+            IsLocked = false,
+            Name = customName,
+            SyncVersion = await syncVersionProvider.NextValueAsync("Governorates_SyncVersion_seq")
+        });
         await context.SaveChangesAsync();
     }
 
