@@ -33,6 +33,21 @@ public class GovernorateWithSpecs : BaseSpecification<Governorate>
         ApplyPaging(paging.PageSize * (paging.PageIndex - 1), paging.PageSize);
     }
 
+    // Delta-sync "changes since" query (doc/local-first-sync-design.md §6) — deliberately no
+    // DeletedAt filter: tombstones (soft-deleted rows) must be included so the caller can tell
+    // the client to remove them. Widened OwnerUserId predicate (global-or-mine, same as every
+    // other GovernorateWithSpecs overload) — a global row's SyncVersion is assigned exactly once
+    // at seed time and never mutates again (locked rows can't reach Update/Delete), so it
+    // surfaces once on a user's first-ever pull and never reappears. Ordered by SyncVersion, not
+    // CreatedAt/UpdatedAt, so the cursor stays unambiguous even for two rows written in the same
+    // millisecond.
+    public GovernorateWithSpecs(string ownerUserId, long since, int pageSize)
+        : base(g => (g.OwnerUserId == null || g.OwnerUserId == ownerUserId) && g.SyncVersion > since)
+    {
+        ApplyOrderBy(g => g.SyncVersion);
+        ApplyPaging(0, pageSize);
+    }
+
     private static Expression<Func<Governorate, bool>> BuildPredicate(string ownerUserId, string? search)
         => g => (g.OwnerUserId == null || g.OwnerUserId == ownerUserId)
             && g.DeletedAt == null

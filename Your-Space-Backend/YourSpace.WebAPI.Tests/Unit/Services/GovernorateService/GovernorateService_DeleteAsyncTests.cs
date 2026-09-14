@@ -4,6 +4,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using GovernorateServiceImpl = YourSpace.Services.Services.GovernorateService.GovernorateService;
 
@@ -15,18 +16,21 @@ public class GovernorateService_DeleteAsyncTests
     private readonly Mock<IGenericRepository<Governorate, int>> _governorateRepo = new();
     private readonly Mock<IGenericRepository<City, int>> _cityRepo = new();
     private readonly Mock<IGenericRepository<Person, int>> _personRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public GovernorateService_DeleteAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Governorate, int>()).Returns(_governorateRepo.Object);
         _unitOfWork.Setup(u => u.Repository<City, int>()).Returns(_cityRepo.Object);
         _unitOfWork.Setup(u => u.Repository<Person, int>()).Returns(_personRepo.Object);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private GovernorateServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<GovernorateServiceImpl>>());
 
     [Fact]
@@ -97,5 +101,20 @@ public class GovernorateService_DeleteAsyncTests
         governorate.DeletedAt.Should().NotBeNull();
         _governorateRepo.Verify(r => r.Update(governorate), Times.Once);
         _unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Assigns_a_new_syncversion_on_soft_delete()
+    {
+        var governorate = new Governorate { Id = 5, OwnerUserId = "owner-1", Name = "My Governorate", IsLocked = false, SyncVersion = 1 };
+        _governorateRepo.Setup(r => r.GetByIdWithSpecAsync(It.IsAny<ISpecification<Governorate>>())).ReturnsAsync(governorate);
+        _cityRepo.Setup(r => r.CountWithSpecAsync(It.IsAny<ISpecification<City>>())).ReturnsAsync(0);
+        _personRepo.Setup(r => r.CountWithSpecAsync(It.IsAny<ISpecification<Person>>())).ReturnsAsync(0);
+        _syncVersionProvider.Setup(s => s.NextValueAsync("Governorates_SyncVersion_seq", It.IsAny<CancellationToken>())).ReturnsAsync(42);
+
+        var result = await CreateSut().DeleteAsync("owner-1", 5);
+
+        result.Success.Should().BeTrue();
+        governorate.SyncVersion.Should().Be(42);
     }
 }

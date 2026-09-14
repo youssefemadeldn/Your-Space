@@ -217,6 +217,9 @@
   <data name="Governorate.Name.MaxLength" xml:space="preserve">
     <value>يجب ألا يتجاوز اسم المحافظة 200 حرف.</value>
   </data>
+  <data name="Governorate.Since.Invalid" xml:space="preserve">
+    <value>مؤشر المزامنة يجب ألا يكون سالبًا.</value>
+  </data>
   <data name="City.NotFound" xml:space="preserve">
     <value>المدينة غير موجودة.</value>
   </data>

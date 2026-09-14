@@ -38,6 +38,11 @@ public class ReferenceDataSeederTests(TestWebApplicationFactory factory) : IClas
         globals.Should().Contain(g => g.Name == "Cairo" && g.NameAr == "القاهرة");
         globals.Should().Contain(g => g.Name == "South Sinai" && g.NameAr == "جنوب سيناء");
         globals.Select(g => g.Name).Should().BeEquivalentTo(EgyptianGovernorates.All.Select(g => g.En));
+        // Delta-sync fields (doc/local-first-sync-design.md §6, row 8.5) — every seeded global row
+        // needs a real SyncVersion, or it would be indistinguishable to a
+        // `WHERE SyncVersion > @since` pull and never surface to any user.
+        globals.Should().OnlyContain(g => g.SyncVersion > 0);
+        globals.Select(g => g.SyncVersion).Should().OnlyHaveUniqueItems();
     }
 
     [Fact]
@@ -73,7 +78,7 @@ public class ReferenceDataSeederTests(TestWebApplicationFactory factory) : IClas
 
         var globals = context.Governorates.Where(g => g.OwnerUserId == null).ToList();
         globals.Should().HaveCount(EgyptianGovernorates.All.Count);
-        globals.Should().ContainSingle(g => g.Name == "Luxor" && g.NameAr == "الأقصر");
+        globals.Should().ContainSingle(g => g.Name == "Luxor" && g.NameAr == "الأقصر" && g.SyncVersion > 0);
     }
 
     [Fact]
