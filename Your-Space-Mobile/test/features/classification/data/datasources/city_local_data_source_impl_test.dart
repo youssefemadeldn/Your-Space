@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -243,6 +244,96 @@ void main() {
       final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
       expect(row.isDeleted, isFalse);
       expect(row.name, 'Back Again');
+    });
+  });
+
+  group('applyCityChanges', () {
+    test('upserts a clean row given in upserts', () async {
+      await dataSource.applyCityChanges(
+        upserts: const [City(id: 1, governorateId: 7, name: 'From Server')],
+        tombstoneIds: const [],
+      );
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a dirty row is not overwritten by an upsert for the same id', () async {
+      await dataSource.queueCityMutation(
+        city: const City(id: 1, governorateId: 7, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyCityChanges(
+        upserts: const [City(id: 1, governorateId: 7, name: 'From Server')],
+        tombstoneIds: const [],
+      );
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDirty, isTrue);
+    });
+
+    test('tombstones exactly the ids given in tombstoneIds — no absence inference', () async {
+      await dataSource.saveCities(const [
+        City(id: 1, governorateId: 7, name: 'Untouched'),
+        City(id: 2, governorateId: 7, name: 'Removed'),
+      ]);
+
+      await dataSource.applyCityChanges(upserts: const [], tombstoneIds: const [2]);
+
+      final untouched = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(untouched.isDeleted, isFalse);
+      final removed = await (database.select(database.citiesTable)..where((t) => t.id.equals(2))).getSingle();
+      expect(removed.isDeleted, isTrue);
+    });
+
+    test('a dirty row is not tombstoned even if its id is given in tombstoneIds', () async {
+      await dataSource.queueCityMutation(
+        city: const City(id: 1, governorateId: 7, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyCityChanges(upserts: const [], tombstoneIds: const [1]);
+
+      final row = await (database.select(database.citiesTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.isDirty, isTrue);
+    });
+  });
+
+  group('getCitiesSyncCursor / saveCitiesSyncCursor', () {
+    test('reads 0 when never synced', () async {
+      expect(await dataSource.getCitiesSyncCursor(), 0);
+    });
+
+    test('round-trips a saved cursor', () async {
+      await dataSource.saveCitiesSyncCursor(137);
+
+      expect(await dataSource.getCitiesSyncCursor(), 137);
+    });
+
+    test('a later save overwrites the earlier value', () async {
+      await dataSource.saveCitiesSyncCursor(50);
+      await dataSource.saveCitiesSyncCursor(90);
+
+      expect(await dataSource.getCitiesSyncCursor(), 90);
+    });
+
+    test('does not clobber a previously-written lastSyncedAt', () async {
+      final syncedAt = DateTime(2026, 9, 13);
+      await database.into(database.syncStateTable).insertOnConflictUpdate(
+            SyncStateTableCompanion.insert(collection: 'cities', lastSyncedAt: Value(syncedAt)),
+          );
+
+      await dataSource.saveCitiesSyncCursor(137);
+
+      final row =
+          await (database.select(database.syncStateTable)..where((t) => t.collection.equals('cities'))).getSingle();
+      expect(row.cursor, '137');
+      expect(row.lastSyncedAt, syncedAt);
     });
   });
 }
