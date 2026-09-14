@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/constants/app_constants.dart';
-import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/neighborhood.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
@@ -145,12 +144,10 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
           availableSubGroups: subGroupsResult.fold((_) => const <SubGroup>[], (p) => p.items),
         );
 
-        final citiesResult = await _cityRepository.getCities(
-          governorateId: person.governorateId,
-          pageIndex: 1,
-          pageSize: 50,
-        );
-        ready = ready.copyWith(availableCities: citiesResult.fold((_) => const <City>[], (p) => p.items));
+        // City is local-first (row 8.8) — a local read can't fail the way a
+        // network call can.
+        final cities = await _cityRepository.watchCities(governorateId: person.governorateId, limit: 50).first;
+        ready = ready.copyWith(availableCities: cities);
 
         if (person.cityId != null) {
           final neighborhoodsResult =
@@ -279,8 +276,10 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
 
   Future<void> selectGovernorate(int governorateId) async {
     _updateReady((r) => r.copyWith(governorateId: governorateId, clearCity: true, clearNeighborhood: true));
-    final result = await _cityRepository.getCities(governorateId: governorateId, pageIndex: 1, pageSize: 50);
-    _updateReady((r) => r.copyWith(availableCities: result.fold((_) => const [], (p) => p.items)));
+    // City is local-first (row 8.8) — a local read can't fail the way a
+    // network call can.
+    final cities = await _cityRepository.watchCities(governorateId: governorateId, limit: 50).first;
+    _updateReady((r) => r.copyWith(availableCities: cities));
   }
 
   Future<int?> addGovernorateInline(String name) async {

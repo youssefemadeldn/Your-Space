@@ -258,11 +258,8 @@ void main() {
             pageIndex: any(named: 'pageIndex'),
             pageSize: any(named: 'pageSize'),
           )).thenAnswer((_) async => Right(_page(const [])));
-      when(() => cityRepository.getCities(
-            governorateId: any(named: 'governorateId'),
-            pageIndex: any(named: 'pageIndex'),
-            pageSize: any(named: 'pageSize'),
-          )).thenAnswer((_) async => Right(_page(const [])));
+      when(() => cityRepository.watchCities(governorateId: any(named: 'governorateId'), limit: any(named: 'limit')))
+          .thenAnswer((_) => Stream.value(const []));
       await cubit.selectGroup(1);
       await cubit.selectGovernorate(1);
       cubit.updateName('New Person');

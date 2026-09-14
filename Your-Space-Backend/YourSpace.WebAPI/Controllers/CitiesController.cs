@@ -25,6 +25,17 @@ public class CitiesController(ICityService cityService) : ControllerBase
         return new ResultActionResult<PaginatedResultDto<CityProfileDto>>(result);
     }
 
+    // Flat "all mine" pull (doc/local-first-sync-design.md §11 row 8.8) — governorate-agnostic,
+    // feeds the mobile Tier 1 bulk sync. Route override (absolute path, no {governorateId}
+    // segment) on this same controller rather than a separate one, since the service method and
+    // DTO are identical to GetAll above.
+    [HttpGet("~/api/v{version:apiVersion}/cities")]
+    public async Task<IActionResult> GetAllMine([FromQuery] string? search, [FromQuery] PaginationSpecification pagination)
+    {
+        var result = await cityService.GetAllMineAsync(GetUserId(), search, pagination);
+        return new ResultActionResult<PaginatedResultDto<CityProfileDto>>(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int governorateId, int id)
     {

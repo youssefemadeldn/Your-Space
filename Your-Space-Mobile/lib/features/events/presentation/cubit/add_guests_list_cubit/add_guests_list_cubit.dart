@@ -107,12 +107,10 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
   Future<void> loadCitiesForGovernorate(int governorateId) async {
     final current = state;
     if (current is! AddGuestsListSuccess) return;
-    final result =
-        await _cityRepository.getCities(governorateId: governorateId, pageIndex: 1, pageSize: _refPageSize);
-    result.fold(
-      (_) {},
-      (page) => emit(current.copyWith(cityOptions: page.items)),
-    );
+    // City is local-first (row 8.8) — a local read can't fail the way a
+    // network call can.
+    final cities = await _cityRepository.watchCities(governorateId: governorateId, limit: _refPageSize).first;
+    emit(current.copyWith(cityOptions: cities));
   }
 
   /// Populates the "by neighborhood" tab's child list once a city is selected.

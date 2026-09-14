@@ -9,9 +9,11 @@ import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/city_response.dart';
 import '../models/create_city_request.dart';
 import '../models/update_city_request.dart';
+import 'base_city_data_source.dart';
 
-@lazySingleton
-class CityRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseCityDataSource)
+class CityRemoteDataSourceImpl implements BaseCityDataSource {
   final ApiManager _api;
 
   CityRemoteDataSourceImpl(this._api);
@@ -19,6 +21,7 @@ class CityRemoteDataSourceImpl {
   String _basePath(int governorateId) =>
       '${ApiConstants.governorates}/$governorateId/${ApiConstants.citiesSegment}';
 
+  @override
   Future<Either<Failure, PaginatedResponse<CityResponse>>> getCities({
     required int governorateId,
     String? search,
@@ -37,6 +40,25 @@ class CityRemoteDataSourceImpl {
         ),
       );
 
+  @override
+  Future<Either<Failure, PaginatedResponse<CityResponse>>> getAllMineCities({
+    String? search,
+    required int pageIndex,
+    required int pageSize,
+  }) =>
+      _api.get<PaginatedResponse<CityResponse>>(
+        path: ApiConstants.cities,
+        queryParameters: {'search': ?search, 'pageIndex': pageIndex, 'pageSize': pageSize},
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => PaginatedResponse.fromJson(
+            inner as Map<String, dynamic>,
+            (item) => CityResponse.fromJson(item as Map<String, dynamic>),
+          ),
+        ),
+      );
+
+  @override
   Future<Either<Failure, CityResponse>> createCity(int governorateId, CreateCityRequest request) =>
       _api.post<CityResponse>(
         path: _basePath(governorateId),
@@ -47,6 +69,7 @@ class CityRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, CityResponse>> updateCity(int governorateId, int id, UpdateCityRequest request) =>
       _api.put<CityResponse>(
         path: '${_basePath(governorateId)}/$id',
@@ -57,6 +80,7 @@ class CityRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, Unit>> deleteCity(int governorateId, int id) => _api.delete<Unit>(
         path: '${_basePath(governorateId)}/$id',
         fromJson: (_) => unit,
