@@ -531,7 +531,7 @@ class Component extends DCLogic {
     const ar = (this.props.language ?? 'English') === 'العربية';
     const chips = (this.props.groupFilter ?? 'Chips') === 'Chips';
     const t = ar ? {
-      home:'الرئيسية', groups:'المجموعات', people:'الأشخاص', events:'المناسبات',
+      home:'الرئيسية', groups:'المجموعات', people:'الأشخاص', events:'المناسبات', settings:'الإعدادات',
       g1:'العائلة المقرّبة', g2:'عائلة ماما', g3:'الجيران', g4:'أصدقاء الجامعة', g5:'العمل', g6:'كورة نهاية الأسبوع',
       searchEvents:'ابحث عن مناسبة',
       eventsEmptyTitle:'لا توجد مناسبات بعد',
@@ -565,7 +565,7 @@ class Component extends DCLogic {
       suggestionsEmptyTitle:'لا يوجد أحد جديد لاقتراحه الآن.',
       suggestionsEmptyBody:'الجميع الذين تمت دعوتك من قبلهم موجودون بالفعل في قائمة ضيوف هذه المناسبة — عمل رائع.'
     } : {
-      home:'Home', groups:'Groups', people:'People', events:'Events',
+      home:'Home', groups:'Groups', people:'People', events:'Events', settings:'Settings',
       g1:'Close family', g2:"Mum's side", g3:'Neighbours', g4:'University friends', g5:'Work', g6:'Weekend football',
       searchEvents:'Search events',
       eventsEmptyTitle:'No events yet',
@@ -670,7 +670,8 @@ class Component extends DCLogic {
         {icon:'home', label:t.home},
         {icon:'group', label:t.groups},
         {icon:'person', label:t.people},
-        {icon:'event', label:t.events}
+        {icon:'event', label:t.events},
+        {icon:'settings', label:t.settings}
       ],
       n3:3,
       groupOptions:[t.g1,t.g2,t.g3,t.g4,t.g5,t.g6],

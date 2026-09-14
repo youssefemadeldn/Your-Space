@@ -34,12 +34,13 @@
         <span style="font:var(--text-body-sm);color:var(--text-hint)">Default</span>
         <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
-          <div style="background:var(--surface);padding:10px 16px 22px;display:flex;flex-direction:column;gap:18px;flex-shrink:0">
-            <span dir="ltr" style="display:flex;align-items:center;gap:10px;align-self:flex-start"><img src="assets/logo.svg" width="32" height="32" alt="Your Space mark"><span style="font:800 20px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></span>
-            <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="background:var(--surface);padding:12px 16px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Avatar" name="Nour Hosny" size="{{ 44 }}" hint-size="44px,44px"></x-import>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+              <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ t.greeting }}</span>
               <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.hi }}</span>
-              <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.hiSubFull }}</span>
             </div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.IconButton" icon="notifications" size="{{ 40 }}" on-click="{{ noop }}" hint-size="40px,40px"></x-import>
           </div>
           <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:16px">
             <div style="display:flex;gap:12px">
@@ -57,16 +58,9 @@
               </x-import></div>
             </div>
             <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,220px">
-              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.groups }}" subtitle="{{ t.groupsSub }}" icon="group" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,68px"></x-import>
-              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.people }}" subtitle="{{ t.peopleSub }}" icon="person" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,68px"></x-import>
-              <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:56px">
-                <span style="width:44px;height:44px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:20px;color:var(--text-secondary)">event</span></span>
-                <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-                  <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ t.events }}</span>
-                  <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ t.eventsSub }}</span>
-                </div>
-                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Badge" tone="neutral" hint-size="auto,26px">{{ t.soon }}</x-import>
-              </div>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.groups }}" subtitle="6" icon="group" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,68px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.people }}" subtitle="48" icon="person" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,68px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.events }}" subtitle="3" icon="event" on-click="{{ noop }}" hint-size="100%,68px"></x-import>
             </x-import>
           </div>
           <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.BottomNav" items="{{ nav }}" active="{{ n0 }}" on-select="{{ noop }}" hint-size="100%,68px"></x-import>
@@ -77,28 +71,15 @@
         <span style="font:var(--text-body-sm);color:var(--text-hint)">Brand-new user · nothing added yet</span>
         <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
-          <div style="background:var(--surface);padding:10px 16px 22px;display:flex;flex-direction:column;gap:18px;flex-shrink:0">
-            <span dir="ltr" style="display:flex;align-items:center;gap:10px;align-self:flex-start"><img src="assets/logo.svg" width="32" height="32" alt="Your Space mark"><span style="font:800 20px/1 var(--font-display);letter-spacing:-0.01em;color:var(--brand-black)">Your <span style="color:var(--brand-primary)">Space</span></span></span>
-            <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="background:var(--surface);padding:12px 16px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Avatar" name="Nour Hosny" size="{{ 44 }}" hint-size="44px,44px"></x-import>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+              <span style="font:var(--text-body-sm);color:var(--text-secondary)">{{ t.greeting }}</span>
               <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.hi }}</span>
-              <span style="font:var(--text-body-md);color:var(--text-secondary)">{{ t.hiSubEmpty }}</span>
             </div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.IconButton" icon="notifications" size="{{ 40 }}" on-click="{{ noop }}" hint-size="40px,40px"></x-import>
           </div>
           <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:16px">
-            <div style="display:flex;gap:12px">
-              <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 18 }}" hint-size="100%,92px">
-                <div style="display:flex;flex-direction:column;gap:2px">
-                  <span dir="ltr" style="font:var(--text-display-md);color:var(--text-hint)">0</span>
-                  <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.statGroups }}</span>
-                </div>
-              </x-import></div>
-              <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 18 }}" hint-size="100%,92px">
-                <div style="display:flex;flex-direction:column;gap:2px">
-                  <span dir="ltr" style="font:var(--text-display-md);color:var(--text-hint)">0</span>
-                  <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">{{ t.statPeople }}</span>
-                </div>
-              </x-import></div>
-            </div>
             <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 8 }}" hint-size="100%,300px">
               <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.EmptyState" icon="group_add" title="{{ t.emptyHomeTitle }}" body="{{ t.emptyHomeBody }}" hint-size="100%,230px"></x-import>
               <div style="display:flex;justify-content:center;padding:0 24px 20px">
@@ -742,23 +723,131 @@
     </div>
   </div>
 
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">5 (current build) · Settings (unverified — needs Claude Design review)</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Profile form + account actions</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:20px">
+            <span style="font:var(--text-headline-sm);color:var(--text-primary)">{{ t.settings }}</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+              <span style="width:88px;height:88px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center"><span class="msr" style="font-size:36px;color:var(--text-hint)">person</span></span>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="text" size="sm" on-click="{{ noop }}" hint-size="140px,36px">{{ t.replacePhoto }}</x-import>
+              <span style="font:var(--text-body-sm);color:var(--text-hint)">{{ t.photoHint }}</span>
+            </div>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 18 }}" hint-size="100%,260px">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.firstName }}" value="Nour" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.lastName }}" value="Hosny" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" label="{{ t.phone }}" dir="ltr" value="+201234567890" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.saveChanges }}</x-import>
+              </div>
+            </x-import>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,168px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.changePasswordRow }}" icon="lock" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,56px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.logoutRow }}" icon="logout" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,56px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.deleteAccountRow }}" icon="delete" on-click="{{ noop }}" hint-size="100%,56px"></x-import>
+            </x-import>
+          </div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.BottomNav" items="{{ nav }}" active="{{ n4 }}" on-select="{{ noop }}" hint-size="100%,68px"></x-import>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font:var(--text-label-sm);letter-spacing:var(--ls-label-sm);text-transform:uppercase;color:var(--text-secondary)">6 (current build) · Classification management — Subgroup / City / Neighborhood, one screen (unverified — needs Claude Design review)</span>
+    <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Reached from Groups (subgroups) and the person wizard's location step (city / neighborhood) — toggle "classificationKind" above</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ cls.screenTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:12px 16px;background:var(--surface);display:flex;align-items:center;gap:10px">
+            <span style="width:36px;height:36px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">folder</span></span>
+            <div style="display:flex;flex-direction:column">
+              <span style="font:var(--text-body-sm);color:var(--text-hint)">{{ cls.parentLabel }}</span>
+              <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ cls.parentName }}</span>
+            </div>
+          </div>
+          <div style="padding:8px 16px 12px;background:var(--surface)">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ cls.searchHint }}" icon="search" value="" on-change="{{ noop }}" hint-size="100%,52px"></x-import>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 6 }}" hint-size="100%,320px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.g1 }}" subtitle="{{ cls.itemCaption }}" icon="folder" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,64px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.g5 }}" subtitle="{{ cls.itemCaption }}" icon="folder" divider="{{ true }}" on-click="{{ noop }}" hint-size="100%,64px"></x-import>
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.ListTile" title="{{ t.g3 }}" subtitle="{{ cls.itemCaption }}" icon="folder" on-click="{{ noop }}" hint-size="100%,64px"></x-import>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Create sheet — same for all three kinds</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ cls.screenTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="position:absolute;inset:0;background:rgba(11,11,11,.42);z-index:4"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-radius:28px 28px 0 0;box-shadow:var(--shadow-soft-lg);padding:12px 20px 24px;display:flex;flex-direction:column;gap:16px">
+            <span style="width:40px;height:4px;border-radius:2px;background:var(--divider);align-self:center"></span>
+            <span style="font:var(--text-title-lg);color:var(--text-primary)">{{ cls.createTitle }}</span>
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Input" placeholder="{{ cls.namePlaceholder }}" value="" on-change="{{ noop }}" hint-size="100%,84px"></x-import>
+            <div style="display:flex;gap:12px">
+              <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" variant="secondary" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ t.cancel }}</x-import></div>
+              <div style="flex:1"><x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" full-width="{{ true }}" on-click="{{ noop }}" hint-size="100%,52px">{{ cls.createCta }}</x-import></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:var(--text-body-sm);color:var(--text-hint)">Empty state</span>
+        <div dir="{{ dir }}" style="width:390px;height:800px;background:var(--bg-app);border-radius:32px;box-shadow:var(--shadow-soft-lg);overflow:hidden;position:relative;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font:700 15px var(--font-body);color:var(--text-primary);background:var(--surface);flex-shrink:0"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="msr" style="font-size:16px">signal_cellular_alt</span><span class="msr" style="font-size:16px">wifi</span><span class="msr" style="font-size:16px">battery_full</span></span></div>
+          <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.AppBar" title="{{ cls.screenTitle }}" on-back="{{ noop }}" hint-size="100%,56px"></x-import>
+          <div style="padding:12px 16px;background:var(--surface);display:flex;align-items:center;gap:10px">
+            <span style="width:36px;height:36px;border-radius:50%;background:var(--input-fill);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="msr" style="font-size:18px;color:var(--text-secondary)">folder</span></span>
+            <div style="display:flex;flex-direction:column">
+              <span style="font:var(--text-body-sm);color:var(--text-hint)">{{ cls.parentLabel }}</span>
+              <span style="font:var(--text-label-lg);font-weight:700;color:var(--text-primary)">{{ cls.parentName }}</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:16px">
+            <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Card" padding="{{ 8 }}" hint-size="100%,280px">
+              <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.EmptyState" icon="folder_off" title="{{ cls.emptyTitle }}" body="{{ cls.emptyBody }}" hint-size="100%,210px"></x-import>
+              <div style="display:flex;justify-content:center;padding:0 24px 20px">
+                <x-import component-from-global-scope="YourSpaceDesignSystem_d7e9f7.Button" icon="add" on-click="{{ noop }}" hint-size="200px,52px">{{ cls.addLabel }}</x-import>
+              </div>
+            </x-import>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:1150},
 &quot;language&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;English&quot;,&quot;العربية&quot;],&quot;default&quot;:&quot;English&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;},
 &quot;showReciprocity&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},
 &quot;groupFilter&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Chips&quot;,&quot;Dropdown&quot;],&quot;default&quot;:&quot;Chips&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;},
-&quot;showPhoneInRows&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+&quot;showPhoneInRows&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},
+&quot;classificationKind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Subgroup&quot;,&quot;City&quot;,&quot;Neighborhood&quot;],&quot;default&quot;:&quot;Subgroup&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
 class Component extends DCLogic {
   renderVals(){
     const ar = (this.props.language ?? 'English') === 'العربية';
     const recip = this.props.showReciprocity ?? true;
     const chips = (this.props.groupFilter ?? 'Chips') === 'Chips';
     const t = ar ? {
-      hi:'أهلاً نور', hiSubFull:'هؤلاء هم المقرّبون إليك.', hiSubEmpty:'لنجمع من تحب في مكان واحد.',
-      home:'الرئيسية', groups:'المجموعات', people:'الأشخاص', events:'المناسبات', soon:'قريبًا',
-      groupsSub:'6 مجموعات · العائلة، العمل، الجيران', peopleSub:'48 شخصًا في مجموعاتك',
-      eventsSub:'خطّط لمناسبة وتابع دعواتك',
+      hi:'أهلاً نور', greeting:'صباح الخير',
+      home:'الرئيسية', groups:'المجموعات', people:'الأشخاص', events:'المناسبات',
       statGroups:'مجموعات', statPeople:'أشخاص',
       emptyHomeTitle:'ابدأ بمجموعة واحدة',
       emptyHomeBody:'تساعدك المجموعات على تنظيم من هو من — العائلة، الأصدقاء، العمل، الجيران.',
@@ -806,12 +895,13 @@ class Component extends DCLogic {
       wizRelSection:'العائلة والعلاقات', wizFamilyMember1:'فرد العائلة ١', wizRelTypePh:'اختر نوع العلاقة', wizAddFamily:'إضافة فرد من العائلة',
       wizNotesHint:'أي شيء يستحق أن تتذكره عن هذا الشخص',
       filtersTitle:'الفلاتر', filtersClearAll:'مسح الكل', filtersLocation:'الموقع', filtersSubGroup:'المجموعة الفرعية', filtersCity:'المدينة', filtersNb:'الحي',
-      filtersAllGov:'كل المحافظات', filtersAllCities:'كل المدن', filtersAllNb:'كل الأحياء'
+      filtersAllGov:'كل المحافظات', filtersAllCities:'كل المدن', filtersAllNb:'كل الأحياء',
+      settings:'الإعدادات', firstName:'الاسم الأول', lastName:'اسم العائلة',
+      replacePhoto:'استبدال الصورة', photoHint:'JPEG أو PNG · صورة واحدة',
+      changePasswordRow:'تغيير كلمة المرور', logoutRow:'تسجيل الخروج', deleteAccountRow:'حذف الحساب'
     } : {
-      hi:'Hi Nour', hiSubFull:"Here's everyone you're keeping close.", hiSubEmpty:"Let's get your people in one place.",
-      home:'Home', groups:'Groups', people:'People', events:'Events', soon:'Soon',
-      groupsSub:'6 groups · family, work, neighbours', peopleSub:'48 people across your groups',
-      eventsSub:'Plan an occasion and track your invites',
+      hi:'Hi Nour', greeting:'Good morning',
+      home:'Home', groups:'Groups', people:'People', events:'Events',
       statGroups:'Groups', statPeople:'People',
       emptyHomeTitle:'Start with one group',
       emptyHomeBody:"Groups help you organize who's who — family, friends, work, neighbors.",
@@ -860,7 +950,10 @@ class Component extends DCLogic {
       wizRelSection:'Family & relationships', wizFamilyMember1:'Family member 1', wizRelTypePh:'Select a relationship', wizAddFamily:'Add family member',
       wizNotesHint:'Anything worth remembering about this person',
       filtersTitle:'Filters', filtersClearAll:'Clear all', filtersLocation:'Location', filtersSubGroup:'Subgroup', filtersCity:'City', filtersNb:'Neighborhood',
-      filtersAllGov:'All governorates', filtersAllCities:'All cities', filtersAllNb:'All neighborhoods'
+      filtersAllGov:'All governorates', filtersAllCities:'All cities', filtersAllNb:'All neighborhoods',
+      settings:'Settings', firstName:'First name', lastName:'Last name',
+      replacePhoto:'Replace photo', photoHint:'JPEG or PNG · one photo',
+      changePasswordRow:'Change password', logoutRow:'Log out', deleteAccountRow:'Delete account'
     };
     return {
       t, dir: ar ? 'rtl' : 'ltr',
@@ -870,13 +963,33 @@ class Component extends DCLogic {
         {icon:'home', label:t.home},
         {icon:'group', label:t.groups},
         {icon:'person', label:t.people},
-        {icon:'event', label:t.events}
+        {icon:'event', label:t.events},
+        {icon:'settings', label:t.settings}
       ],
-      n0:0, n1:1, n2:2,
+      n0:0, n1:1, n2:2, n4:4,
       groupOptions:[t.g1, t.g5, t.g3, t.g4],
       relationTypes: ar ? ['أخت','أخ','أم','أب','زوجة','زوج','ابن','ابنة'] : ['Sister','Brother','Mother','Father','Wife','Husband','Son','Daughter'],
+      cls: this.clsText(ar),
       noop:()=>{}
     };
+  }
+  // Classification management (Subgroups / Cities / Neighborhoods) reuses one
+  // screen shape — copy switches on the classificationKind prop, matching
+  // Subgroup/City/NeighborhoodManagementScreen in code (same layout, different
+  // parent/child vocabulary per classification.subgroup|city|neighborhood.*).
+  clsText(ar){
+    const kind = this.props.classificationKind ?? 'Subgroup';
+    const en = {
+      Subgroup:{screenTitle:'Subgroups', parentLabel:'Group', searchHint:'Search subgroups', emptyTitle:'No subgroups yet', emptyBody:'Create a subgroup to organize people within this group further.', addLabel:'Add subgroup', createTitle:'New subgroup', namePlaceholder:'Subgroup name', createCta:'Create subgroup', itemCaption:'12 people', parentName:'Close family'},
+      City:{screenTitle:'Cities', parentLabel:'Governorate', searchHint:'Search cities', emptyTitle:'No cities yet', emptyBody:'Create a city to organize neighborhoods within this governorate.', addLabel:'Add city', createTitle:'New city', namePlaceholder:'City name', createCta:'Create city', itemCaption:'6 neighbourhoods', parentName:'Cairo'},
+      Neighborhood:{screenTitle:'Neighborhoods', parentLabel:'City', searchHint:'Search neighborhoods', emptyTitle:'No neighborhoods yet', emptyBody:'Create a neighborhood to pin down locations within this city.', addLabel:'Add neighborhood', createTitle:'New neighborhood', namePlaceholder:'Neighborhood name', createCta:'Create neighborhood', itemCaption:'9 people', parentName:'Nasr City'}
+    };
+    const arMap = {
+      Subgroup:{screenTitle:'المجموعات الفرعية', parentLabel:'المجموعة', searchHint:'ابحث عن مجموعة فرعية', emptyTitle:'لا توجد مجموعات فرعية بعد', emptyBody:'أنشئ مجموعة فرعية لتنظيم الأشخاص داخل هذه المجموعة أكثر.', addLabel:'إضافة مجموعة فرعية', createTitle:'مجموعة فرعية جديدة', namePlaceholder:'اسم المجموعة الفرعية', createCta:'إنشاء مجموعة فرعية', itemCaption:'12 شخصًا', parentName:'العائلة المقرّبة'},
+      City:{screenTitle:'المدن', parentLabel:'المحافظة', searchHint:'ابحث عن مدينة', emptyTitle:'لا توجد مدن بعد', emptyBody:'أنشئ مدينة لتنظيم الأحياء داخل هذه المحافظة.', addLabel:'إضافة مدينة', createTitle:'مدينة جديدة', namePlaceholder:'اسم المدينة', createCta:'إنشاء مدينة', itemCaption:'6 أحياء', parentName:'القاهرة'},
+      Neighborhood:{screenTitle:'الأحياء', parentLabel:'المدينة', searchHint:'ابحث عن حي', emptyTitle:'لا توجد أحياء بعد', emptyBody:'أنشئ حيًا لتحديد المواقع داخل هذه المدينة.', addLabel:'إضافة حي', createTitle:'حي جديد', namePlaceholder:'اسم الحي', createCta:'إنشاء حي', itemCaption:'9 أشخاص', parentName:'مدينة نصر'}
+    };
+    return (ar ? arMap : en)[kind];
   }
 }
 </script>
