@@ -11,6 +11,7 @@ class GovernorateResponse {
   final String? nameAr;
   final bool isLocked;
   final int personCount;
+  final DateTime? updatedAt;
 
   const GovernorateResponse({
     required this.id,
@@ -18,6 +19,7 @@ class GovernorateResponse {
     this.nameAr,
     required this.isLocked,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   factory GovernorateResponse.fromJson(Map<String, dynamic> json) => GovernorateResponse(
@@ -26,8 +28,15 @@ class GovernorateResponse {
         nameAr: json['nameAr'] as String?,
         isLocked: json['isLocked'] as bool,
         personCount: json['personCount'] as int? ?? 0,
+        updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
 
-  Governorate toEntity() =>
-      Governorate(id: id, name: name, nameAr: nameAr, isLocked: isLocked, personCount: personCount);
+  Governorate toEntity() => Governorate(
+        id: id,
+        name: name,
+        nameAr: nameAr,
+        isLocked: isLocked,
+        personCount: personCount,
+        updatedAt: updatedAt,
+      );
 }
