@@ -17,6 +17,7 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:go_router/go_router.dart' as _i583;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:shared_preferences/shared_preferences.dart' as _i460;
+import 'package:your_space_mobile/core/database/app_database.dart' as _i935;
 import 'package:your_space_mobile/core/di/register_module.dart' as _i876;
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart' as _i215;
 import 'package:your_space_mobile/core/helpers/dialog_helper.dart' as _i733;
@@ -29,6 +30,9 @@ import 'package:your_space_mobile/core/storage/app_preferences_helper.dart'
     as _i782;
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart'
     as _i134;
+import 'package:your_space_mobile/core/sync/collection_puller.dart' as _i635;
+import 'package:your_space_mobile/core/sync/outbox_replayer.dart' as _i222;
+import 'package:your_space_mobile/core/sync/sync_service.dart' as _i477;
 import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_data_source_impl.dart'
     as _i1073;
 import 'package:your_space_mobile/features/auth/data/repositories/auth_repository_impl.dart'
@@ -51,8 +55,12 @@ import 'package:your_space_mobile/features/auth/presentation/cubit/register_cubi
     as _i44;
 import 'package:your_space_mobile/features/auth/presentation/cubit/reset_password_cubit/reset_password_cubit.dart'
     as _i115;
+import 'package:your_space_mobile/features/classification/data/datasources/base_governorate_data_source.dart'
+    as _i721;
 import 'package:your_space_mobile/features/classification/data/datasources/city_remote_data_source_impl.dart'
     as _i500;
+import 'package:your_space_mobile/features/classification/data/datasources/governorate_local_data_source_impl.dart'
+    as _i577;
 import 'package:your_space_mobile/features/classification/data/datasources/governorate_remote_data_source_impl.dart'
     as _i352;
 import 'package:your_space_mobile/features/classification/data/datasources/neighborhood_remote_data_source_impl.dart'
@@ -67,6 +75,10 @@ import 'package:your_space_mobile/features/classification/data/repositories/neig
     as _i412;
 import 'package:your_space_mobile/features/classification/data/repositories/subgroup_repository_impl.dart'
     as _i180;
+import 'package:your_space_mobile/features/classification/data/sync/governorate_collection_puller.dart'
+    as _i1067;
+import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
+    as _i774;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart'
     as _i881;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart'
@@ -80,7 +92,7 @@ import 'package:your_space_mobile/features/classification/presentation/cubit/cit
 import 'package:your_space_mobile/features/classification/presentation/cubit/city_list_cubit/city_list_cubit.dart'
     as _i493;
 import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_action_cubit/neighborhood_action_cubit.dart'
-    as _i622;
+    as _i623;
 import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_list_cubit/neighborhood_list_cubit.dart'
     as _i977;
 import 'package:your_space_mobile/features/classification/presentation/cubit/subgroup_action_cubit/subgroup_action_cubit.dart'
@@ -115,10 +127,18 @@ import 'package:your_space_mobile/features/events/presentation/cubit/events_list
     as _i890;
 import 'package:your_space_mobile/features/events/presentation/cubit/reciprocity_suggestions_cubit/reciprocity_suggestions_cubit.dart'
     as _i147;
+import 'package:your_space_mobile/features/groups/data/datasources/base_group_data_source.dart'
+    as _i229;
+import 'package:your_space_mobile/features/groups/data/datasources/group_local_data_source_impl.dart'
+    as _i640;
 import 'package:your_space_mobile/features/groups/data/datasources/group_remote_data_source_impl.dart'
     as _i190;
 import 'package:your_space_mobile/features/groups/data/repositories/group_repository_impl.dart'
     as _i612;
+import 'package:your_space_mobile/features/groups/data/sync/group_collection_puller.dart'
+    as _i544;
+import 'package:your_space_mobile/features/groups/data/sync/group_outbox_replayer.dart'
+    as _i1011;
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart'
     as _i994;
 import 'package:your_space_mobile/features/groups/presentation/cubit/group_action_cubit/group_action_cubit.dart'
@@ -127,8 +147,12 @@ import 'package:your_space_mobile/features/groups/presentation/cubit/groups_list
     as _i771;
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_cubit.dart'
     as _i136;
+import 'package:your_space_mobile/features/people/data/datasources/base_person_data_source.dart'
+    as _i498;
 import 'package:your_space_mobile/features/people/data/datasources/person_image_remote_data_source_impl.dart'
     as _i931;
+import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart'
+    as _i439;
 import 'package:your_space_mobile/features/people/data/datasources/person_relationship_remote_data_source_impl.dart'
     as _i903;
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart'
@@ -139,6 +163,10 @@ import 'package:your_space_mobile/features/people/data/repositories/person_relat
     as _i630;
 import 'package:your_space_mobile/features/people/data/repositories/person_repository_impl.dart'
     as _i504;
+import 'package:your_space_mobile/features/people/data/sync/person_collection_puller.dart'
+    as _i946;
+import 'package:your_space_mobile/features/people/data/sync/person_outbox_replayer.dart'
+    as _i622;
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_image_repository.dart'
     as _i1005;
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_relationship_repository.dart'
@@ -171,6 +199,13 @@ extension GetItInjectableX on _i174.GetIt {
       () => registerModule.sharedPreferences,
       preResolve: true,
     );
+    gh.lazySingleton<_i935.AppDatabase>(() => _i935.AppDatabase());
+    gh.lazySingleton<List<_i222.OutboxReplayer>>(
+      () => registerModule.outboxReplayers,
+    );
+    gh.lazySingleton<List<_i635.CollectionPuller>>(
+      () => registerModule.collectionPullers,
+    );
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => registerModule.secureStorage,
     );
@@ -191,11 +226,32 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i559.LocaleHelper>(
       () => _i559.LocaleHelper(gh<_i460.SharedPreferences>()),
     );
+    gh.lazySingleton<_i577.GovernorateLocalDataSourceImpl>(
+      () => _i577.GovernorateLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
+    gh.lazySingleton<_i640.GroupLocalDataSourceImpl>(
+      () => _i640.GroupLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
+    gh.lazySingleton<_i439.PersonLocalDataSourceImpl>(
+      () => _i439.PersonLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
     gh.lazySingleton<_i733.DialogHelper>(
       () => _i733.DialogHelper(gh<_i409.GlobalKey<_i409.NavigatorState>>()),
     );
     gh.lazySingleton<_i967.SnackBarHelper>(
       () => _i967.SnackBarHelper(gh<_i409.GlobalKey<_i409.NavigatorState>>()),
+    );
+    gh.lazySingleton<_i477.SyncService>(
+      () => _i477.SyncService(
+        gh<_i935.AppDatabase>(),
+        gh<_i0.ConnectivityHelper>(),
+        gh<List<_i222.OutboxReplayer>>(),
+        gh<List<_i635.CollectionPuller>>(),
+      ),
+      dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i927.DioFactory>(
       () => _i927.DioFactory(
@@ -206,14 +262,19 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i361.Dio>(() => registerModule.dio(gh<_i927.DioFactory>()));
     gh.lazySingleton<_i531.ApiManager>(() => _i531.ApiManager(gh<_i361.Dio>()));
+    gh.lazySingleton<_i498.BasePersonDataSource>(
+      () => _i293.PersonRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
+    );
+    gh.lazySingleton<_i229.BaseGroupDataSource>(
+      () => _i190.GroupRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
+    );
     gh.lazySingleton<_i1073.AuthRemoteDataSourceImpl>(
       () => _i1073.AuthRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
     gh.lazySingleton<_i500.CityRemoteDataSourceImpl>(
       () => _i500.CityRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
-    gh.lazySingleton<_i352.GovernorateRemoteDataSourceImpl>(
-      () => _i352.GovernorateRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
     gh.lazySingleton<_i46.NeighborhoodRemoteDataSourceImpl>(
       () => _i46.NeighborhoodRemoteDataSourceImpl(gh<_i531.ApiManager>()),
@@ -227,9 +288,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i557.EventRemoteDataSourceImpl>(
       () => _i557.EventRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
-    gh.lazySingleton<_i190.GroupRemoteDataSourceImpl>(
-      () => _i190.GroupRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
     gh.lazySingleton<_i931.PersonImageRemoteDataSourceImpl>(
       () => _i931.PersonImageRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
@@ -237,19 +295,28 @@ extension GetItInjectableX on _i174.GetIt {
       () =>
           _i903.PersonRelationshipRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
-    gh.lazySingleton<_i293.PersonRemoteDataSourceImpl>(
-      () => _i293.PersonRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
     gh.lazySingleton<_i235.EventGuestRepository>(
       () => _i1063.EventGuestRepositoryImpl(
         gh<_i320.EventGuestRemoteDataSourceImpl>(),
       ),
     );
-    gh.lazySingleton<_i994.GroupRepository>(
-      () => _i612.GroupRepositoryImpl(gh<_i190.GroupRemoteDataSourceImpl>()),
-    );
     gh.lazySingleton<_i571.PersonRepository>(
-      () => _i504.PersonRepositoryImpl(gh<_i293.PersonRemoteDataSourceImpl>()),
+      () => _i504.PersonRepositoryImpl(
+        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
+        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
+      ),
+    );
+    gh.factory<_i641.AddOccasionCubit>(
+      () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
+      instanceName: 'person',
+    );
+    gh.lazySingleton<_i721.BaseGovernorateDataSource>(
+      () => _i352.GovernorateRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
     );
     gh.lazySingleton<_i126.PersonRelationshipRepository>(
       () => _i630.PersonRelationshipRepositoryImpl(
@@ -273,22 +340,31 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
+    gh.lazySingleton<_i262.GovernorateRepository>(
+      () => _i362.GovernorateRepositoryImpl(
+        gh<_i721.BaseGovernorateDataSource>(instanceName: 'remote'),
+        gh<_i577.GovernorateLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
+      ),
+    );
     gh.factory<_i930.PersonDetailsCubit>(
       () => _i930.PersonDetailsCubit(
         gh<_i571.PersonRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i889.EventGuestsListCubit>(
-      () => _i889.EventGuestsListCubit(
-        gh<_i235.EventGuestRepository>(),
-        gh<_i994.GroupRepository>(),
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i622.PersonOutboxReplayer(
+        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
+        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
       ),
+      instanceName: 'person',
     );
-    gh.factory<_i147.ReciprocitySuggestionsCubit>(
-      () => _i147.ReciprocitySuggestionsCubit(
-        gh<_i235.EventGuestRepository>(),
-        gh<_i994.GroupRepository>(),
+    gh.lazySingleton<_i994.GroupRepository>(
+      () => _i612.GroupRepositoryImpl(
+        gh<_i229.BaseGroupDataSource>(instanceName: 'remote'),
+        gh<_i640.GroupLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
       ),
     );
     gh.lazySingleton<_i681.AuthRepository>(
@@ -300,11 +376,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1005.PersonImageRepository>(
       () => _i744.PersonImageRepositoryImpl(
         gh<_i931.PersonImageRemoteDataSourceImpl>(),
-      ),
-    );
-    gh.lazySingleton<_i262.GovernorateRepository>(
-      () => _i362.GovernorateRepositoryImpl(
-        gh<_i352.GovernorateRemoteDataSourceImpl>(),
       ),
     );
     gh.lazySingleton<_i219.EventRepository>(
@@ -330,17 +401,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i881.CityRepository>(
       () => _i866.CityRepositoryImpl(gh<_i500.CityRemoteDataSourceImpl>()),
     );
-    gh.factory<_i965.GroupActionCubit>(
-      () => _i965.GroupActionCubit(
-        gh<_i994.GroupRepository>(),
-        gh<_i215.DataRefreshBus>(),
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i1011.GroupOutboxReplayer(
+        gh<_i229.BaseGroupDataSource>(instanceName: 'remote'),
+        gh<_i640.GroupLocalDataSourceImpl>(instanceName: 'local'),
       ),
-    );
-    gh.factory<_i771.GroupsListCubit>(
-      () => _i771.GroupsListCubit(
-        gh<_i994.GroupRepository>(),
-        gh<_i215.DataRefreshBus>(),
-      ),
+      instanceName: 'group',
     );
     gh.factory<_i837.CityActionCubit>(
       () => _i837.CityActionCubit(
@@ -372,8 +438,23 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.factory<_i641.AddOccasionCubit>(
-      () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () =>
+          _i1067.GovernorateCollectionPuller(gh<_i262.GovernorateRepository>()),
+      instanceName: 'governorate',
+    );
+    gh.factory<_i965.GroupActionCubit>(
+      () => _i965.GroupActionCubit(gh<_i994.GroupRepository>()),
+    );
+    gh.factory<_i771.GroupsListCubit>(
+      () => _i771.GroupsListCubit(gh<_i994.GroupRepository>()),
+    );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i774.GovernorateOutboxReplayer(
+        gh<_i721.BaseGovernorateDataSource>(instanceName: 'remote'),
+        gh<_i577.GovernorateLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'governorate',
     );
     gh.factory<_i895.AddGuestsListCubit>(
       () => _i895.AddGuestsListCubit(
@@ -406,8 +487,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i115.ResetPasswordCubit>(
       () => _i115.ResetPasswordCubit(gh<_i681.AuthRepository>()),
     );
-    gh.factory<_i622.NeighborhoodActionCubit>(
-      () => _i622.NeighborhoodActionCubit(
+    gh.factory<_i623.NeighborhoodActionCubit>(
+      () => _i623.NeighborhoodActionCubit(
         gh<_i680.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
@@ -430,8 +511,24 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i544.GroupCollectionPuller(gh<_i994.GroupRepository>()),
+      instanceName: 'group',
+    );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i681.AuthRepository>()),
+    );
+    gh.factory<_i889.EventGuestsListCubit>(
+      () => _i889.EventGuestsListCubit(
+        gh<_i235.EventGuestRepository>(),
+        gh<_i994.GroupRepository>(),
+      ),
+    );
+    gh.factory<_i147.ReciprocitySuggestionsCubit>(
+      () => _i147.ReciprocitySuggestionsCubit(
+        gh<_i235.EventGuestRepository>(),
+        gh<_i994.GroupRepository>(),
+      ),
     );
     gh.factory<_i68.PersonWizardCubit>(
       () => _i68.PersonWizardCubit(

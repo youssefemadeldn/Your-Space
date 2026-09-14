@@ -64,6 +64,9 @@
   <data name="Group.HasActivePersons" xml:space="preserve">
     <value>This group still has people assigned to it. Reassign or remove them before deleting the group.</value>
   </data>
+  <data name="Group.Since.Invalid" xml:space="preserve">
+    <value>The sync cursor must not be negative.</value>
+  </data>
   <data name="Person.NotFound" xml:space="preserve">
     <value>Person not found.</value>
   </data>
@@ -174,6 +177,9 @@
   </data>
   <data name="Person.NeighborhoodId.Invalid" xml:space="preserve">
     <value>The specified neighborhood is invalid for this city.</value>
+  </data>
+  <data name="Person.Since.Invalid" xml:space="preserve">
+    <value>The sync cursor must not be negative.</value>
   </data>
   <data name="SubGroup.NotFound" xml:space="preserve">
     <value>Subgroup not found.</value>

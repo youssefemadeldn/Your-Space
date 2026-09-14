@@ -5,6 +5,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.StorageService;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using PersonServiceImpl = YourSpace.Services.Services.PersonService.PersonService;
@@ -35,6 +36,7 @@ public class PersonService_GetDetailsAsyncTests
         Mock.Of<IR2StorageService>(),
         R2SettingsFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        Mock.Of<ISyncVersionProvider>(),
         Mock.Of<ILogger<PersonServiceImpl>>());
 
     [Fact]

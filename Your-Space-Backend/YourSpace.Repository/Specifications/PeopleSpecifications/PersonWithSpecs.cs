@@ -42,6 +42,18 @@ public class PersonWithSpecs : BaseSpecification<Person>
         ApplyPaging(paging.PageSize * (paging.PageIndex - 1), paging.PageSize);
     }
 
+    // Delta-sync "changes since" query (doc/local-first-sync-design.md §6) — deliberately no
+    // DeletedAt filter: tombstones (soft-deleted rows) must be included so the caller can tell
+    // the client to remove them. Ordered by SyncVersion, not CreatedAt/UpdatedAt, so the cursor
+    // stays unambiguous even for two rows written in the same millisecond.
+    public PersonWithSpecs(string ownerUserId, long since, int pageSize)
+        : base(p => p.OwnerUserId == ownerUserId && p.SyncVersion > since)
+    {
+        AddClassificationIncludes(this);
+        ApplyOrderBy(p => p.SyncVersion);
+        ApplyPaging(0, pageSize);
+    }
+
     // Explicit id list, optionally filtered by group — feeds reciprocity-candidate resolution
     // (the candidate PersonIds come from PersonOccasionHistoryWithSpecs.ReciprocityCandidates,
     // this spec then loads the actual Person rows for the ones not yet on the event).

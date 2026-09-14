@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,7 @@ import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
@@ -77,16 +79,19 @@ void main() {
       );
 
   void stubReferenceLists({
-    Either<Failure, PaginatedResult<Group>>? groups,
-    Either<Failure, PaginatedResult<Governorate>>? governorates,
+    List<Group>? groups,
+    List<Governorate>? governorates,
   }) {
-    when(() => groupRepository.getGroups(pageIndex: any(named: 'pageIndex'), pageSize: any(named: 'pageSize')))
-        .thenAnswer((_) async => groups ?? Right(_page(const [Group(id: 1, name: 'Family')])));
-    when(() => governorateRepository.getGovernorates(
-          pageIndex: any(named: 'pageIndex'),
-          pageSize: any(named: 'pageSize'),
-        )).thenAnswer((_) async => governorates ?? Right(_page(const [Governorate(id: 1, name: 'Cairo')])));
+    when(() => groupRepository.watchGroups(limit: any(named: 'limit')))
+        .thenAnswer((_) => Stream.value(groups ?? const [Group(id: 1, name: 'Family')]));
+    when(() => governorateRepository.watchGovernorates(limit: any(named: 'limit')))
+        .thenAnswer((_) => Stream.value(governorates ?? const [Governorate(id: 1, name: 'Cairo')]));
   }
+
+  setUpAll(() {
+    registerFallbackValue(Gender.male);
+    registerFallbackValue(File(''));
+  });
 
   setUp(() {
     personRepository = MockPersonRepository();
@@ -122,12 +127,31 @@ void main() {
       await expectation;
     });
 
-    test('surfaces an error screen when the group list fails (no silent empty picker)', () async {
-      stubReferenceLists(groups: const Left(NetworkFailure()));
+    test('emits Ready with an empty group picker when the local cache has no groups yet', () async {
+      stubReferenceLists(groups: const []);
 
       final expectation = expectLater(
         cubit.stream,
-        emitsInOrder([const PersonWizardLoading(), isA<PersonWizardError>()]),
+        emitsInOrder([
+          const PersonWizardLoading(),
+          isA<PersonWizardReady>().having((s) => s.availableGroups, 'availableGroups', isEmpty),
+        ]),
+      );
+
+      unawaited(cubit.initialize(null));
+      await expectation;
+    });
+
+    test('emits Ready with an empty governorate picker when the local cache has no governorates yet',
+        () async {
+      stubReferenceLists(governorates: const []);
+
+      final expectation = expectLater(
+        cubit.stream,
+        emitsInOrder([
+          const PersonWizardLoading(),
+          isA<PersonWizardReady>().having((s) => s.availableGovernorates, 'availableGovernorates', isEmpty),
+        ]),
       );
 
       unawaited(cubit.initialize(null));
@@ -202,7 +226,7 @@ void main() {
     });
 
     test('creates the group, selects it, appends it, and pings the refresh bus', () async {
-      when(() => groupRepository.createGroup(name: any(named: 'name')))
+      when(() => groupRepository.createGroupAndSync(name: any(named: 'name')))
           .thenAnswer((_) async => const Right(Group(id: 99, name: 'Neighbours')));
       when(() => subGroupRepository.getSubGroups(
             groupId: any(named: 'groupId'),
@@ -222,6 +246,161 @@ void main() {
       expect(state.groupId, 99);
       expect(state.availableGroups.map((g) => g.id), containsAll(<int>[1, 99]));
       expect(scopes, contains(DataScope.groups));
+    });
+  });
+
+  group('submit', () {
+    Future<void> readyForSubmit() async {
+      stubReferenceLists();
+      await cubit.initialize(null);
+      when(() => subGroupRepository.getSubGroups(
+            groupId: any(named: 'groupId'),
+            pageIndex: any(named: 'pageIndex'),
+            pageSize: any(named: 'pageSize'),
+          )).thenAnswer((_) async => Right(_page(const [])));
+      when(() => cityRepository.getCities(
+            governorateId: any(named: 'governorateId'),
+            pageIndex: any(named: 'pageIndex'),
+            pageSize: any(named: 'pageSize'),
+          )).thenAnswer((_) async => Right(_page(const [])));
+      await cubit.selectGroup(1);
+      await cubit.selectGovernorate(1);
+      cubit.updateName('New Person');
+      cubit.updateGender(Gender.male);
+    }
+
+    test('with no photo/relationship changes calls createPerson (not AndSync) and skips child syncs', () async {
+      await readyForSubmit();
+      when(() => personRepository.createPerson(
+            name: any(named: 'name'),
+            phoneNumber: any(named: 'phoneNumber'),
+            phoneNumber2: any(named: 'phoneNumber2'),
+            gender: any(named: 'gender'),
+            groupId: any(named: 'groupId'),
+            groupName: any(named: 'groupName'),
+            subGroupId: any(named: 'subGroupId'),
+            subGroupName: any(named: 'subGroupName'),
+            governorateId: any(named: 'governorateId'),
+            governorateName: any(named: 'governorateName'),
+            cityId: any(named: 'cityId'),
+            cityName: any(named: 'cityName'),
+            neighborhoodId: any(named: 'neighborhoodId'),
+            neighborhoodName: any(named: 'neighborhoodName'),
+            notes: any(named: 'notes'),
+          )).thenAnswer((_) async => const Right(_person));
+
+      await cubit.submit();
+
+      final captured = verify(() => personRepository.createPerson(
+            name: 'New Person',
+            phoneNumber: any(named: 'phoneNumber'),
+            phoneNumber2: any(named: 'phoneNumber2'),
+            gender: Gender.male,
+            groupId: 1,
+            groupName: captureAny(named: 'groupName'),
+            subGroupId: any(named: 'subGroupId'),
+            subGroupName: any(named: 'subGroupName'),
+            governorateId: 1,
+            governorateName: captureAny(named: 'governorateName'),
+            cityId: any(named: 'cityId'),
+            cityName: any(named: 'cityName'),
+            neighborhoodId: any(named: 'neighborhoodId'),
+            neighborhoodName: any(named: 'neighborhoodName'),
+            notes: any(named: 'notes'),
+          )).captured;
+      expect(captured, ['Family', 'Cairo']);
+
+      expect(cubit.state, isA<PersonWizardSubmitSuccess>());
+      verifyNever(() => personRepository.createPersonAndSync(
+            name: any(named: 'name'),
+            gender: any(named: 'gender'),
+            groupId: any(named: 'groupId'),
+            groupName: any(named: 'groupName'),
+            governorateId: any(named: 'governorateId'),
+            governorateName: any(named: 'governorateName'),
+          ));
+      verifyZeroInteractions(personImageRepository);
+      verifyZeroInteractions(personRelationshipRepository);
+    });
+
+    test('with a staged new photo calls createPersonAndSync and still runs photo sync on success', () async {
+      await readyForSubmit();
+      cubit.addPhoto(File('local.jpg'));
+
+      when(() => personRepository.createPersonAndSync(
+            name: any(named: 'name'),
+            phoneNumber: any(named: 'phoneNumber'),
+            phoneNumber2: any(named: 'phoneNumber2'),
+            gender: any(named: 'gender'),
+            groupId: any(named: 'groupId'),
+            groupName: any(named: 'groupName'),
+            subGroupId: any(named: 'subGroupId'),
+            subGroupName: any(named: 'subGroupName'),
+            governorateId: any(named: 'governorateId'),
+            governorateName: any(named: 'governorateName'),
+            cityId: any(named: 'cityId'),
+            cityName: any(named: 'cityName'),
+            neighborhoodId: any(named: 'neighborhoodId'),
+            neighborhoodName: any(named: 'neighborhoodName'),
+            notes: any(named: 'notes'),
+          )).thenAnswer((_) async => const Right(_person));
+      when(() => personImageRepository.uploadImage(personId: any(named: 'personId'), file: any(named: 'file')))
+          .thenAnswer((_) async => const Right(PersonImage(id: 1, url: 'https://x/1.jpg', isPrimary: true)));
+      when(() => personImageRepository.setPrimary(personId: any(named: 'personId'), imageId: any(named: 'imageId')))
+          .thenAnswer((_) async => const Right(PersonImage(id: 1, url: 'https://x/1.jpg', isPrimary: true)));
+
+      await cubit.submit();
+
+      verify(() => personRepository.createPersonAndSync(
+            name: any(named: 'name'),
+            phoneNumber: any(named: 'phoneNumber'),
+            phoneNumber2: any(named: 'phoneNumber2'),
+            gender: any(named: 'gender'),
+            groupId: any(named: 'groupId'),
+            groupName: any(named: 'groupName'),
+            subGroupId: any(named: 'subGroupId'),
+            subGroupName: any(named: 'subGroupName'),
+            governorateId: any(named: 'governorateId'),
+            governorateName: any(named: 'governorateName'),
+            cityId: any(named: 'cityId'),
+            cityName: any(named: 'cityName'),
+            neighborhoodId: any(named: 'neighborhoodId'),
+            neighborhoodName: any(named: 'neighborhoodName'),
+            notes: any(named: 'notes'),
+          )).called(1);
+      verify(() => personImageRepository.uploadImage(personId: _person.id, file: any(named: 'file'))).called(1);
+      expect(cubit.state, isA<PersonWizardSubmitSuccess>());
+    });
+
+    test('with a photo change, a failed immediate sync emits submitError and skips child syncs', () async {
+      await readyForSubmit();
+      cubit.addPhoto(File('local.jpg'));
+      const failure = NetworkFailure();
+
+      when(() => personRepository.createPersonAndSync(
+            name: any(named: 'name'),
+            phoneNumber: any(named: 'phoneNumber'),
+            phoneNumber2: any(named: 'phoneNumber2'),
+            gender: any(named: 'gender'),
+            groupId: any(named: 'groupId'),
+            groupName: any(named: 'groupName'),
+            subGroupId: any(named: 'subGroupId'),
+            subGroupName: any(named: 'subGroupName'),
+            governorateId: any(named: 'governorateId'),
+            governorateName: any(named: 'governorateName'),
+            cityId: any(named: 'cityId'),
+            cityName: any(named: 'cityName'),
+            neighborhoodId: any(named: 'neighborhoodId'),
+            neighborhoodName: any(named: 'neighborhoodName'),
+            notes: any(named: 'notes'),
+          )).thenAnswer((_) async => const Left(failure));
+
+      await cubit.submit();
+
+      final state = cubit.state as PersonWizardReady;
+      expect(state.isSubmitting, isFalse);
+      expect(state.submitError, isNotNull);
+      verifyZeroInteractions(personImageRepository);
     });
   });
 }

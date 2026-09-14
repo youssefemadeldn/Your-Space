@@ -64,6 +64,8 @@ Features must never import from other features. Cross-feature navigation uses ar
 | `network/` | `ApiManager`, `ApiResult` (sealed internal transport — never imported outside `ApiManager`; converted to `Either<Failure, T>` before leaving the network layer), `Failure` hierarchy, `failure_messages.dart`, `DioFactory`, `AuthInterceptor`, `ConnectivityHelper` |
 | `router/` | `AppRouter.router` (`GoRouter` instance), `AppRoutes` (route name constants), `args/` (typed args classes per screen) |
 | `storage/` | `SecureStorageHelper` (`@lazySingleton`, wraps `FlutterSecureStorage`) |
+| `database/` | `AppDatabase` (drift — the on-device store synced features read from and write to), its DAOs, and the `outbox` table. Created when the first synced feature lands; the schema, outbox row shape, and sync-cursor format are owned by `doc/local-first-sync-design.md`, not this file (Architecture rule 7). |
+| `sync/` | `SyncService` — the background push/pull orchestrator and per-collection watermark store. This is where the network lives for synced features; screens and cubits never wait on it. |
 | `theme/` | `AppColors`, `AppFontWeight`, `AppTextStyles`, `AppTheme.lightTheme` |
 | `widgets/` | `AppLoadingIndicator`, `EmptyStateWidget`, `ErrorStateWidget` |
 
@@ -90,7 +92,9 @@ features/<feature>/
     └── widgets/       # only when shared across 2+ screens within the feature
 ```
 
-**Local data source:** add one only when the feature needs offline cache or local persistence. When you do, introduce an abstract `base_<feature>_data_source.dart` contract covering read operations only, create `*_remote_data_source_impl.dart` (`@Named('remote') @LazySingleton(as: Base<Feature>DataSource)` — must bind *as* the interface, plain `@lazySingleton` leaves the repository's abstract-typed parameter unresolvable) and `*_local_data_source_impl.dart` (`@Named('local') @lazySingleton`, plus its own `save*` write methods that have no remote equivalent). Inject both into the repository impl via `@Named('remote')`/`@Named('local')` constructor parameters — type `_remote` against the abstraction, `_local` against its concrete class so the repo can call the save methods. Do not create the abstract contract until the local source actually exists. Storage backend defaults to `SharedPreferences`; see `flutter_feature_prompt.md`'s "Choosing a storage backend" section for when Hive/SQLite or drift are actually justified instead.
+**Local data source:** add one only when the feature needs offline cache or local persistence. When you do, introduce an abstract `base_<feature>_data_source.dart` contract covering read operations only, create `*_remote_data_source_impl.dart` (`@Named('remote') @LazySingleton(as: Base<Feature>DataSource)` — must bind *as* the interface, plain `@lazySingleton` leaves the repository's abstract-typed parameter unresolvable) and `*_local_data_source_impl.dart` (`@Named('local') @lazySingleton`, plus its own `save*` write methods that have no remote equivalent). Inject both into the repository impl via `@Named('remote')`/`@Named('local')` constructor parameters — type `_remote` against the abstraction, `_local` against its concrete class so the repo can call the save methods. Do not create the abstract contract until the local source actually exists.
+
+**When to add one:** for a feature on the local-first sync rollout (Architecture rule 7), the local data source is **mandatory** and is backed by the shared drift `AppDatabase`, not `SharedPreferences` — the repository serves reads from it and routes writes through the `outbox`. For a feature that only needs lightweight, bounded caching and is *not* on the sync rollout, `SharedPreferences` remains the default; see `flutter_feature_prompt.md`'s "Choosing a storage backend" section.
 
 ---
 
@@ -98,6 +102,8 @@ features/<feature>/
 
 ### 1. Auth is invisible to the data layer
 `AuthInterceptor` handles Bearer token injection and silent token refresh on 401 — concurrent 401s share one in-flight refresh call, the failed request is retried once with the new token, and only a failed refresh triggers logout. Data sources never read tokens, build headers, or call auth services.
+
+A failed refresh clears the tokens and routes to login, but **never wipes the local drift database** — the cached data survives logout; only outbound writes are gated until the user re-authenticates (Architecture rule 7).
 
 ### 2. No try/catch outside ApiManager
 `ApiManager` is the sole error boundary. It converts every `DioException` to `Either<Failure, T>`. Data source methods return that `Either` directly — no wrapping, no try/catch.
@@ -114,6 +120,19 @@ Features with both mutations and reads must use separate cubits to prevent state
 ### 6. Screen complexity threshold
 If a screen's total widget code is under ~250 lines and contains no embedded `StatefulWidget`, keep private classes in the single page file. Once either threshold is crossed, create a screen folder: `pages/<screen_name>_screen/` containing `<screen_name>_screen.dart` (only the screen widget) plus one file per extracted component. Screen-specific components go in this folder — not in `widgets/`. `widgets/` remains strictly for components shared across two or more screens. No `states/` subfolder — name files by concern (`home_shimmer.dart`, `home_newsletter_strip.dart`) and keep flat.
 
+### 7. Local-first for synced features
+
+Features on the sync rollout are **local-first**: the drift `AppDatabase` is the single source of truth the UI reads, and the network is a background concern.
+
+- **Read path:** a cubit watches a reactive query on the local store (a `Stream`) and renders whatever is there immediately — it never shows a bare spinner waiting on the network for a list or detail that has been cached before.
+- **Write path:** a mutation is applied optimistically to the local store and recorded in the `outbox` in the same transaction; `SyncService` replays the outbox when connectivity returns, reconciles client temp-IDs to server IDs, and resolves conflicts last-write-wins (the data is strictly single-owner, so this is safe).
+- **Sync:** `SyncService` pulls changes per collection against a stored watermark cursor. It is injected, runs in the background, and is **never** awaited from a screen or cubit.
+- **Stays network-only** (not cached, not queued): server-computed values — reciprocity suggestions, event guest progress, `hasReciprocityHistory`, and any other derived field. A cubit may call these through the repository's network path directly.
+- **Image uploads** are queued as local file references in the `outbox` and uploaded on reconnect, same as any other write.
+- **Rollout is feature-by-feature**, People first as the pilot. A feature that has not been migrated keeps the plain remote-only data source and is unaffected by this rule.
+
+The concrete drift schema, outbox row shape, sync-cursor format, temp-ID reconciliation, and the tier-by-tier delivery plan live in `doc/local-first-sync-design.md` — that document is the authority for the mechanism; this rule is the authority for the posture.
+
 ---
 
 ## DI scopes
@@ -125,6 +144,8 @@ If a screen's total widget code is under ~250 lines and contains no embedded `St
 | Use case | `@injectable` | Factory |
 | Cubit | `@injectable` | Factory |
 | `DialogHelper`, `SnackBarHelper` | `@lazySingleton` | Lifetime |
+| `AppDatabase` (drift), its DAOs | `@lazySingleton` | Lifetime — one connection for the app; synced features only (Architecture rule 7) |
+| `SyncService` | `@lazySingleton` | Lifetime — background sync orchestrator; never provided to a `BlocProvider` and never awaited from a cubit |
 | `CartCubit` | `@lazySingleton` | Lifetime — **exception**: global cart state shared by `AppBarWidget` badge and `CartScreen`. Access via `getIt<CartCubit>()`; provide in `CartScreen` with `BlocProvider.value(value: getIt<CartCubit>())`. |
 
 Both forms come from the `injectable` package: `@lazySingleton` is the no-arg const shorthand for `@LazySingleton()`; `@LazySingleton(as: Repo)` is used when binding a concrete class to an interface. Use whichever fits — they are not inconsistent.
@@ -312,6 +333,7 @@ Before finishing any task, verify every item:
 - [ ] No existing functionality, API, or UX flow is broken.
 - [ ] Architecture layer boundaries are respected.
 - [ ] No business logic exists in the UI layer.
+- [ ] For a synced feature (Architecture rule 7): the cubit reads from the local drift store via a reactive stream, writes go through the `outbox`, no cubit awaits `SyncService` or calls a remote data source on the read path, and a failed token refresh does not wipe the local database.
 - [ ] No unnecessary widget rebuilds or performance regressions introduced.
 - [ ] No security risks introduced.
 - [ ] Acted as a senior partner: non-obvious tradeoffs named, concerns flagged, improvements suggested when genuinely valuable.

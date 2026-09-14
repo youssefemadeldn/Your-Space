@@ -19,7 +19,11 @@ final class GroupsListLoading extends GroupsListState {
 final class GroupsListSuccess extends GroupsListState {
   final List<Group> groups;
   final String? search;
-  final int pageIndex;
+
+  /// How many rows the local `watchGroups` query is currently asking for
+  /// (grows by the page size on `loadMore()`) — a local read window, not a
+  /// server page index (Tier 1, design doc §3).
+  final int limit;
   final bool hasNextPage;
   final bool isLoadingMore;
 
@@ -34,7 +38,7 @@ final class GroupsListSuccess extends GroupsListState {
   const GroupsListSuccess(
     this.groups, {
     this.search,
-    required this.pageIndex,
+    required this.limit,
     required this.hasNextPage,
     this.isLoadingMore = false,
     this.loadMoreErrorMessage,
@@ -43,7 +47,7 @@ final class GroupsListSuccess extends GroupsListState {
 
   GroupsListSuccess copyWith({
     List<Group>? groups,
-    int? pageIndex,
+    int? limit,
     bool? hasNextPage,
     bool? isLoadingMore,
     String? loadMoreErrorMessage,
@@ -52,7 +56,7 @@ final class GroupsListSuccess extends GroupsListState {
       GroupsListSuccess(
         groups ?? this.groups,
         search: search,
-        pageIndex: pageIndex ?? this.pageIndex,
+        limit: limit ?? this.limit,
         hasNextPage: hasNextPage ?? this.hasNextPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
         loadMoreErrorMessage: loadMoreErrorMessage ?? this.loadMoreErrorMessage,
@@ -60,8 +64,7 @@ final class GroupsListSuccess extends GroupsListState {
       );
 
   @override
-  List<Object?> get props =>
-      [groups, search, pageIndex, hasNextPage, isLoadingMore, loadMoreErrorMessage, loadMoreErrorId];
+  List<Object?> get props => [groups, search, limit, hasNextPage, isLoadingMore, loadMoreErrorMessage, loadMoreErrorId];
 }
 
 final class GroupsListError extends GroupsListState {

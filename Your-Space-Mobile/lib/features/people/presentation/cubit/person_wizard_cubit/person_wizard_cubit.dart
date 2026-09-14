@@ -8,15 +8,12 @@ import 'package:injectable/injectable.dart';
 import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
-import 'package:your_space_mobile/core/entities/governorate.dart';
-import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/entities/neighborhood.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
-import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
@@ -73,26 +70,15 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<void> initialize(int? personId) async {
     emit(const PersonWizardLoading());
 
-    // Kick the independent fetches off together, then await — the group and
-    // governorate lists are hard prerequisites (both required in Step 2), so a
-    // failure on either surfaces as an error screen with Retry rather than an
-    // empty picker the user can't get past.
-    final groupsFuture = _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
-    final governoratesFuture = _governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50);
+    // Groups (row 7.2) and Governorates (row 8.2) are both local-first now —
+    // a local read can't fail the way a network call can, so neither is part
+    // of a prerequisite-failure check anymore.
+    final groupsFuture = _groupRepository.watchGroups(limit: 50).first;
+    final governoratesFuture = _governorateRepository.watchGovernorates(limit: 50).first;
     final detailsFuture = personId == null ? null : _personRepository.getPersonById(personId);
 
-    final groupsResult = await groupsFuture;
-    final governoratesResult = await governoratesFuture;
-
-    final prereqFailure = groupsResult.fold<Failure?>((f) => f, (_) => null) ??
-        governoratesResult.fold<Failure?>((f) => f, (_) => null);
-    if (prereqFailure != null) {
-      emit(PersonWizardError(core.failureToMessage(prereqFailure)));
-      return;
-    }
-
-    final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
-    final governorates = governoratesResult.fold((_) => const <Governorate>[], (page) => page.items);
+    final groups = await groupsFuture;
+    final governorates = await governoratesFuture;
 
     if (personId == null) {
       emit(PersonWizardReady(
@@ -252,7 +238,16 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   /// reachable from the wizard, and a zero-group account would otherwise be
   /// stuck, so creating one here is the only way forward.
   Future<int?> addGroupInline(String name) async {
-    final result = await _groupRepository.createGroup(name: name);
+    // createGroupAndSync, not createGroup: the outbox (row 7.3) makes a
+    // plain createGroup optimistic (a temp negative id), but this id gets
+    // embedded directly into the in-progress person's own `groupId` — a
+    // value that can never resolve to a real server id via Person's own
+    // reconciliation, which only rewrites Person outbox rows keyed to a
+    // Person tempId, not a foreign Group tempId sitting inside an
+    // already-built Person payload. createGroupAndSync guarantees this
+    // always returns either a real, server-confirmed id or null (on
+    // failure, same as before this row).
+    final result = await _groupRepository.createGroupAndSync(name: name);
     return result.fold((failure) => null, (group) {
       _dataRefreshBus.notify(DataScope.groups);
       _updateReady((r) => r.copyWith(
@@ -289,7 +284,17 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   }
 
   Future<int?> addGovernorateInline(String name) async {
-    final result = await _governorateRepository.createGovernorate(name: name);
+    // createGovernorateAndSync, not createGovernorate: the outbox (row 8.3)
+    // makes a plain createGovernorate optimistic (a temp negative id), but
+    // this id gets embedded directly into the in-progress person's own
+    // `governorateId` — a value that can never resolve to a real server id
+    // via Person's own reconciliation, which only rewrites Person outbox
+    // rows keyed to a Person tempId, not a foreign Governorate tempId
+    // sitting inside an already-built Person payload.
+    // createGovernorateAndSync guarantees this always returns either a
+    // real, server-confirmed id or null (on failure, same as before this
+    // row).
+    final result = await _governorateRepository.createGovernorateAndSync(name: name);
     return result.fold((failure) => null, (governorate) {
       _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(
@@ -423,38 +428,122 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     if (current is! PersonWizardReady) return;
     emit(current.copyWith(isSubmitting: true, clearSubmitError: true));
 
+    // Photo/relationship uploads need a real, resolved server id right
+    // after create/update — they aren't part of the People Tier-1 pilot cut
+    // (design doc §4) and stay network-only. A submission with no such
+    // changes can go through the pure-optimistic outbox path instead
+    // (Tier 2, design doc §5) and return without waiting on the network at
+    // all, even offline.
+    final needsSync = _hasPendingChildWrites(current);
+
+    final groupName = current.availableGroups.firstWhere((g) => g.id == current.groupId).name;
+    final subGroupName = current.subGroupId == null
+        ? null
+        : current.availableSubGroups.firstWhere((s) => s.id == current.subGroupId).name;
+    final governorateName =
+        current.availableGovernorates.firstWhere((g) => g.id == current.governorateId).name;
+    final cityName =
+        current.cityId == null ? null : current.availableCities.firstWhere((c) => c.id == current.cityId).name;
+    final neighborhoodName = current.neighborhoodId == null
+        ? null
+        : current.availableNeighborhoods.firstWhere((n) => n.id == current.neighborhoodId).name;
+
     final personResult = current.isEditing
-        ? await _personRepository.updatePerson(
-            id: current.personId!,
-            name: current.name.trim(),
-            phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
-            phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
-            gender: current.gender!,
-            groupId: current.groupId!,
-            subGroupId: current.subGroupId,
-            governorateId: current.governorateId!,
-            cityId: current.cityId,
-            neighborhoodId: current.neighborhoodId,
-            notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
-          )
-        : await _personRepository.createPerson(
-            name: current.name.trim(),
-            phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
-            phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
-            gender: current.gender!,
-            groupId: current.groupId!,
-            subGroupId: current.subGroupId,
-            governorateId: current.governorateId!,
-            cityId: current.cityId,
-            neighborhoodId: current.neighborhoodId,
-            notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
-          );
+        ? (needsSync
+            ? await _personRepository.updatePersonAndSync(
+                id: current.personId!,
+                name: current.name.trim(),
+                phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
+                phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
+                gender: current.gender!,
+                groupId: current.groupId!,
+                groupName: groupName,
+                subGroupId: current.subGroupId,
+                subGroupName: subGroupName,
+                governorateId: current.governorateId!,
+                governorateName: governorateName,
+                cityId: current.cityId,
+                cityName: cityName,
+                neighborhoodId: current.neighborhoodId,
+                neighborhoodName: neighborhoodName,
+                notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+              )
+            : await _personRepository.updatePerson(
+                id: current.personId!,
+                name: current.name.trim(),
+                phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
+                phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
+                gender: current.gender!,
+                groupId: current.groupId!,
+                groupName: groupName,
+                subGroupId: current.subGroupId,
+                subGroupName: subGroupName,
+                governorateId: current.governorateId!,
+                governorateName: governorateName,
+                cityId: current.cityId,
+                cityName: cityName,
+                neighborhoodId: current.neighborhoodId,
+                neighborhoodName: neighborhoodName,
+                notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+              ))
+        : (needsSync
+            ? await _personRepository.createPersonAndSync(
+                name: current.name.trim(),
+                phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
+                phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
+                gender: current.gender!,
+                groupId: current.groupId!,
+                groupName: groupName,
+                subGroupId: current.subGroupId,
+                subGroupName: subGroupName,
+                governorateId: current.governorateId!,
+                governorateName: governorateName,
+                cityId: current.cityId,
+                cityName: cityName,
+                neighborhoodId: current.neighborhoodId,
+                neighborhoodName: neighborhoodName,
+                notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+              )
+            : await _personRepository.createPerson(
+                name: current.name.trim(),
+                phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
+                phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
+                gender: current.gender!,
+                groupId: current.groupId!,
+                groupName: groupName,
+                subGroupId: current.subGroupId,
+                subGroupName: subGroupName,
+                governorateId: current.governorateId!,
+                governorateName: governorateName,
+                cityId: current.cityId,
+                cityName: cityName,
+                neighborhoodId: current.neighborhoodId,
+                neighborhoodName: neighborhoodName,
+                notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+              ));
 
     if (isClosed) return;
     final personId = personResult.fold((failure) => null, (person) => person.id);
     if (personId == null) {
       final message = personResult.fold((f) => core.failureToMessage(f), (_) => '');
       emit(current.copyWith(isSubmitting: false, submitError: message));
+      return;
+    }
+
+    if (!needsSync) {
+      // Pure optimistic path: nothing else needs a real id, so there's
+      // nothing left to await — this is the offline-create/edit UX Tier 2
+      // unlocks (today this branch would have blocked on the network and
+      // errored outright when offline).
+      _dataRefreshBus.notify(DataScope.people);
+      if (current.didInlineAddClassification) {
+        _dataRefreshBus.notify(DataScope.classification);
+      }
+      emit(PersonWizardSubmitSuccess(
+        personId: personId,
+        personName: current.name.trim(),
+        partialFailureKeys: null,
+      ));
       return;
     }
 
@@ -474,6 +563,28 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
       personName: current.name.trim(),
       partialFailureKeys: failures.isEmpty ? null : failures,
     ));
+  }
+
+  /// Mirrors the exact removal/upload/add detection `_syncPhotos`/
+  /// `_syncRelationships` already do inline — extracted so `submit()` can
+  /// decide, before calling the repository, whether this submission needs
+  /// the network-synchronous path (design doc §5, decision 3).
+  bool _hasPendingChildWrites(PersonWizardReady draft) {
+    final currentExistingPhotoIds =
+        draft.stagedPhotos.where((p) => p.existingImageId != null).map((p) => p.existingImageId!).toSet();
+    final hasPhotoRemoval = draft.originalPhotoIds.difference(currentExistingPhotoIds).isNotEmpty;
+    final hasPhotoUpload = draft.stagedPhotos.any((p) => p.localFile != null);
+
+    final currentExistingRelationshipIds = draft.relationshipRows
+        .where((r) => r.existingRelationshipId != null)
+        .map((r) => r.existingRelationshipId!)
+        .toSet();
+    final hasRelationshipRemoval =
+        draft.originalRelationshipIds.difference(currentExistingRelationshipIds).isNotEmpty;
+    final hasRelationshipChange =
+        draft.relationshipRows.any((r) => r.isComplete && (r.existingRelationshipId == null || r.isEdited));
+
+    return hasPhotoRemoval || hasPhotoUpload || hasRelationshipRemoval || hasRelationshipChange;
   }
 
   Future<List<String>> _syncPhotos(PersonWizardReady draft, int personId) async {

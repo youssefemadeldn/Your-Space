@@ -8,6 +8,7 @@ using YourSpace.Repository.Specifications.GroupSpecifications;
 using YourSpace.Repository.Specifications.LocationSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.PersonOccasionHistoryService.Dtos;
@@ -23,8 +24,18 @@ public class PersonService(
     IR2StorageService r2StorageService,
     IOptions<R2Settings> r2Options,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<PersonService> logger) : IPersonService
 {
+    // Postgres sequence backing Person.SyncVersion (doc/local-first-sync-design.md §6) — one per
+    // synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "People_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is "hundreds of rows per
+    // user" (design doc §1), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "Person.NotFound";
@@ -33,6 +44,7 @@ public class PersonService(
         public const string GovernorateInvalid = "Person.GovernorateId.Invalid";
         public const string CityInvalid = "Person.CityId.Invalid";
         public const string NeighborhoodInvalid = "Person.NeighborhoodId.Invalid";
+        public const string SinceInvalid = "Person.Since.Invalid";
     }
 
     public async Task<ServiceResult<PersonDetailsDto>> GetDetailsAsync(string ownerUserId, int id)
@@ -169,7 +181,8 @@ public class PersonService(
             GovernorateId = dto.GovernorateId,
             CityId = dto.CityId,
             NeighborhoodId = dto.NeighborhoodId,
-            Notes = dto.Notes
+            Notes = dto.Notes,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(person);
@@ -347,6 +360,7 @@ public class PersonService(
         }
 
         person.UpdatedAt = DateTime.UtcNow;
+        person.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(person);
         await unitOfWork.SaveChangesAsync();
 
@@ -375,11 +389,52 @@ public class PersonService(
 
         person.DeletedAt = DateTime.UtcNow;
         person.UpdatedAt = DateTime.UtcNow;
+        person.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(person);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("Person {PersonId} soft-deleted for user {UserId}", id, ownerUserId);
         return ServiceResult.Ok("Person deleted successfully.");
+    }
+
+    public async Task<ServiceResult<PersonChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<PersonChangesDto>.Fail(localizer["Person.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<Person, int>();
+        var rows = await repo.ListAllWithSpecAsync(new PersonWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(p => p.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(p => p.DeletedAt != null).Select(p => p.Id).ToList();
+
+        var reciprocityPersonIds = await GetReciprocityPersonIdsAsync(ownerUserId);
+        var upsertIds = upsertRows.Select(p => p.Id).ToList();
+        var photoUrlByPersonId = await ResolvePrimaryPhotoUrlsAsync(upsertIds, ownerUserId);
+
+        var upserts = upsertRows.Select(p =>
+        {
+            var dto = mapper.Map<PersonProfileDto>(p);
+            dto.HasReciprocityHistory = reciprocityPersonIds.Contains(p.Id);
+            dto.PrimaryPhotoUrl = photoUrlByPersonId.GetValueOrDefault(p.Id);
+            return dto;
+        }).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(p => p.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<PersonChangesDto>.Ok(new PersonChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 
     private async Task<List<PersonOccasionHistoryProfileDto>> GetHistoryAsync(int personId, string ownerUserId)

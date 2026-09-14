@@ -466,12 +466,17 @@ namespace YourSpace.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<long>("SyncVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("OwnerUserId", "SyncVersion");
 
                     b.ToTable("Groups");
                 });
@@ -605,6 +610,9 @@ namespace YourSpace.Data.Migrations
                     b.Property<int?>("SubGroupId")
                         .HasColumnType("integer");
 
+                    b.Property<long>("SyncVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -627,6 +635,8 @@ namespace YourSpace.Data.Migrations
                     b.HasIndex("OwnerUserId", "GroupId");
 
                     b.HasIndex("OwnerUserId", "SubGroupId");
+
+                    b.HasIndex("OwnerUserId", "SyncVersion");
 
                     b.ToTable("People");
                 });

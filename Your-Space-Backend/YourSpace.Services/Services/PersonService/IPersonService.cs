@@ -15,4 +15,6 @@ public interface IPersonService
     Task<ServiceResult<PersonDetailsDto>> CreateAsync(string ownerUserId, CreatePersonDto dto);
     Task<ServiceResult<PersonDetailsDto>> UpdateAsync(string ownerUserId, UpdatePersonDto dto);
     Task<ServiceResult> DeleteAsync(string ownerUserId, int id);
+
+    Task<ServiceResult<PersonChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize);
 }

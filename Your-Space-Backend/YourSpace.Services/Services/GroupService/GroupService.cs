@@ -6,6 +6,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.GroupSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.GroupService.Dtos;
@@ -16,12 +17,23 @@ public class GroupService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<GroupService> logger) : IGroupService
 {
+    // Postgres sequence backing Group.SyncVersion (doc/local-first-sync-design.md §6) — one per
+    // synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "Groups_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is "small, low cardinality"
+    // (design doc §1/§2), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "Group.NotFound";
         public const string HasActivePersons = "Group.HasActivePersons";
+        public const string SinceInvalid = "Group.Since.Invalid";
     }
 
     public async Task<ServiceResult<GroupDetailsDto>> GetDetailsAsync(string ownerUserId, int id)
@@ -62,7 +74,8 @@ public class GroupService(
         {
             OwnerUserId = ownerUserId,
             Name = dto.Name,
-            NameAr = dto.NameAr
+            NameAr = dto.NameAr,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(group);
@@ -93,6 +106,7 @@ public class GroupService(
         }
 
         group.UpdatedAt = DateTime.UtcNow;
+        group.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(group);
         await unitOfWork.SaveChangesAsync();
 
@@ -124,10 +138,41 @@ public class GroupService(
 
         group.DeletedAt = DateTime.UtcNow;
         group.UpdatedAt = DateTime.UtcNow;
+        group.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(group);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("Group {GroupId} soft-deleted for user {UserId}", id, ownerUserId);
         return ServiceResult.Ok("Group deleted successfully.");
+    }
+
+    public async Task<ServiceResult<GroupChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<GroupChangesDto>.Fail(localizer["Group.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<Group, int>();
+        var rows = await repo.ListAllWithSpecAsync(new GroupWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(g => g.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(g => g.DeletedAt != null).Select(g => g.Id).ToList();
+
+        var upserts = upsertRows.Select(mapper.Map<GroupProfileDto>).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(g => g.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<GroupChangesDto>.Ok(new GroupChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 }

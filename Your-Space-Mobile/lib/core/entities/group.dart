@@ -7,9 +7,10 @@ class Group extends Equatable {
   final int id;
   final String name;
   final String? nameAr;
+  final DateTime? updatedAt;
 
-  const Group({required this.id, required this.name, this.nameAr});
+  const Group({required this.id, required this.name, this.nameAr, this.updatedAt});
 
   @override
-  List<Object?> get props => [id, name, nameAr];
+  List<Object?> get props => [id, name, nameAr, updatedAt];
 }

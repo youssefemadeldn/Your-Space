@@ -8,13 +8,16 @@ import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_governorate_request.dart';
 import '../models/governorate_response.dart';
+import 'base_governorate_data_source.dart';
 
-@lazySingleton
-class GovernorateRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseGovernorateDataSource)
+class GovernorateRemoteDataSourceImpl implements BaseGovernorateDataSource {
   final ApiManager _api;
 
   GovernorateRemoteDataSourceImpl(this._api);
 
+  @override
   Future<Either<Failure, PaginatedResponse<GovernorateResponse>>> getGovernorates({
     String? search,
     required int pageIndex,
@@ -32,6 +35,7 @@ class GovernorateRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, GovernorateResponse>> createGovernorate(CreateGovernorateRequest request) =>
       _api.post<GovernorateResponse>(
         path: ApiConstants.governorates,

@@ -27,4 +27,6 @@ public class PersonDetailsDto
     public required IReadOnlyList<PersonOccasionHistoryProfileDto> OccasionHistory { get; set; }
     public required IReadOnlyList<PersonRelationshipProfileDto> Relationships { get; set; }
     public required DateTime CreatedAt { get; set; }
+    public required DateTime UpdatedAt { get; set; }
+    public required long SyncVersion { get; set; }
 }

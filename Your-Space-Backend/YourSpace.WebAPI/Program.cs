@@ -8,6 +8,7 @@ using Serilog;
 using StackExchange.Redis;
 using YourSpace.Data.Contexts;
 using YourSpace.Data.Entities;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.WebAPI.Extensions;
 using YourSpace.WebAPI.Helpers;
@@ -133,7 +134,8 @@ if (app.Environment.IsDevelopment())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        await MockDataSeeder.SeedAsync(dbContext, userManager);
+        var syncVersionProvider = scope.ServiceProvider.GetRequiredService<ISyncVersionProvider>();
+        await MockDataSeeder.SeedAsync(dbContext, userManager, syncVersionProvider);
     }
 
     app.UseOpenApi();

@@ -8,6 +8,11 @@ di-annotation: "@LazySingleton(as: <Feature>Repository)"
 
 Single file. Replace all `<Placeholder>` tokens before use.
 
+> **Synced features (local-first, CLAUDE.md Architecture rule 7):** the repository reads from
+> the local drift store and exposes a `Stream`, and routes writes through the `outbox` — not
+> the `_remote`/`_local` fallback fold shown below. The local-first variant of this template
+> is pending approval of `doc/local-first-sync-design.md`.
+
 ---
 
 ## `data/repositories/<feature>_repository_impl.dart`

@@ -11,7 +11,6 @@ import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
-import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_neighborhood_repository.dart';
@@ -64,6 +63,42 @@ void main() {
     governorateName: 'Cairo',
   );
 
+  /// Stubs a `watchPersons`/`countPersons` pair for a full set of filter
+  /// values (defaults match `PeopleListCubit`'s "no filters" call shape).
+  void stubPersons({
+    int? groupId,
+    int? subGroupId,
+    int? governorateId,
+    int? cityId,
+    int? neighborhoodId,
+    String? search,
+    required int limit,
+    required List<Person> people,
+    required int total,
+  }) {
+    when(
+      () => personRepository.watchPersons(
+        groupId: groupId,
+        subGroupId: subGroupId,
+        governorateId: governorateId,
+        cityId: cityId,
+        neighborhoodId: neighborhoodId,
+        search: search,
+        limit: limit,
+      ),
+    ).thenAnswer((_) => Stream.value(people));
+    when(
+      () => personRepository.countPersons(
+        groupId: groupId,
+        subGroupId: subGroupId,
+        governorateId: governorateId,
+        cityId: cityId,
+        neighborhoodId: neighborhoodId,
+        search: search,
+      ),
+    ).thenAnswer((_) async => total);
+  }
+
   setUp(() {
     personRepository = MockPersonRepository();
     groupRepository = MockGroupRepository();
@@ -86,21 +121,18 @@ void main() {
       (_) async =>
           const Right(PaginatedResult(items: [family, closeFriends], pageIndex: 1, totalPages: 1, totalItems: 2)),
     );
-    when(() => governorateRepository.getGovernorates(pageIndex: 1, pageSize: 50)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: <Governorate>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
-    );
+    when(() => governorateRepository.watchGovernorates(limit: 50))
+        .thenAnswer((_) => Stream.value(const <Governorate>[]));
     when(() => subGroupRepository.getSubGroups(groupId: family.id, pageIndex: 1, pageSize: 50)).thenAnswer(
       (_) async => const Right(PaginatedResult(items: <SubGroup>[], pageIndex: 1, totalPages: 1, totalItems: 0)),
     );
+    when(() => personRepository.refreshPersons()).thenAnswer((_) async => const Right(unit));
   });
 
   tearDown(() => cubit.close());
 
-  test('emits [Loading, Success] with people and groups on load', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async =>
-          const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-    );
+  test('emits [Loading, Success] with people and groups on load, and kicks off a background refresh', () async {
+    stubPersons(limit: 20, people: const [person1, person2], total: 2);
 
     final expectation = expectLater(
       cubit.stream,
@@ -112,98 +144,128 @@ void main() {
       ]),
     );
 
-    unawaited(cubit.load());
+    await cubit.load();
     await expectation;
+
+    verify(() => personRepository.refreshPersons()).called(1);
   });
 
-  test('filterByGroup narrows the list and tracks selectedGroupId', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async =>
-          const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-    );
+  test('filterByGroup resubscribes with the new filter and resets to the base limit', () async {
+    stubPersons(limit: 20, people: const [person1, person2], total: 2);
     await cubit.load();
 
-    when(() => personRepository.getPersons(groupId: family.id, pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+    stubPersons(groupId: family.id, limit: 20, people: const [person1], total: 1);
 
     await cubit.filterByGroup(family.id);
 
     final state = cubit.state as PeopleListSuccess;
     expect(state.selectedGroupId, family.id);
     expect(state.people, [person1]);
+    expect(state.limit, 20);
   });
 
-  test('loadMore appends the next page and advances pageIndex', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 2, totalItems: 2)),
-    );
+  test('loadMore grows the limit and hasNextPage reflects the exact count', () async {
+    stubPersons(limit: 20, people: const [person1], total: 2);
     await cubit.load();
+    expect((cubit.state as PeopleListSuccess).hasNextPage, isTrue);
 
-    when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 2, pageSize: 20))
-        .thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 2, totalPages: 2, totalItems: 2)),
-    );
+    stubPersons(limit: 40, people: const [person1, person2], total: 2);
 
     await cubit.loadMore();
 
     final state = cubit.state as PeopleListSuccess;
     expect(state.people, [person1, person2]);
-    expect(state.pageIndex, 2);
+    expect(state.limit, 40);
     expect(state.hasNextPage, isFalse);
   });
 
   test('loadMore is a no-op when hasNextPage is already false', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+    stubPersons(limit: 20, people: const [person1], total: 1);
     await cubit.load();
 
     await cubit.loadMore();
 
-    verifyNever(() => personRepository.getPersons(
-          groupId: any(named: 'groupId'),
-          search: any(named: 'search'),
-          pageIndex: 2,
-          pageSize: any(named: 'pageSize'),
-        ));
+    verifyNever(
+      () => personRepository.watchPersons(
+        groupId: any(named: 'groupId'),
+        subGroupId: any(named: 'subGroupId'),
+        governorateId: any(named: 'governorateId'),
+        cityId: any(named: 'cityId'),
+        neighborhoodId: any(named: 'neighborhoodId'),
+        search: any(named: 'search'),
+        limit: 40,
+      ),
+    );
   });
 
   test('loadMore ignores a second concurrent call while the first is in flight', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 2, totalItems: 2)),
-    );
+    stubPersons(limit: 20, people: const [person1], total: 2);
     await cubit.load();
 
-    final completer = Completer<Either<Failure, PaginatedResult<Person>>>();
-    when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 2, pageSize: 20))
-        .thenAnswer((_) => completer.future);
+    final controller = StreamController<List<Person>>();
+    when(
+      () => personRepository.watchPersons(
+        groupId: null,
+        subGroupId: null,
+        governorateId: null,
+        cityId: null,
+        neighborhoodId: null,
+        search: null,
+        limit: 40,
+      ),
+    ).thenAnswer((_) => controller.stream);
+    when(
+      () => personRepository.countPersons(
+        groupId: null,
+        subGroupId: null,
+        governorateId: null,
+        cityId: null,
+        neighborhoodId: null,
+        search: null,
+      ),
+    ).thenAnswer((_) async => 2);
 
     final first = cubit.loadMore();
     final second = cubit.loadMore();
-    completer.complete(
-      const Right(PaginatedResult(items: [person2], pageIndex: 2, totalPages: 2, totalItems: 2)),
-    );
+    controller.add(const [person1, person2]);
+    await controller.close();
     await first;
     await second;
 
-    verify(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 2, pageSize: 20)).called(1);
+    verify(
+      () => personRepository.watchPersons(
+        groupId: null,
+        subGroupId: null,
+        governorateId: null,
+        cityId: null,
+        neighborhoodId: null,
+        search: null,
+        limit: 40,
+      ),
+    ).called(1);
   });
 
-  test('loadMore preserves existing items and resets isLoadingMore on failure', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 2, totalItems: 2)),
-    );
+  test('loadMore preserves the existing items/limit and resets isLoadingMore on failure', () async {
+    stubPersons(limit: 20, people: const [person1], total: 2);
     await cubit.load();
 
-    when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 2, pageSize: 20))
-        .thenAnswer((_) async => const Left(NetworkFailure()));
+    when(
+      () => personRepository.watchPersons(
+        groupId: null,
+        subGroupId: null,
+        governorateId: null,
+        cityId: null,
+        neighborhoodId: null,
+        search: null,
+        limit: 40,
+      ),
+    ).thenAnswer((_) => Stream.error(Exception('local I/O error')));
 
     await cubit.loadMore();
 
     final state = cubit.state as PeopleListSuccess;
     expect(state.people, [person1]);
-    expect(state.pageIndex, 1);
+    expect(state.limit, 20);
     expect(state.hasNextPage, isTrue);
     expect(state.isLoadingMore, isFalse);
     expect(state.loadMoreErrorMessage, isNotNull);
@@ -211,48 +273,31 @@ void main() {
   });
 
   group('DataRefreshBus', () {
-    // Reproduces the original bug: PeopleListCubit is a shell-branch cubit,
-    // built once by IndexedStack and never rebuilt — a person added via the
-    // sibling PersonForm route never reached it until logout/login. A bus
-    // notification must now silently pull the updated list in.
-    test('a `people` notification re-fetches page 1 preserving filter/search, no Loading flash', () async {
-      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async =>
-            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-      );
+    test('a `people` notification no longer triggers anything — the write-path upsert keeps the stream current',
+        () async {
+      stubPersons(limit: 20, people: const [person1, person2], total: 2);
       await cubit.load();
-
-      const newPerson = Person(
-        id: 3,
-        name: 'Laila Fathy',
-        gender: Gender.female,
-        groupId: 1,
-        groupName: 'Family',
-        governorateId: 1,
-        governorateName: 'Cairo',
-      );
-      when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async => const Right(
-          PaginatedResult(items: [person1, person2, newPerson], pageIndex: 1, totalPages: 1, totalItems: 3),
-        ),
-      );
-
-      final states = <dynamic>[];
-      final sub = cubit.stream.listen(states.add);
+      clearInteractions(personRepository);
 
       dataRefreshBus.notify(DataScope.people);
       await Future<void>.delayed(Duration.zero);
-      await sub.cancel();
 
-      expect(states, isNot(contains(isA<PeopleListLoading>())));
-      expect(cubit.state, isA<PeopleListSuccess>().having((s) => s.people, 'people', [person1, person2, newPerson]));
+      verifyNever(() => personRepository.refreshPersons());
+      verifyNever(
+        () => personRepository.watchPersons(
+          groupId: any(named: 'groupId'),
+          subGroupId: any(named: 'subGroupId'),
+          governorateId: any(named: 'governorateId'),
+          cityId: any(named: 'cityId'),
+          neighborhoodId: any(named: 'neighborhoodId'),
+          search: any(named: 'search'),
+          limit: any(named: 'limit'),
+        ),
+      );
     });
 
-    test('a `groups` notification refreshes only the group dropdown, leaving the people page untouched', () async {
-      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async =>
-            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-      );
+    test('a `groups` notification refreshes only the group dropdown, leaving the people list untouched', () async {
+      stubPersons(limit: 20, people: const [person1, person2], total: 2);
       await cubit.load();
 
       const newGroup = Group(id: 3, name: 'Book club');
@@ -268,23 +313,6 @@ void main() {
       final state = cubit.state as PeopleListSuccess;
       expect(state.groups, [family, closeFriends, newGroup]);
       expect(state.people, [person1, person2]);
-    });
-
-    test('a failed background refresh keeps the last-good list on screen', () async {
-      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-        (_) async =>
-            const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-      );
-      await cubit.load();
-      final beforeRefresh = cubit.state;
-
-      when(() => personRepository.getPersons(groupId: null, search: null, pageIndex: 1, pageSize: 20))
-          .thenAnswer((_) async => const Left(NetworkFailure()));
-
-      dataRefreshBus.notify(DataScope.people);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(cubit.state, beforeRefresh);
     });
   });
 }

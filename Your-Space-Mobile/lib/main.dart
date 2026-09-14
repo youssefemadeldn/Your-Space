@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/di/injection_container.dart';
+import 'core/sync/sync_service.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
@@ -14,6 +15,12 @@ Future<void> main() async {
   await initializeDateFormatting('en');
   await initializeDateFormatting('ar');
   await configureDependencies();
+
+  // Eager warm-up: SyncService is @lazySingleton and nothing else in the
+  // app is guaranteed to resolve it at startup. Touching it here is what
+  // triggers its constructor (connectivity subscription + cold-start check,
+  // design doc §5) — it is never awaited or referenced again after this.
+  getIt<SyncService>();
 
   runApp(
     EasyLocalization(
