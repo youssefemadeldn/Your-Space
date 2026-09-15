@@ -189,10 +189,14 @@ import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cu
     as _i136;
 import 'package:your_space_mobile/features/people/data/datasources/base_person_data_source.dart'
     as _i498;
+import 'package:your_space_mobile/features/people/data/datasources/base_person_relationship_data_source.dart'
+    as _i1008;
 import 'package:your_space_mobile/features/people/data/datasources/person_image_remote_data_source_impl.dart'
     as _i931;
 import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart'
     as _i439;
+import 'package:your_space_mobile/features/people/data/datasources/person_relationship_local_data_source_impl.dart'
+    as _i732;
 import 'package:your_space_mobile/features/people/data/datasources/person_relationship_remote_data_source_impl.dart'
     as _i903;
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart'
@@ -207,6 +211,10 @@ import 'package:your_space_mobile/features/people/data/sync/person_collection_pu
     as _i946;
 import 'package:your_space_mobile/features/people/data/sync/person_outbox_replayer.dart'
     as _i622;
+import 'package:your_space_mobile/features/people/data/sync/person_relationship_collection_puller.dart'
+    as _i816;
+import 'package:your_space_mobile/features/people/data/sync/person_relationship_outbox_replayer.dart'
+    as _i66;
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_image_repository.dart'
     as _i1005;
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_relationship_repository.dart'
@@ -298,6 +306,11 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i439.PersonLocalDataSourceImpl(gh<_i935.AppDatabase>()),
       instanceName: 'local',
     );
+    gh.lazySingleton<_i732.PersonRelationshipLocalDataSourceImpl>(
+      () =>
+          _i732.PersonRelationshipLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
     gh.lazySingleton<_i733.DialogHelper>(
       () => _i733.DialogHelper(gh<_i409.GlobalKey<_i409.NavigatorState>>()),
     );
@@ -358,10 +371,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i931.PersonImageRemoteDataSourceImpl>(
       () => _i931.PersonImageRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
-    gh.lazySingleton<_i903.PersonRelationshipRemoteDataSourceImpl>(
-      () =>
-          _i903.PersonRelationshipRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
     gh.lazySingleton<_i423.BaseNeighborhoodDataSource>(
       () => _i46.NeighborhoodRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
@@ -402,10 +411,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i352.GovernorateRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
-    gh.lazySingleton<_i126.PersonRelationshipRepository>(
-      () => _i630.PersonRelationshipRepositoryImpl(
-        gh<_i903.PersonRelationshipRemoteDataSourceImpl>(),
-      ),
+    gh.lazySingleton<_i1008.BasePersonRelationshipDataSource>(
+      () =>
+          _i903.PersonRelationshipRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
     );
     gh.lazySingleton<_i219.EventRepository>(
       () => _i155.EventRepositoryImpl(
@@ -571,12 +580,26 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i771.GroupsListCubit>(
       () => _i771.GroupsListCubit(gh<_i994.GroupRepository>()),
     );
+    gh.lazySingleton<_i126.PersonRelationshipRepository>(
+      () => _i630.PersonRelationshipRepositoryImpl(
+        gh<_i1008.BasePersonRelationshipDataSource>(instanceName: 'remote'),
+        gh<_i732.PersonRelationshipLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i571.PersonRepository>(),
+      ),
+    );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i774.GovernorateOutboxReplayer(
         gh<_i721.BaseGovernorateDataSource>(instanceName: 'remote'),
         gh<_i577.GovernorateLocalDataSourceImpl>(instanceName: 'local'),
       ),
       instanceName: 'governorate',
+    );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i66.PersonRelationshipOutboxReplayer(
+        gh<_i1008.BasePersonRelationshipDataSource>(instanceName: 'remote'),
+        gh<_i732.PersonRelationshipLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'personRelationship',
     );
     gh.factory<_i895.AddGuestsListCubit>(
       () => _i895.AddGuestsListCubit(
@@ -625,6 +648,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i680.AuthRepository>()),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i816.PersonRelationshipCollectionPuller(
+        gh<_i126.PersonRelationshipRepository>(),
+      ),
+      instanceName: 'personRelationship',
     );
     gh.factory<_i889.EventGuestsListCubit>(
       () => _i889.EventGuestsListCubit(

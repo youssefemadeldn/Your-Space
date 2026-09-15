@@ -218,6 +218,14 @@ class PersonLocalDataSourceImpl {
   ///     Feature → Feature one. Mirrors `EventLocalDataSourceImpl.
   ///     reconcileCreatedEvent`'s own 4th step (decode/patch/re-encode,
   ///     never string-replace).
+  ///  6. row 9.14 — a second dependent-rewrite step, this time touching
+  ///     **two** FK columns on the same `PersonRelationshipsTable` row
+  ///     (`personId` and `relatedPersonId`), since either side of a
+  ///     relationship pair could reference an offline-created Person. Also
+  ///     rewrites any still-queued `entityType='personRelationship'` outbox
+  ///     payload's `personId`/`relatedPersonId` keys — that payload is the
+  ///     one queued by `PersonRelationshipRepositoryImpl.createRelationship`,
+  ///     shared by both halves of the pair (row 9.13).
   Future<void> reconcileCreatedPerson({
     required int tempId,
     required Person realPerson,
@@ -252,6 +260,30 @@ class PersonLocalDataSourceImpl {
           final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
           if (payload['personId'] != tempId) continue;
           payload['personId'] = realPerson.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
+
+        await (_db.update(_db.personRelationshipsTable)..where((t) => t.personId.equals(tempId)))
+            .write(PersonRelationshipsTableCompanion(personId: Value(realPerson.id)));
+        await (_db.update(_db.personRelationshipsTable)..where((t) => t.relatedPersonId.equals(tempId)))
+            .write(PersonRelationshipsTableCompanion(relatedPersonId: Value(realPerson.id)));
+
+        final pendingRelationshipRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('personRelationship') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingRelationshipRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          var changed = false;
+          if (payload['personId'] == tempId) {
+            payload['personId'] = realPerson.id;
+            changed = true;
+          }
+          if (payload['relatedPersonId'] == tempId) {
+            payload['relatedPersonId'] = realPerson.id;
+            changed = true;
+          }
+          if (!changed) continue;
           await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
               .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
         }

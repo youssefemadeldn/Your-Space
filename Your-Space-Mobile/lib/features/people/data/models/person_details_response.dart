@@ -103,36 +103,51 @@ class PersonDetailsResponse {
           hasReciprocityHistory: hasReciprocityHistory,
         ),
         occasionHistory: occasionHistory.map((e) => e.toEntity()).toList(),
-        relationships: relationships.map((e) => e.toEntity()).toList(),
+        relationships: relationships.map((e) => e.toEntity(id)).toList(),
         createdAt: createdAt,
       );
 }
 
 /// `PersonRelationshipProfileDto` — nested inside `PersonDetailsDto.relationships`.
+/// Parses `PersonRelationshipProfileDto`'s fields (list/mutation responses).
+/// The nested per-person route never sends `personId` (the route already
+/// implies it) — [personId] is nullable here and [toEntity] accepts an
+/// explicit override for that caller. Row 9.11/9.13's flat "all mine"
+/// endpoint does send it, since that response spans every person the owner
+/// has. [inverseId] is likewise only ever present on that flat response
+/// (mirrors the entity's own `InverseRelationshipId`).
 class PersonRelationshipResponse {
   final int id;
+  final int? personId;
   final int relatedPersonId;
   final String relatedPersonName;
   final RelationType relationType;
+  final int? inverseId;
 
   const PersonRelationshipResponse({
     required this.id,
+    this.personId,
     required this.relatedPersonId,
     required this.relatedPersonName,
     required this.relationType,
+    this.inverseId,
   });
 
   factory PersonRelationshipResponse.fromJson(Map<String, dynamic> json) => PersonRelationshipResponse(
         id: json['id'] as int,
+        personId: json['personId'] as int?,
         relatedPersonId: json['relatedPersonId'] as int,
         relatedPersonName: json['relatedPersonName'] as String,
         relationType: RelationType.fromWire(json['relationType'] as String),
+        inverseId: json['inverseRelationshipId'] as int?,
       );
 
-  core.PersonRelationship toEntity() => core.PersonRelationship(
+  core.PersonRelationship toEntity([int? personIdOverride]) => core.PersonRelationship(
         id: id,
+        personId: personIdOverride ?? personId ?? (throw StateError('PersonRelationshipResponse.toEntity: no personId available')),
         relatedPersonId: relatedPersonId,
         relatedPersonName: relatedPersonName,
         relationType: relationType,
+        inverseId: inverseId,
       );
 }

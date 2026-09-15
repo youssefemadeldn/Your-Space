@@ -428,5 +428,81 @@ void main() {
         expect(guestOutboxRow.payloadJson, contains('"personId":999'));
       },
     );
+
+    test(
+      'row 9.14: rewrites a dependent PersonRelationshipsTable row on BOTH its personId and '
+      'relatedPersonId columns, and a still-queued personRelationship outbox payload',
+      () async {
+        const tempId = -555;
+        final personRowId = await dataSource.queuePersonMutation(
+          person: _person(id: tempId, name: 'Offline Person'),
+          operation: 'create',
+          payloadJson: '{"name":"Offline Person"}',
+        );
+        // personId references the temp id directly; relatedPersonId (a
+        // different, already-synced person's own inverse row) also
+        // references it — both columns must be rewritten independently.
+        await database.into(database.personRelationshipsTable).insert(
+              PersonRelationshipsTableCompanion.insert(
+                id: const Value(-1),
+                personId: tempId,
+                relatedPersonId: 42,
+                relatedPersonName: 'Ahmed',
+                relationType: 'Father',
+                isDirty: const Value(true),
+              ),
+            );
+        await database.into(database.personRelationshipsTable).insert(
+              PersonRelationshipsTableCompanion.insert(
+                id: const Value(-2),
+                personId: 42,
+                relatedPersonId: tempId,
+                relatedPersonName: 'Offline Person',
+                relationType: 'Son',
+                isDirty: const Value(true),
+              ),
+            );
+        await database.into(database.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'personRelationship',
+                entityId: -1,
+                operation: 'create',
+                payloadJson: '{"personId":$tempId,"relatedPersonId":42,"relationType":"Father"}',
+              ),
+            );
+
+        const realPerson = Person(
+          id: 999,
+          name: 'Offline Person',
+          gender: Gender.male,
+          groupId: 1,
+          groupName: 'Group 1',
+          governorateId: 1,
+          governorateName: 'Governorate 1',
+        );
+        await dataSource.reconcileCreatedPerson(
+          tempId: tempId,
+          realPerson: realPerson,
+          replayedOutboxRowId: personRowId,
+        );
+
+        final forwardRow = await (database.select(database.personRelationshipsTable)
+              ..where((t) => t.id.equals(-1)))
+            .getSingle();
+        expect(forwardRow.personId, 999);
+
+        final inverseRow = await (database.select(database.personRelationshipsTable)
+              ..where((t) => t.id.equals(-2)))
+            .getSingle();
+        expect(inverseRow.relatedPersonId, 999);
+
+        final relationshipOutboxRow = (await (database.select(database.outboxTable)
+                  ..where((t) => t.entityType.equals('personRelationship')))
+                .get())
+            .single;
+        expect(relationshipOutboxRow.payloadJson, contains('"personId":999'));
+        expect(relationshipOutboxRow.payloadJson, contains('"relatedPersonId":42'));
+      },
+    );
   });
 }
