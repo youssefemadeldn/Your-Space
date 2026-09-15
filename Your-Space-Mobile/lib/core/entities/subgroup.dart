@@ -9,6 +9,7 @@ class SubGroup extends Equatable {
   final String name;
   final String? nameAr;
   final int personCount;
+  final DateTime? updatedAt;
 
   const SubGroup({
     required this.id,
@@ -16,6 +17,7 @@ class SubGroup extends Equatable {
     required this.name,
     this.nameAr,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   /// Used by `SubGroupListCubit` to merge the one-shot server-computed
@@ -27,8 +29,9 @@ class SubGroup extends Equatable {
         name: name,
         nameAr: nameAr,
         personCount: personCount ?? this.personCount,
+        updatedAt: updatedAt,
       );
 
   @override
-  List<Object?> get props => [id, groupId, name, nameAr, personCount];
+  List<Object?> get props => [id, groupId, name, nameAr, personCount, updatedAt];
 }

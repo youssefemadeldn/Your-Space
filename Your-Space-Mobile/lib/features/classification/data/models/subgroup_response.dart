@@ -9,6 +9,7 @@ class SubGroupResponse {
   final String name;
   final String? nameAr;
   final int personCount;
+  final DateTime? updatedAt;
 
   const SubGroupResponse({
     required this.id,
@@ -16,6 +17,7 @@ class SubGroupResponse {
     required this.name,
     this.nameAr,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   factory SubGroupResponse.fromJson(Map<String, dynamic> json) => SubGroupResponse(
@@ -24,7 +26,15 @@ class SubGroupResponse {
         name: json['name'] as String,
         nameAr: json['nameAr'] as String?,
         personCount: json['personCount'] as int? ?? 0,
+        updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
 
-  SubGroup toEntity() => SubGroup(id: id, groupId: groupId, name: name, nameAr: nameAr, personCount: personCount);
+  SubGroup toEntity() => SubGroup(
+        id: id,
+        groupId: groupId,
+        name: name,
+        nameAr: nameAr,
+        personCount: personCount,
+        updatedAt: updatedAt,
+      );
 }
