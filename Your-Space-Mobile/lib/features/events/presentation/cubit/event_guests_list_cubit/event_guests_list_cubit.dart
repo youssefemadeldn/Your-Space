@@ -36,8 +36,9 @@ class EventGuestsListCubit extends Cubit<EventGuestsListState> {
   Future<void> load(int eventId) async {
     _eventId = eventId;
     emit(const EventGuestsListLoading());
-    final groupsResult = await _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
-    final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
+    // Group is local-first (CLAUDE.md Architecture rule 7) — a local read
+    // can't fail the way a network call can.
+    final groups = await _groupRepository.watchGroups(limit: 50).first;
     await _subscribeToGuests(groups: groups, groupId: null, status: null, limit: _pageSize);
   }
 

@@ -45,6 +45,7 @@ void main() {
     when(() => local.applyEventChanges(upserts: any(named: 'upserts'), tombstoneIds: any(named: 'tombstoneIds')))
         .thenAnswer((_) async {});
     when(() => local.saveEventsSyncCursor(any())).thenAnswer((_) async {});
+    when(() => local.saveEvent(any())).thenAnswer((_) async {});
   });
 
   test('getEventById maps the response to an entity', () async {
@@ -57,13 +58,33 @@ void main() {
     expect(result, const Right(Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5)));
   });
 
-  test('getEventById propagates a failure unchanged', () async {
+  test('getEventById propagates a non-network failure unchanged', () async {
     const failure = ServerFailure(statusCode: 404, message: 'Not found', errorCode: 'Event.NotFound');
     when(() => remote.getEventById(999)).thenAnswer((_) async => const Left(failure));
 
     final result = await repository.getEventById(999);
 
     expect(result, const Left(failure));
+  });
+
+  test('getEventById falls back to the cached event on a NetworkFailure', () async {
+    when(() => remote.getEventById(1)).thenAnswer((_) async => const Left(NetworkFailure()));
+    when(() => local.getCachedEventById(1)).thenAnswer(
+      (_) async => const Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5),
+    );
+
+    final result = await repository.getEventById(1);
+
+    expect(result, const Right(Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5)));
+  });
+
+  test('getEventById surfaces the NetworkFailure when nothing is cached', () async {
+    when(() => remote.getEventById(2)).thenAnswer((_) async => const Left(NetworkFailure()));
+    when(() => local.getCachedEventById(2)).thenAnswer((_) async => null);
+
+    final result = await repository.getEventById(2);
+
+    expect(result, const Left(NetworkFailure()));
   });
 
   test('watchEvents delegates straight to the local data source', () {

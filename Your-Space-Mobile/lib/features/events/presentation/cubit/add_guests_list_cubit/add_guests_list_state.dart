@@ -22,9 +22,10 @@ final class AddGuestsListLoading extends AddGuestsListState {
 }
 
 /// [availablePeople] excludes persons already on this event's guest list —
-/// the checklist should never let the user redundantly re-select them. Only
-/// correctly excludes the event's first 50 already-added guests (see cubit
-/// doc comment) — an accepted personal-scale approximation.
+/// the checklist should never let the user redundantly re-select them.
+/// EventGuest is local-first (row 9.8), so the cubit's `load()` reads the
+/// event's complete local guest set via `watchEventGuests(..., limit:
+/// 1000000)`, not just a first page — the exclusion set is exact.
 ///
 /// [groupProgress] backs the "by group" tab's per-group availability count
 /// (`totalPersonsInGroup - guestsAddedCount`) — sourced from the same
@@ -46,7 +47,7 @@ final class AddGuestsListSuccess extends AddGuestsListState {
   final List<SubGroup> subGroupOptions;
   final List<City> cityOptions;
   final List<Neighborhood> neighborhoodOptions;
-  final int pageIndex;
+  final int limit;
   final bool hasNextPage;
   final bool isLoadingMore;
 
@@ -57,7 +58,7 @@ final class AddGuestsListSuccess extends AddGuestsListState {
     this.subGroupOptions = const [],
     this.cityOptions = const [],
     this.neighborhoodOptions = const [],
-    required this.pageIndex,
+    required this.limit,
     required this.hasNextPage,
     this.isLoadingMore = false,
   });
@@ -74,7 +75,7 @@ final class AddGuestsListSuccess extends AddGuestsListState {
     List<SubGroup>? subGroupOptions,
     List<City>? cityOptions,
     List<Neighborhood>? neighborhoodOptions,
-    int? pageIndex,
+    int? limit,
     bool? hasNextPage,
     bool? isLoadingMore,
   }) =>
@@ -85,7 +86,7 @@ final class AddGuestsListSuccess extends AddGuestsListState {
         subGroupOptions: subGroupOptions ?? this.subGroupOptions,
         cityOptions: cityOptions ?? this.cityOptions,
         neighborhoodOptions: neighborhoodOptions ?? this.neighborhoodOptions,
-        pageIndex: pageIndex ?? this.pageIndex,
+        limit: limit ?? this.limit,
         hasNextPage: hasNextPage ?? this.hasNextPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       );
@@ -98,7 +99,7 @@ final class AddGuestsListSuccess extends AddGuestsListState {
         subGroupOptions,
         cityOptions,
         neighborhoodOptions,
-        pageIndex,
+        limit,
         hasNextPage,
         isLoadingMore,
       ];

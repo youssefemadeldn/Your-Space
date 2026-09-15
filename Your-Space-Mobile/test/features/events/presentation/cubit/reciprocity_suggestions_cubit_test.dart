@@ -46,8 +46,7 @@ void main() {
     groupRepository = MockGroupRepository();
     cubit = ReciprocitySuggestionsCubit(eventGuestRepository, groupRepository);
 
-    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50))
-        .thenAnswer((_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 0)));
+    when(() => groupRepository.watchGroups(limit: 50)).thenAnswer((_) => Stream.value(const []));
   });
 
   tearDown(() => cubit.close());

@@ -164,6 +164,15 @@ class PersonLocalDataSourceImpl {
   Future<void> savePerson(Person person) =>
       _db.into(_db.personsTable).insertOnConflictUpdate(_toCompanion(person));
 
+  /// One-shot cached read by id — powers `PersonRepositoryImpl.getPersonById`'s
+  /// offline fallback (design doc §7: detail reads are still one-shot
+  /// `Future` calls, not a reactive `Stream`, so this is a cache-then-network
+  /// read rather than a true local-first one).
+  Future<Person?> getCachedPersonById(int id) async {
+    final row = await (_db.select(_db.personsTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _toEntity(row);
+  }
+
   /// Tier 2 optimistic write (design doc §5): writes [person] into
   /// PersonsTable (marked dirty) and appends one OutboxTable row, in the
   /// same drift transaction. Returns the new outbox row's id so the

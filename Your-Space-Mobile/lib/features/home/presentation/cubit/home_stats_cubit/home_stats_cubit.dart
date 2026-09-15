@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
-import 'package:your_space_mobile/core/network/failure.dart';
-import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
@@ -37,57 +34,61 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
   /// Counts come from each list endpoint's `totalItems` — fetching a single
   /// item per list is enough to read the total without pulling every row.
   /// The profile fetch (for the header's "Hi {firstName}" greeting) runs
-  /// alongside the three count calls, not after them.
+  /// alongside the three count calls, not after them. No prior state exists
+  /// yet, so a failed profile fetch (e.g. offline on a cold start) falls all
+  /// the way back to an empty greeting rather than blanking the dashboard —
+  /// see [_fetch].
   Future<void> load() async {
     emit(const HomeStatsLoading());
-    final result = await _fetch();
-    result.fold(
-      (failure) => emit(HomeStatsError(core.failureToMessage(failure))),
-      (success) => emit(success),
-    );
+    emit(await _fetch(fallbackName: '', fallbackAvatarUrl: null));
   }
 
   /// Re-fetches without a `Loading` flash — triggered by [DataRefreshBus]
   /// when a mutation elsewhere (add a person, edit profile, ...) makes the
-  /// already-built Home tab's stats stale. On failure, keeps whatever is
-  /// already on screen rather than replacing a working view for a
-  /// background refresh the user didn't ask for.
+  /// already-built Home tab's stats stale. Unlike [load], a prior
+  /// `HomeStatsSuccess` exists here, so a failed profile fetch falls back to
+  /// its greeting instead of an empty one — a background refresh should
+  /// never regress what's already on screen.
   Future<void> refresh() async {
-    if (state is! HomeStatsSuccess) return;
-    final result = await _fetch();
-    result.fold((_) {}, (success) => emit(success));
+    final current = state;
+    if (current is! HomeStatsSuccess) return;
+    emit(await _fetch(fallbackName: current.firstName, fallbackAvatarUrl: current.avatarUrl));
   }
 
-  Future<Either<Failure, HomeStatsSuccess>> _fetch() async {
-    final countsFuture = Future.wait<Either<Failure, int>>([
-      _groupRepository
-          .getGroups(pageIndex: 1, pageSize: 1)
-          .then((r) => r.map((page) => page.totalItems)),
-      _personRepository
-          .getPersons(pageIndex: 1, pageSize: 1)
-          .then((r) => r.map((page) => page.totalItems)),
-      _eventRepository
-          .getEvents(pageIndex: 1, pageSize: 1)
-          .then((r) => r.map((page) => page.totalItems)),
-    ]);
+  /// Groups/People are local-first (CLAUDE.md Architecture rule 7) — a local
+  /// count can't fail the way a network call can. Events and the profile
+  /// (Auth is never migrated, per CLAUDE.md) stay network-only; either one's
+  /// failure is folded to a fallback instead of failing the whole fetch and
+  /// blanking the dashboard for one flaky network-only piece.
+  Future<HomeStatsSuccess> _fetch({required String fallbackName, required String? fallbackAvatarUrl}) async {
+    final groupsCountFuture = _groupRepository.countGroups();
+    final peopleCountFuture = _personRepository.countPersons();
+    final eventsCountFuture = _eventRepository
+        .getEvents(pageIndex: 1, pageSize: 1)
+        .then((r) => r.fold((_) => 0, (page) => page.totalItems));
     final profileFuture = _getCurrentUserProfile();
 
-    final results = await countsFuture;
+    final groupsCount = await groupsCountFuture;
+    final peopleCount = await peopleCountFuture;
+    final eventsCount = await eventsCountFuture;
     final profileResult = await profileFuture;
 
-    final failure = results
-        .map((r) => r.fold((f) => f, (_) => null))
-        .firstWhere((f) => f != null, orElse: () => null);
-    final effectiveFailure = failure ?? profileResult.fold((f) => f, (_) => null);
-    if (effectiveFailure != null) return Left(effectiveFailure);
-
-    return Right(HomeStatsSuccess(
-      groupsCount: results[0].fold((_) => 0, (count) => count),
-      peopleCount: results[1].fold((_) => 0, (count) => count),
-      eventsCount: results[2].fold((_) => 0, (count) => count),
-      firstName: profileResult.fold((_) => '', (profile) => profile.firstName),
-      avatarUrl: profileResult.fold((_) => null, (profile) => profile.avatarUrl),
-    ));
+    return profileResult.fold(
+      (_) => HomeStatsSuccess(
+        groupsCount: groupsCount,
+        peopleCount: peopleCount,
+        eventsCount: eventsCount,
+        firstName: fallbackName,
+        avatarUrl: fallbackAvatarUrl,
+      ),
+      (profile) => HomeStatsSuccess(
+        groupsCount: groupsCount,
+        peopleCount: peopleCount,
+        eventsCount: eventsCount,
+        firstName: profile.firstName,
+        avatarUrl: profile.avatarUrl,
+      ),
+    );
   }
 
   @override

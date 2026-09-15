@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import 'package:your_space_mobile/core/entities/governorate.dart';
+import 'package:your_space_mobile/core/entities/person.dart';
+import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart';
@@ -34,9 +39,10 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
   ) : super(const AddGuestsListInitial());
 
   /// Every already-added guest for this event, from the local drift cache
-  /// (row 9.8) — unlike the pre-9.8 remote-paginated read, this is the
-  /// user's complete guest set for the event, not just the first page.
+  /// (row 9.8) — this is the user's complete guest set for the event, not
+  /// just a first page.
   Set<int> _existingGuestPersonIds = {};
+  StreamSubscription<List<Person>>? _peopleSubscription;
 
   Future<void> load(int eventId) async {
     emit(const AddGuestsListLoading());
@@ -55,37 +61,61 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
     // a network call can.
     final governorates = await _governorateRepository.watchGovernorates(limit: _refPageSize).first;
 
-    final peopleResult = await _personRepository.getPersons(pageIndex: 1, pageSize: _pageSize);
-    peopleResult.fold(
-      (failure) => emit(AddGuestsListError(core.failureToMessage(failure))),
-      (page) => emit(AddGuestsListSuccess(
-        availablePeople: page.items.where((p) => !_existingGuestPersonIds.contains(p.id)).toList(),
-        groupProgress: groupProgress,
-        governorates: governorates,
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-      )),
-    );
+    await _subscribeToPeople(limit: _pageSize, groupProgress: groupProgress, governorates: governorates);
   }
 
   Future<void> loadMore() async {
     final current = state;
     if (current is! AddGuestsListSuccess || !current.hasNextPage || current.isLoadingMore) return;
     emit(current.copyWith(isLoadingMore: true));
-    final result =
-        await _personRepository.getPersons(pageIndex: current.pageIndex + 1, pageSize: _pageSize);
-    result.fold(
-      (failure) => emit(current.copyWith(isLoadingMore: false)),
-      (page) => emit(current.copyWith(
-        availablePeople: [
-          ...current.availablePeople,
-          ...page.items.where((p) => !_existingGuestPersonIds.contains(p.id)),
-        ],
-        pageIndex: page.pageIndex,
-        hasNextPage: page.hasNextPage,
-        isLoadingMore: false,
-      )),
+    await _subscribeToPeople(limit: current.limit + _pageSize);
+  }
+
+  /// Cancels any existing local subscription and resubscribes to
+  /// `watchPersons(limit: limit)` — Person is local-first (CLAUDE.md
+  /// Architecture rule 7), so the "available people" list reads from the
+  /// local drift store instead of a remote page fetch. Mirrors
+  /// `PeopleListCubit._subscribeToPersons`/`CityListCubit._subscribeToCities`.
+  /// [groupProgress]/[governorates] are only passed on the very first call
+  /// (from [load]) — later calls (`loadMore`) fall back to whatever is
+  /// already in the current [AddGuestsListSuccess].
+  Future<void> _subscribeToPeople({
+    required int limit,
+    List<GroupGuestProgress>? groupProgress,
+    List<Governorate>? governorates,
+  }) async {
+    await _peopleSubscription?.cancel();
+    final done = Completer<void>();
+
+    void handleError(Object error) {
+      emit(AddGuestsListError(core.failureToMessage(const CacheFailure())));
+      if (!done.isCompleted) done.complete();
+    }
+
+    _peopleSubscription = _personRepository.watchPersons(limit: limit).listen(
+      (people) async {
+        try {
+          final total = await _personRepository.countPersons();
+          final available = people.where((p) => !_existingGuestPersonIds.contains(p.id)).toList();
+          final base = state;
+          emit(AddGuestsListSuccess(
+            availablePeople: available,
+            groupProgress: groupProgress ?? (base is AddGuestsListSuccess ? base.groupProgress : const []),
+            governorates: governorates ?? (base is AddGuestsListSuccess ? base.governorates : const []),
+            subGroupOptions: base is AddGuestsListSuccess ? base.subGroupOptions : const [],
+            cityOptions: base is AddGuestsListSuccess ? base.cityOptions : const [],
+            neighborhoodOptions: base is AddGuestsListSuccess ? base.neighborhoodOptions : const [],
+            limit: limit,
+            hasNextPage: people.length < total,
+          ));
+          if (!done.isCompleted) done.complete();
+        } catch (error) {
+          handleError(error);
+        }
+      },
+      onError: (Object error) => handleError(error),
     );
+    await done.future;
   }
 
   /// Populates the "by subgroup" tab's child list once its own local
@@ -118,5 +148,11 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
     // way a network call can.
     final neighborhoods = await _neighborhoodRepository.watchNeighborhoods(cityId: cityId, limit: _refPageSize).first;
     emit(current.copyWith(neighborhoodOptions: neighborhoods));
+  }
+
+  @override
+  Future<void> close() {
+    _peopleSubscription?.cancel();
+    return super.close();
   }
 }

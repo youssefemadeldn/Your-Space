@@ -5,6 +5,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
@@ -198,12 +199,11 @@ void main() {
       await cubit.initialize(null);
     });
 
-    test('debounces, then emits server results into relationshipLookupResults', () async {
-      when(() => personRepository.getPersons(
+    test('debounces, then emits local results into relationshipLookupResults', () async {
+      when(() => personRepository.watchPersons(
             search: any(named: 'search'),
-            pageIndex: any(named: 'pageIndex'),
-            pageSize: any(named: 'pageSize'),
-          )).thenAnswer((_) async => Right(_page(const [_person])));
+            limit: any(named: 'limit'),
+          )).thenAnswer((_) => Stream.value(const [_person]));
 
       cubit.searchRelationshipPeople('sara');
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -211,10 +211,9 @@ void main() {
       final state = cubit.state as PersonWizardReady;
       expect(state.relationshipLookupLoading, isFalse);
       expect(state.relationshipLookupResults.single.id, 7);
-      verify(() => personRepository.getPersons(
+      verify(() => personRepository.watchPersons(
             search: 'sara',
-            pageIndex: 1,
-            pageSize: any(named: 'pageSize'),
+            limit: AppConstants.kDefaultPageSize,
           )).called(1);
     });
   });

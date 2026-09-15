@@ -442,19 +442,9 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i46.NeighborhoodRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
-    gh.lazySingleton<_i571.PersonRepository>(
-      () => _i504.PersonRepositoryImpl(
-        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
-        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
-        gh<_i477.SyncService>(),
-      ),
-    );
     gh.lazySingleton<_i738.BaseEventGuestDataSource>(
       () => _i320.EventGuestRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
-    );
-    gh.factory<_i641.AddOccasionCubit>(
-      () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
     );
     gh.factory<_i793.SubGroupActionCubit>(
       () => _i793.SubGroupActionCubit(gh<_i133.SubGroupRepository>()),
@@ -488,10 +478,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i477.SyncService>(),
       ),
     );
-    gh.factory<_i930.PersonDetailsCubit>(
-      () => _i930.PersonDetailsCubit(
-        gh<_i571.PersonRepository>(),
-        gh<_i215.DataRefreshBus>(),
+    gh.lazySingleton<_i571.PersonRepository>(
+      () => _i504.PersonRepositoryImpl(
+        gh<_i498.BasePersonDataSource>(instanceName: 'remote'),
+        gh<_i439.PersonLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i732.PersonRelationshipLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
       ),
     );
     gh.lazySingleton<_i235.EventGuestRepository>(
@@ -629,6 +621,9 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       instanceName: 'governorate',
     );
+    gh.factory<_i641.AddOccasionCubit>(
+      () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
+    );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i66.PersonRelationshipOutboxReplayer(
         gh<_i1008.BasePersonRelationshipDataSource>(instanceName: 'remote'),
@@ -675,6 +670,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i680.AuthRepository>()),
+    );
+    gh.factory<_i930.PersonDetailsCubit>(
+      () => _i930.PersonDetailsCubit(
+        gh<_i571.PersonRepository>(),
+        gh<_i215.DataRefreshBus>(),
+      ),
     );
     gh.factory<_i889.EventGuestsListCubit>(
       () => _i889.EventGuestsListCubit(

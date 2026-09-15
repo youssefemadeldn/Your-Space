@@ -67,6 +67,15 @@ class EventLocalDataSourceImpl {
   Future<void> deleteEventLocal(int id) =>
       (_db.delete(_db.eventsTable)..where((t) => t.id.equals(id))).go();
 
+  /// One-shot cached read by id — powers `EventRepositoryImpl.getEventById`'s
+  /// offline fallback (design doc §7: detail reads are still one-shot
+  /// `Future` calls, not a reactive `Stream`, so this is a cache-then-network
+  /// read rather than a true local-first one).
+  Future<Event?> getCachedEventById(int id) async {
+    final row = await (_db.select(_db.eventsTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _toEntity(row);
+  }
+
   /// Tier 2 optimistic write (design doc §5): writes [event] into
   /// EventsTable (marked dirty) and appends one OutboxTable row, in the same
   /// drift transaction. Mirrors `GroupLocalDataSourceImpl.queueGroupMutation`

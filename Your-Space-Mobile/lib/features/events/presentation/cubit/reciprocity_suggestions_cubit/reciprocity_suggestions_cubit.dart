@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
@@ -23,8 +22,9 @@ class ReciprocitySuggestionsCubit extends Cubit<ReciprocitySuggestionsState> {
   Future<void> load(int eventId) async {
     _eventId = eventId;
     emit(const ReciprocitySuggestionsLoading());
-    final groupsResult = await _groupRepository.getGroups(pageIndex: 1, pageSize: 50);
-    final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
+    // Group is local-first (CLAUDE.md Architecture rule 7) — a local read
+    // can't fail the way a network call can.
+    final groups = await _groupRepository.watchGroups(limit: 50).first;
     final result =
         await _eventGuestRepository.getReciprocitySuggestions(eventId, pageIndex: 1, pageSize: _pageSize);
     result.fold(

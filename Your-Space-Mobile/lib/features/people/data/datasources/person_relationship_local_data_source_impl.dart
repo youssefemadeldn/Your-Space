@@ -58,6 +58,16 @@ class PersonRelationshipLocalDataSourceImpl {
     return row == null ? null : _toEntity(row);
   }
 
+  /// One-shot cached read, scoped to one person — powers
+  /// `PersonRepositoryImpl.getPersonById`'s offline fallback. No limit
+  /// needed: a person's own relationships are always a small bounded set.
+  Future<List<PersonRelationship>> getCachedRelationships(int personId) async {
+    final rows = await (_db.select(_db.personRelationshipsTable)
+          ..where((t) => t.isDeleted.equals(false) & t.personId.equals(personId)))
+        .get();
+    return rows.map(_toEntity).toList();
+  }
+
   /// Tier 2 optimistic write (design doc §5, row 9.13's "symmetric pair"
   /// mechanism) — inserts **both** [forward] and [inverse] under fresh
   /// negative temp ids (linked to each other via `inverseId`, mirroring the

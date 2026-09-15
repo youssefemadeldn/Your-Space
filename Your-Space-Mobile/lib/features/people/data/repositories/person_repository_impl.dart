@@ -14,6 +14,7 @@ import '../../domain/entities/person_occasion_history_entry.dart';
 import '../../domain/repositories/base_person_repository.dart';
 import '../datasources/base_person_data_source.dart';
 import '../datasources/person_local_data_source_impl.dart';
+import '../datasources/person_relationship_local_data_source_impl.dart';
 import '../models/add_occasion_history_request.dart';
 import '../models/create_person_request.dart';
 import '../models/update_person_request.dart';
@@ -22,11 +23,13 @@ import '../models/update_person_request.dart';
 class PersonRepositoryImpl implements PersonRepository {
   final BasePersonDataSource _remote;
   final PersonLocalDataSourceImpl _local;
+  final PersonRelationshipLocalDataSourceImpl _relationshipsLocal;
   final SyncService _syncService;
 
   PersonRepositoryImpl(
     @Named('remote') this._remote,
     @Named('local') this._local,
+    @Named('local') this._relationshipsLocal,
     this._syncService,
   );
 
@@ -117,10 +120,36 @@ class PersonRepositoryImpl implements PersonRepository {
     return const Right(unit);
   }
 
+  /// Cache-then-network (design doc §7): this is a one-shot `Future`, not a
+  /// reactive `Stream`, so unlike `watchPersons()` it can't fall back to the
+  /// local cache silently in the background — it has to try the network
+  /// first and only reach for drift on a genuine connectivity failure. A
+  /// `NetworkFailure` with a cached row falls back to it (relationships are
+  /// fully cached too; occasion history and `createdAt` aren't — see
+  /// `PersonDetails`'s own doc comment). Any other failure (auth, server
+  /// error) or a cache miss still surfaces as before.
   @override
   Future<Either<Failure, PersonDetails>> getPersonById(int id) async {
     final result = await _remote.getPersonById(id);
-    return result.fold(Left.new, (response) => Right(response.toEntity()));
+    return result.fold(
+      (failure) async {
+        if (failure is! NetworkFailure) return Left(failure);
+        final cachedPerson = await _local.getCachedPersonById(id);
+        if (cachedPerson == null) return Left(failure);
+        final relationships = await _relationshipsLocal.getCachedRelationships(id);
+        return Right(PersonDetails(
+          person: cachedPerson,
+          occasionHistory: const [],
+          relationships: relationships,
+          createdAt: null,
+        ));
+      },
+      (response) async {
+        final details = response.toEntity();
+        await _local.savePerson(details.person);
+        return Right(details);
+      },
+    );
   }
 
   int _newTempPersonId() => -DateTime.now().microsecondsSinceEpoch;
