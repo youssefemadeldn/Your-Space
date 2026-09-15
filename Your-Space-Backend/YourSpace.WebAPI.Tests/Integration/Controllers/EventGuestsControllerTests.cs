@@ -113,6 +113,45 @@ public class EventGuestsControllerTests(TestWebApplicationFactory factory) : ICl
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    // Row 9.8's new flat endpoint — deliberately scoped to just this endpoint, matching
+    // CitiesControllerTests'/SubGroupsControllerTests' own doc comment precedent: the pre-existing
+    // nested CRUD routes' own coverage above is the feature's existing scope, not this step's job.
+    [Fact]
+    public async Task GetAllMine_returns_every_guest_across_every_event_the_owner_has()
+    {
+        var client = await factory.CreateAuthenticatedClientAsync("event-guests.flat@example.com");
+
+        var groupResponse = await client.PostAsJsonAsync("/api/v1/Groups", new CreateGroupDto { Name = "Village Friends" });
+        var group = (await DeserializeAsync<GroupDetailsDto>(groupResponse)).Data!;
+        var personId = (await CreatePersonAsync(client, "Ahmed", group.Id)).Id;
+
+        var eventOneId = (await DeserializeAsync<EventDetailsDto>(
+            await client.PostAsJsonAsync("/api/v1/Events", new CreateEventDto { Name = "Wedding" }))).Data!.Id;
+        var eventTwoId = (await DeserializeAsync<EventDetailsDto>(
+            await client.PostAsJsonAsync("/api/v1/Events", new CreateEventDto { Name = "Graduation" }))).Data!.Id;
+
+        await client.PostAsync($"/api/v1/events/{eventOneId}/guests/by-group/{group.Id}", null);
+        await client.PostAsync($"/api/v1/events/{eventTwoId}/guests/by-group/{group.Id}", null);
+
+        var response = await client.GetAsync("/api/v1/event-guests");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var guests = (await DeserializeAsync<List<EventGuestProfileDto>>(response)).Data!;
+        guests.Should().HaveCount(2);
+        guests.Select(g => g.EventId).Should().BeEquivalentTo([eventOneId, eventTwoId]);
+        guests.Should().OnlyContain(g => g.PersonId == personId);
+    }
+
+    [Fact]
+    public async Task GetAllMine_rejects_unauthenticated_requests()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/event-guests");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private static async Task<PersonDetailsDto> CreatePersonAsync(HttpClient client, string name, int groupId)
     {
         var governorateId = await CreateGovernorateAsync(client, $"{name}'s Governorate");

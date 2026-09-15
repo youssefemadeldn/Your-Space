@@ -48,6 +48,18 @@ public class EventGuestService(
         return ServiceResult<EventGuestDetailsDto>.Ok(BuildDetailsDto(guest));
     }
 
+    // Flat "all mine" pull (row 9.8) — event-agnostic, spans every event the owner has. Feeds
+    // Tier 1's bulk local population and (row 9.10) the permanent full-refetch-as-delta pull;
+    // EventGuest never gets a real cursor endpoint (row 9 cross-cutting decision — hard-delete
+    // only, no tombstone stream possible without a soft-delete column).
+    public async Task<ServiceResult<List<EventGuestProfileDto>>> GetAllMineAsync(string ownerUserId)
+    {
+        var repo = unitOfWork.Repository<EventGuest, int>();
+        var guests = await repo.ListAllWithSpecAsync(EventGuestWithSpecs.ForOwnerWithPersonDetails(ownerUserId));
+
+        return ServiceResult<List<EventGuestProfileDto>>.Ok(guests.Select(BuildProfileDto).ToList());
+    }
+
     public async Task<ServiceResult<PaginatedResultDto<EventGuestProfileDto>>> GetListAsync(
         string ownerUserId, int eventId, int? groupId, EventGuestStatus? status, PaginationSpecification pagination)
     {
@@ -432,6 +444,7 @@ public class EventGuestService(
     private static EventGuestProfileDto BuildProfileDto(EventGuest guest) => new()
     {
         Id = guest.Id,
+        EventId = guest.EventId,
         PersonId = guest.PersonId,
         PersonName = guest.Person.Name,
         PersonPhoneNumber = guest.Person.PhoneNumber,
