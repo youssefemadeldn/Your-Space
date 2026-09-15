@@ -11,6 +11,7 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String settings = '/settings';
+  static const String fullPhotoViewer = '/photo';
 
   static const String groups = '/groups';
 

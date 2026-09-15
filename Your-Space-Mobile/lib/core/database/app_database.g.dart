@@ -186,6 +186,17 @@ class $PersonsTableTable extends PersonsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _facebookUrlMeta = const VerificationMeta(
+    'facebookUrl',
+  );
+  @override
+  late final GeneratedColumn<String> facebookUrl = GeneratedColumn<String>(
+    'facebook_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _hasReciprocityHistoryMeta =
       const VerificationMeta('hasReciprocityHistory');
   @override
@@ -261,6 +272,7 @@ class $PersonsTableTable extends PersonsTable
     neighborhoodName,
     primaryPhotoUrl,
     notes,
+    facebookUrl,
     hasReciprocityHistory,
     updatedAt,
     isDeleted,
@@ -416,6 +428,15 @@ class $PersonsTableTable extends PersonsTable
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('facebook_url')) {
+      context.handle(
+        _facebookUrlMeta,
+        facebookUrl.isAcceptableOrUnknown(
+          data['facebook_url']!,
+          _facebookUrlMeta,
+        ),
+      );
+    }
     if (data.containsKey('has_reciprocity_history')) {
       context.handle(
         _hasReciprocityHistoryMeta,
@@ -520,6 +541,10 @@ class $PersonsTableTable extends PersonsTable
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      facebookUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}facebook_url'],
+      ),
       hasReciprocityHistory: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}has_reciprocity_history'],
@@ -564,6 +589,7 @@ class PersonsTableData extends DataClass
   final String? neighborhoodName;
   final String? primaryPhotoUrl;
   final String? notes;
+  final String? facebookUrl;
   final bool hasReciprocityHistory;
   final DateTime? updatedAt;
   final bool isDeleted;
@@ -586,6 +612,7 @@ class PersonsTableData extends DataClass
     this.neighborhoodName,
     this.primaryPhotoUrl,
     this.notes,
+    this.facebookUrl,
     required this.hasReciprocityHistory,
     this.updatedAt,
     required this.isDeleted,
@@ -630,6 +657,9 @@ class PersonsTableData extends DataClass
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || facebookUrl != null) {
+      map['facebook_url'] = Variable<String>(facebookUrl);
     }
     map['has_reciprocity_history'] = Variable<bool>(hasReciprocityHistory);
     if (!nullToAbsent || updatedAt != null) {
@@ -679,6 +709,9 @@ class PersonsTableData extends DataClass
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      facebookUrl: facebookUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(facebookUrl),
       hasReciprocityHistory: Value(hasReciprocityHistory),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -711,6 +744,7 @@ class PersonsTableData extends DataClass
       neighborhoodName: serializer.fromJson<String?>(json['neighborhoodName']),
       primaryPhotoUrl: serializer.fromJson<String?>(json['primaryPhotoUrl']),
       notes: serializer.fromJson<String?>(json['notes']),
+      facebookUrl: serializer.fromJson<String?>(json['facebookUrl']),
       hasReciprocityHistory: serializer.fromJson<bool>(
         json['hasReciprocityHistory'],
       ),
@@ -740,6 +774,7 @@ class PersonsTableData extends DataClass
       'neighborhoodName': serializer.toJson<String?>(neighborhoodName),
       'primaryPhotoUrl': serializer.toJson<String?>(primaryPhotoUrl),
       'notes': serializer.toJson<String?>(notes),
+      'facebookUrl': serializer.toJson<String?>(facebookUrl),
       'hasReciprocityHistory': serializer.toJson<bool>(hasReciprocityHistory),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -765,6 +800,7 @@ class PersonsTableData extends DataClass
     Value<String?> neighborhoodName = const Value.absent(),
     Value<String?> primaryPhotoUrl = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    Value<String?> facebookUrl = const Value.absent(),
     bool? hasReciprocityHistory,
     Value<DateTime?> updatedAt = const Value.absent(),
     bool? isDeleted,
@@ -793,6 +829,7 @@ class PersonsTableData extends DataClass
         ? primaryPhotoUrl.value
         : this.primaryPhotoUrl,
     notes: notes.present ? notes.value : this.notes,
+    facebookUrl: facebookUrl.present ? facebookUrl.value : this.facebookUrl,
     hasReciprocityHistory: hasReciprocityHistory ?? this.hasReciprocityHistory,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isDeleted: isDeleted ?? this.isDeleted,
@@ -835,6 +872,9 @@ class PersonsTableData extends DataClass
           ? data.primaryPhotoUrl.value
           : this.primaryPhotoUrl,
       notes: data.notes.present ? data.notes.value : this.notes,
+      facebookUrl: data.facebookUrl.present
+          ? data.facebookUrl.value
+          : this.facebookUrl,
       hasReciprocityHistory: data.hasReciprocityHistory.present
           ? data.hasReciprocityHistory.value
           : this.hasReciprocityHistory,
@@ -864,6 +904,7 @@ class PersonsTableData extends DataClass
           ..write('neighborhoodName: $neighborhoodName, ')
           ..write('primaryPhotoUrl: $primaryPhotoUrl, ')
           ..write('notes: $notes, ')
+          ..write('facebookUrl: $facebookUrl, ')
           ..write('hasReciprocityHistory: $hasReciprocityHistory, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -891,6 +932,7 @@ class PersonsTableData extends DataClass
     neighborhoodName,
     primaryPhotoUrl,
     notes,
+    facebookUrl,
     hasReciprocityHistory,
     updatedAt,
     isDeleted,
@@ -917,6 +959,7 @@ class PersonsTableData extends DataClass
           other.neighborhoodName == this.neighborhoodName &&
           other.primaryPhotoUrl == this.primaryPhotoUrl &&
           other.notes == this.notes &&
+          other.facebookUrl == this.facebookUrl &&
           other.hasReciprocityHistory == this.hasReciprocityHistory &&
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted &&
@@ -941,6 +984,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
   final Value<String?> neighborhoodName;
   final Value<String?> primaryPhotoUrl;
   final Value<String?> notes;
+  final Value<String?> facebookUrl;
   final Value<bool> hasReciprocityHistory;
   final Value<DateTime?> updatedAt;
   final Value<bool> isDeleted;
@@ -963,6 +1007,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     this.neighborhoodName = const Value.absent(),
     this.primaryPhotoUrl = const Value.absent(),
     this.notes = const Value.absent(),
+    this.facebookUrl = const Value.absent(),
     this.hasReciprocityHistory = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -986,6 +1031,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     this.neighborhoodName = const Value.absent(),
     this.primaryPhotoUrl = const Value.absent(),
     this.notes = const Value.absent(),
+    this.facebookUrl = const Value.absent(),
     this.hasReciprocityHistory = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -1014,6 +1060,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     Expression<String>? neighborhoodName,
     Expression<String>? primaryPhotoUrl,
     Expression<String>? notes,
+    Expression<String>? facebookUrl,
     Expression<bool>? hasReciprocityHistory,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
@@ -1037,6 +1084,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
       if (neighborhoodName != null) 'neighborhood_name': neighborhoodName,
       if (primaryPhotoUrl != null) 'primary_photo_url': primaryPhotoUrl,
       if (notes != null) 'notes': notes,
+      if (facebookUrl != null) 'facebook_url': facebookUrl,
       if (hasReciprocityHistory != null)
         'has_reciprocity_history': hasReciprocityHistory,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -1063,6 +1111,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     Value<String?>? neighborhoodName,
     Value<String?>? primaryPhotoUrl,
     Value<String?>? notes,
+    Value<String?>? facebookUrl,
     Value<bool>? hasReciprocityHistory,
     Value<DateTime?>? updatedAt,
     Value<bool>? isDeleted,
@@ -1086,6 +1135,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
       neighborhoodName: neighborhoodName ?? this.neighborhoodName,
       primaryPhotoUrl: primaryPhotoUrl ?? this.primaryPhotoUrl,
       notes: notes ?? this.notes,
+      facebookUrl: facebookUrl ?? this.facebookUrl,
       hasReciprocityHistory:
           hasReciprocityHistory ?? this.hasReciprocityHistory,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -1148,6 +1198,9 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (facebookUrl.present) {
+      map['facebook_url'] = Variable<String>(facebookUrl.value);
+    }
     if (hasReciprocityHistory.present) {
       map['has_reciprocity_history'] = Variable<bool>(
         hasReciprocityHistory.value,
@@ -1185,6 +1238,7 @@ class PersonsTableCompanion extends UpdateCompanion<PersonsTableData> {
           ..write('neighborhoodName: $neighborhoodName, ')
           ..write('primaryPhotoUrl: $primaryPhotoUrl, ')
           ..write('notes: $notes, ')
+          ..write('facebookUrl: $facebookUrl, ')
           ..write('hasReciprocityHistory: $hasReciprocityHistory, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -6473,6 +6527,7 @@ typedef $$PersonsTableTableCreateCompanionBuilder =
       Value<String?> neighborhoodName,
       Value<String?> primaryPhotoUrl,
       Value<String?> notes,
+      Value<String?> facebookUrl,
       Value<bool> hasReciprocityHistory,
       Value<DateTime?> updatedAt,
       Value<bool> isDeleted,
@@ -6497,6 +6552,7 @@ typedef $$PersonsTableTableUpdateCompanionBuilder =
       Value<String?> neighborhoodName,
       Value<String?> primaryPhotoUrl,
       Value<String?> notes,
+      Value<String?> facebookUrl,
       Value<bool> hasReciprocityHistory,
       Value<DateTime?> updatedAt,
       Value<bool> isDeleted,
@@ -6594,6 +6650,11 @@ class $$PersonsTableTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get facebookUrl => $composableBuilder(
+    column: $table.facebookUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6712,6 +6773,11 @@ class $$PersonsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get facebookUrl => $composableBuilder(
+    column: $table.facebookUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get hasReciprocityHistory => $composableBuilder(
     column: $table.hasReciprocityHistory,
     builder: (column) => ColumnOrderings(column),
@@ -6811,6 +6877,11 @@ class $$PersonsTableTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumn<String> get facebookUrl => $composableBuilder(
+    column: $table.facebookUrl,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get hasReciprocityHistory => $composableBuilder(
     column: $table.hasReciprocityHistory,
     builder: (column) => column,
@@ -6874,6 +6945,7 @@ class $$PersonsTableTableTableManager
                 Value<String?> neighborhoodName = const Value.absent(),
                 Value<String?> primaryPhotoUrl = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> facebookUrl = const Value.absent(),
                 Value<bool> hasReciprocityHistory = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
@@ -6896,6 +6968,7 @@ class $$PersonsTableTableTableManager
                 neighborhoodName: neighborhoodName,
                 primaryPhotoUrl: primaryPhotoUrl,
                 notes: notes,
+                facebookUrl: facebookUrl,
                 hasReciprocityHistory: hasReciprocityHistory,
                 updatedAt: updatedAt,
                 isDeleted: isDeleted,
@@ -6920,6 +6993,7 @@ class $$PersonsTableTableTableManager
                 Value<String?> neighborhoodName = const Value.absent(),
                 Value<String?> primaryPhotoUrl = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> facebookUrl = const Value.absent(),
                 Value<bool> hasReciprocityHistory = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
@@ -6942,6 +7016,7 @@ class $$PersonsTableTableTableManager
                 neighborhoodName: neighborhoodName,
                 primaryPhotoUrl: primaryPhotoUrl,
                 notes: notes,
+                facebookUrl: facebookUrl,
                 hasReciprocityHistory: hasReciprocityHistory,
                 updatedAt: updatedAt,
                 isDeleted: isDeleted,

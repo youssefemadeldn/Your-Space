@@ -183,7 +183,8 @@
       "emptyAction": "إضافة مناسبة",
       "occasionUnnamed": "مناسبة",
       "notFound": "الشخص غير موجود",
-      "notesTitle": "ملاحظات"
+      "notesTitle": "ملاحظات",
+      "facebookLink": "فيسبوك"
     },
     "occasion": {
       "addTitle": "إضافة مناسبة",
@@ -278,7 +279,9 @@
       "step4": {
         "name": "ملاحظات",
         "notesLabel": "ملاحظات",
-        "notesHint": "أي شيء يستحق أن تتذكره عن هذا الشخص"
+        "notesHint": "أي شيء يستحق أن تتذكره عن هذا الشخص",
+        "facebookUrlLabel": "رابط فيسبوك",
+        "facebookUrlHint": "https://facebook.com/..."
       },
       "submit": {
         "savedMessage": "تم حفظ الشخص",

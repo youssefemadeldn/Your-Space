@@ -385,6 +385,7 @@ class PersonLocalDataSourceImpl {
         neighborhoodName: row.neighborhoodName,
         primaryPhotoUrl: row.primaryPhotoUrl,
         notes: row.notes,
+        facebookUrl: row.facebookUrl,
         hasReciprocityHistory: row.hasReciprocityHistory,
         updatedAt: row.updatedAt,
       );
@@ -408,6 +409,7 @@ class PersonLocalDataSourceImpl {
         neighborhoodName: Value(person.neighborhoodName),
         primaryPhotoUrl: Value(person.primaryPhotoUrl),
         notes: Value(person.notes),
+        facebookUrl: Value(person.facebookUrl),
         hasReciprocityHistory: Value(person.hasReciprocityHistory),
         // `updatedAt` comes from the server (design doc §6, row 5/6); still
         // nullable because a locally-created draft (Tier 2 optimistic

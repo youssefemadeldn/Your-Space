@@ -40,6 +40,9 @@ public class Person
     [MaxLength(2000)]
     public string? Notes { get; set; }
 
+    [MaxLength(2048)]
+    public string? FacebookUrl { get; set; }
+
     public DateTime? DeletedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

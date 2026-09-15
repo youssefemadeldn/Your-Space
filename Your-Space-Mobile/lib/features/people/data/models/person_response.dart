@@ -23,6 +23,7 @@ class PersonResponse {
   final String? neighborhoodName;
   final String? primaryPhotoUrl;
   final String? notes;
+  final String? facebookUrl;
   final bool hasReciprocityHistory;
   final DateTime? updatedAt;
 
@@ -44,6 +45,7 @@ class PersonResponse {
     this.neighborhoodName,
     this.primaryPhotoUrl,
     this.notes,
+    this.facebookUrl,
     required this.hasReciprocityHistory,
     this.updatedAt,
   });
@@ -66,6 +68,7 @@ class PersonResponse {
         neighborhoodName: json['neighborhoodName'] as String?,
         primaryPhotoUrl: json['primaryPhotoUrl'] as String?,
         notes: json['notes'] as String?,
+        facebookUrl: json['facebookUrl'] as String?,
         hasReciprocityHistory: json['hasReciprocityHistory'] as bool,
         updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
@@ -88,6 +91,7 @@ class PersonResponse {
         neighborhoodName: neighborhoodName,
         primaryPhotoUrl: primaryPhotoUrl,
         notes: notes,
+        facebookUrl: facebookUrl,
         hasReciprocityHistory: hasReciprocityHistory,
         updatedAt: updatedAt,
       );

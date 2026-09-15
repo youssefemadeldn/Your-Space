@@ -14,4 +14,5 @@ public class CreatePersonDto
     public int? CityId { get; set; }
     public int? NeighborhoodId { get; set; }
     public string? Notes { get; set; }
+    public string? FacebookUrl { get; set; }
 }

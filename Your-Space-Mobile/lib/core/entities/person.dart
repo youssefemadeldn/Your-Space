@@ -24,6 +24,7 @@ class Person extends Equatable {
   final String? neighborhoodName;
   final String? primaryPhotoUrl;
   final String? notes;
+  final String? facebookUrl;
   final bool hasReciprocityHistory;
   final DateTime? updatedAt;
 
@@ -45,6 +46,7 @@ class Person extends Equatable {
     this.neighborhoodName,
     this.primaryPhotoUrl,
     this.notes,
+    this.facebookUrl,
     this.hasReciprocityHistory = false,
     this.updatedAt,
   });
@@ -68,6 +70,7 @@ class Person extends Equatable {
         neighborhoodName,
         primaryPhotoUrl,
         notes,
+        facebookUrl,
         hasReciprocityHistory,
         updatedAt,
       ];

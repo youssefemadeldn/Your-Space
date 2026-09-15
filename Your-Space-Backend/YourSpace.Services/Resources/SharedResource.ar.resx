@@ -115,6 +115,9 @@
   <data name="Person.Notes.MaxLength" xml:space="preserve">
     <value>يجب ألا تتجاوز الملاحظات 2000 حرف.</value>
   </data>
+  <data name="Person.FacebookUrl.InvalidFormat" xml:space="preserve">
+    <value>يجب أن يكون رابط فيسبوك رابطًا صحيحًا يبدأ بـ http أو https.</value>
+  </data>
   <data name="Person.Gender.Required" xml:space="preserve">
     <value>يجب اختيار جنس صحيح.</value>
   </data>

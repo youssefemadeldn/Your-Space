@@ -59,6 +59,7 @@ final class PersonWizardReady extends PersonWizardState {
 
   // Step 4 — Notes
   final String notes;
+  final String facebookUrl;
 
   // Submit
   final bool isSubmitting;
@@ -91,6 +92,7 @@ final class PersonWizardReady extends PersonWizardState {
     this.relationshipLookupResults = const [],
     this.relationshipLookupLoading = false,
     this.notes = '',
+    this.facebookUrl = '',
     this.isSubmitting = false,
     this.submitError,
     this.originalPhotoIds = const {},
@@ -120,6 +122,7 @@ final class PersonWizardReady extends PersonWizardState {
     List<Person>? relationshipLookupResults,
     bool? relationshipLookupLoading,
     String? notes,
+    String? facebookUrl,
     bool? isSubmitting,
     String? submitError,
     bool clearSubmitError = false,
@@ -146,6 +149,7 @@ final class PersonWizardReady extends PersonWizardState {
         relationshipLookupResults: relationshipLookupResults ?? this.relationshipLookupResults,
         relationshipLookupLoading: relationshipLookupLoading ?? this.relationshipLookupLoading,
         notes: notes ?? this.notes,
+        facebookUrl: facebookUrl ?? this.facebookUrl,
         isSubmitting: isSubmitting ?? this.isSubmitting,
         submitError: clearSubmitError ? null : (submitError ?? this.submitError),
         originalPhotoIds: originalPhotoIds,
@@ -174,6 +178,7 @@ final class PersonWizardReady extends PersonWizardState {
         relationshipLookupResults,
         relationshipLookupLoading,
         notes,
+        facebookUrl,
         isSubmitting,
         submitError,
       ];

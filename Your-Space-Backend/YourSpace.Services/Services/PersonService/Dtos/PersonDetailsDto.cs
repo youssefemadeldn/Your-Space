@@ -23,6 +23,7 @@ public class PersonDetailsDto
     public string? NeighborhoodName { get; set; }
     public string? PrimaryPhotoUrl { get; set; }
     public string? Notes { get; set; }
+    public string? FacebookUrl { get; set; }
     public required bool HasReciprocityHistory { get; set; }
     public required IReadOnlyList<PersonOccasionHistoryProfileDto> OccasionHistory { get; set; }
     public required IReadOnlyList<PersonRelationshipProfileDto> Relationships { get; set; }

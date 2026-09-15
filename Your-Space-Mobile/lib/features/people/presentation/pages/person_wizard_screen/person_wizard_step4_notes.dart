@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,11 +16,13 @@ class PersonWizardStep4Notes extends StatefulWidget {
 
 class _PersonWizardStep4NotesState extends State<PersonWizardStep4Notes> {
   final _notesController = TextEditingController();
+  final _facebookUrlController = TextEditingController();
   bool _seeded = false;
 
   @override
   void dispose() {
     _notesController.dispose();
+    _facebookUrlController.dispose();
     super.dispose();
   }
 
@@ -28,6 +30,7 @@ class _PersonWizardStep4NotesState extends State<PersonWizardStep4Notes> {
     if (_seeded) return;
     _seeded = true;
     _notesController.text = state.notes;
+    _facebookUrlController.text = state.facebookUrl;
   }
 
   @override
@@ -50,7 +53,19 @@ class _PersonWizardStep4NotesState extends State<PersonWizardStep4Notes> {
                 controller: _notesController,
                 multiline: true,
                 maxLength: 2000,
+                textInputAction: TextInputAction.done,
                 onChanged: cubit.updateNotes,
+                onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              ),
+              SizedBox(height: 14.h),
+              AppInput(
+                label: 'people.wizard.step4.facebookUrlLabel'.tr(),
+                hintText: 'people.wizard.step4.facebookUrlHint'.tr(),
+                helperText: 'people.wizard.step1.optional'.tr(),
+                controller: _facebookUrlController,
+                keyboardType: TextInputType.url,
+                textDirection: TextDirection.ltr,
+                onChanged: cubit.updateFacebookUrl,
               ),
             ],
           ),

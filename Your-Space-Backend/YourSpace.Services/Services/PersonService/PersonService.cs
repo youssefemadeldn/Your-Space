@@ -182,6 +182,7 @@ public class PersonService(
             CityId = dto.CityId,
             NeighborhoodId = dto.NeighborhoodId,
             Notes = dto.Notes,
+            FacebookUrl = dto.FacebookUrl,
             SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
@@ -357,6 +358,11 @@ public class PersonService(
         if (dto.Notes is not null)
         {
             person.Notes = dto.Notes;
+        }
+
+        if (dto.FacebookUrl is not null)
+        {
+            person.FacebookUrl = dto.FacebookUrl;
         }
 
         person.UpdatedAt = DateTime.UtcNow;
