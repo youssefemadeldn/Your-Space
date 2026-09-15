@@ -5166,6 +5166,407 @@ class PersonRelationshipsTableCompanion
   }
 }
 
+class $PersonImagesTableTable extends PersonImagesTable
+    with TableInfo<$PersonImagesTableTable, PersonImagesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PersonImagesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<int> personId = GeneratedColumn<int>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _objectKeyMeta = const VerificationMeta(
+    'objectKey',
+  );
+  @override
+  late final GeneratedColumn<String> objectKey = GeneratedColumn<String>(
+    'object_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isPrimaryMeta = const VerificationMeta(
+    'isPrimary',
+  );
+  @override
+  late final GeneratedColumn<bool> isPrimary = GeneratedColumn<bool>(
+    'is_primary',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_primary" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDirtyMeta = const VerificationMeta(
+    'isDirty',
+  );
+  @override
+  late final GeneratedColumn<bool> isDirty = GeneratedColumn<bool>(
+    'is_dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    personId,
+    objectKey,
+    isPrimary,
+    isDeleted,
+    isDirty,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'person_images_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PersonImagesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('object_key')) {
+      context.handle(
+        _objectKeyMeta,
+        objectKey.isAcceptableOrUnknown(data['object_key']!, _objectKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_objectKeyMeta);
+    }
+    if (data.containsKey('is_primary')) {
+      context.handle(
+        _isPrimaryMeta,
+        isPrimary.isAcceptableOrUnknown(data['is_primary']!, _isPrimaryMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('is_dirty')) {
+      context.handle(
+        _isDirtyMeta,
+        isDirty.isAcceptableOrUnknown(data['is_dirty']!, _isDirtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PersonImagesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PersonImagesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_id'],
+      )!,
+      objectKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}object_key'],
+      )!,
+      isPrimary: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_primary'],
+      )!,
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      isDirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dirty'],
+      )!,
+    );
+  }
+
+  @override
+  $PersonImagesTableTable createAlias(String alias) {
+    return $PersonImagesTableTable(attachedDatabase, alias);
+  }
+}
+
+class PersonImagesTableData extends DataClass
+    implements Insertable<PersonImagesTableData> {
+  final int id;
+  final int personId;
+  final String objectKey;
+  final bool isPrimary;
+  final bool isDeleted;
+  final bool isDirty;
+  const PersonImagesTableData({
+    required this.id,
+    required this.personId,
+    required this.objectKey,
+    required this.isPrimary,
+    required this.isDeleted,
+    required this.isDirty,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['person_id'] = Variable<int>(personId);
+    map['object_key'] = Variable<String>(objectKey);
+    map['is_primary'] = Variable<bool>(isPrimary);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_dirty'] = Variable<bool>(isDirty);
+    return map;
+  }
+
+  PersonImagesTableCompanion toCompanion(bool nullToAbsent) {
+    return PersonImagesTableCompanion(
+      id: Value(id),
+      personId: Value(personId),
+      objectKey: Value(objectKey),
+      isPrimary: Value(isPrimary),
+      isDeleted: Value(isDeleted),
+      isDirty: Value(isDirty),
+    );
+  }
+
+  factory PersonImagesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PersonImagesTableData(
+      id: serializer.fromJson<int>(json['id']),
+      personId: serializer.fromJson<int>(json['personId']),
+      objectKey: serializer.fromJson<String>(json['objectKey']),
+      isPrimary: serializer.fromJson<bool>(json['isPrimary']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isDirty: serializer.fromJson<bool>(json['isDirty']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'personId': serializer.toJson<int>(personId),
+      'objectKey': serializer.toJson<String>(objectKey),
+      'isPrimary': serializer.toJson<bool>(isPrimary),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isDirty': serializer.toJson<bool>(isDirty),
+    };
+  }
+
+  PersonImagesTableData copyWith({
+    int? id,
+    int? personId,
+    String? objectKey,
+    bool? isPrimary,
+    bool? isDeleted,
+    bool? isDirty,
+  }) => PersonImagesTableData(
+    id: id ?? this.id,
+    personId: personId ?? this.personId,
+    objectKey: objectKey ?? this.objectKey,
+    isPrimary: isPrimary ?? this.isPrimary,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isDirty: isDirty ?? this.isDirty,
+  );
+  PersonImagesTableData copyWithCompanion(PersonImagesTableCompanion data) {
+    return PersonImagesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      objectKey: data.objectKey.present ? data.objectKey.value : this.objectKey,
+      isPrimary: data.isPrimary.present ? data.isPrimary.value : this.isPrimary,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isDirty: data.isDirty.present ? data.isDirty.value : this.isDirty,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonImagesTableData(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('objectKey: $objectKey, ')
+          ..write('isPrimary: $isPrimary, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, personId, objectKey, isPrimary, isDeleted, isDirty);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PersonImagesTableData &&
+          other.id == this.id &&
+          other.personId == this.personId &&
+          other.objectKey == this.objectKey &&
+          other.isPrimary == this.isPrimary &&
+          other.isDeleted == this.isDeleted &&
+          other.isDirty == this.isDirty);
+}
+
+class PersonImagesTableCompanion
+    extends UpdateCompanion<PersonImagesTableData> {
+  final Value<int> id;
+  final Value<int> personId;
+  final Value<String> objectKey;
+  final Value<bool> isPrimary;
+  final Value<bool> isDeleted;
+  final Value<bool> isDirty;
+  const PersonImagesTableCompanion({
+    this.id = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.objectKey = const Value.absent(),
+    this.isPrimary = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  });
+  PersonImagesTableCompanion.insert({
+    this.id = const Value.absent(),
+    required int personId,
+    required String objectKey,
+    this.isPrimary = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  }) : personId = Value(personId),
+       objectKey = Value(objectKey);
+  static Insertable<PersonImagesTableData> custom({
+    Expression<int>? id,
+    Expression<int>? personId,
+    Expression<String>? objectKey,
+    Expression<bool>? isPrimary,
+    Expression<bool>? isDeleted,
+    Expression<bool>? isDirty,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (personId != null) 'person_id': personId,
+      if (objectKey != null) 'object_key': objectKey,
+      if (isPrimary != null) 'is_primary': isPrimary,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isDirty != null) 'is_dirty': isDirty,
+    });
+  }
+
+  PersonImagesTableCompanion copyWith({
+    Value<int>? id,
+    Value<int>? personId,
+    Value<String>? objectKey,
+    Value<bool>? isPrimary,
+    Value<bool>? isDeleted,
+    Value<bool>? isDirty,
+  }) {
+    return PersonImagesTableCompanion(
+      id: id ?? this.id,
+      personId: personId ?? this.personId,
+      objectKey: objectKey ?? this.objectKey,
+      isPrimary: isPrimary ?? this.isPrimary,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isDirty: isDirty ?? this.isDirty,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<int>(personId.value);
+    }
+    if (objectKey.present) {
+      map['object_key'] = Variable<String>(objectKey.value);
+    }
+    if (isPrimary.present) {
+      map['is_primary'] = Variable<bool>(isPrimary.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (isDirty.present) {
+      map['is_dirty'] = Variable<bool>(isDirty.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonImagesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('objectKey: $objectKey, ')
+          ..write('isPrimary: $isPrimary, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTableTable extends OutboxTable
     with TableInfo<$OutboxTableTable, OutboxTableData> {
   @override
@@ -6029,6 +6430,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $PersonRelationshipsTableTable personRelationshipsTable =
       $PersonRelationshipsTableTable(this);
+  late final $PersonImagesTableTable personImagesTable =
+      $PersonImagesTableTable(this);
   late final $OutboxTableTable outboxTable = $OutboxTableTable(this);
   late final $SyncStateTableTable syncStateTable = $SyncStateTableTable(this);
   @override
@@ -6045,6 +6448,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     eventsTable,
     eventGuestsTable,
     personRelationshipsTable,
+    personImagesTable,
     outboxTable,
     syncStateTable,
   ];
@@ -8724,6 +9128,243 @@ typedef $$PersonRelationshipsTableTableProcessedTableManager =
       PersonRelationshipsTableData,
       PrefetchHooks Function()
     >;
+typedef $$PersonImagesTableTableCreateCompanionBuilder =
+    PersonImagesTableCompanion Function({
+      Value<int> id,
+      required int personId,
+      required String objectKey,
+      Value<bool> isPrimary,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+typedef $$PersonImagesTableTableUpdateCompanionBuilder =
+    PersonImagesTableCompanion Function({
+      Value<int> id,
+      Value<int> personId,
+      Value<String> objectKey,
+      Value<bool> isPrimary,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+
+class $$PersonImagesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PersonImagesTableTable> {
+  $$PersonImagesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get objectKey => $composableBuilder(
+    column: $table.objectKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPrimary => $composableBuilder(
+    column: $table.isPrimary,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PersonImagesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PersonImagesTableTable> {
+  $$PersonImagesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get objectKey => $composableBuilder(
+    column: $table.objectKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPrimary => $composableBuilder(
+    column: $table.isPrimary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PersonImagesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PersonImagesTableTable> {
+  $$PersonImagesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<String> get objectKey =>
+      $composableBuilder(column: $table.objectKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPrimary =>
+      $composableBuilder(column: $table.isPrimary, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDirty =>
+      $composableBuilder(column: $table.isDirty, builder: (column) => column);
+}
+
+class $$PersonImagesTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PersonImagesTableTable,
+          PersonImagesTableData,
+          $$PersonImagesTableTableFilterComposer,
+          $$PersonImagesTableTableOrderingComposer,
+          $$PersonImagesTableTableAnnotationComposer,
+          $$PersonImagesTableTableCreateCompanionBuilder,
+          $$PersonImagesTableTableUpdateCompanionBuilder,
+          (
+            PersonImagesTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $PersonImagesTableTable,
+              PersonImagesTableData
+            >,
+          ),
+          PersonImagesTableData,
+          PrefetchHooks Function()
+        > {
+  $$PersonImagesTableTableTableManager(
+    _$AppDatabase db,
+    $PersonImagesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PersonImagesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PersonImagesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PersonImagesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> personId = const Value.absent(),
+                Value<String> objectKey = const Value.absent(),
+                Value<bool> isPrimary = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => PersonImagesTableCompanion(
+                id: id,
+                personId: personId,
+                objectKey: objectKey,
+                isPrimary: isPrimary,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int personId,
+                required String objectKey,
+                Value<bool> isPrimary = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => PersonImagesTableCompanion.insert(
+                id: id,
+                personId: personId,
+                objectKey: objectKey,
+                isPrimary: isPrimary,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PersonImagesTableTable, PersonImagesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PersonImagesTableTable,
+                    PersonImagesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PersonImagesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PersonImagesTableTable,
+      PersonImagesTableData,
+      $$PersonImagesTableTableFilterComposer,
+      $$PersonImagesTableTableOrderingComposer,
+      $$PersonImagesTableTableAnnotationComposer,
+      $$PersonImagesTableTableCreateCompanionBuilder,
+      $$PersonImagesTableTableUpdateCompanionBuilder,
+      (
+        PersonImagesTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $PersonImagesTableTable,
+          PersonImagesTableData
+        >,
+      ),
+      PersonImagesTableData,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxTableTableCreateCompanionBuilder =
     OutboxTableCompanion Function({
       Value<int> id,
@@ -9217,6 +9858,8 @@ class $AppDatabaseManager {
         _db,
         _db.personRelationshipsTable,
       );
+  $$PersonImagesTableTableTableManager get personImagesTable =>
+      $$PersonImagesTableTableTableManager(_db, _db.personImagesTable);
   $$OutboxTableTableTableManager get outboxTable =>
       $$OutboxTableTableTableManager(_db, _db.outboxTable);
   $$SyncStateTableTableTableManager get syncStateTable =>
