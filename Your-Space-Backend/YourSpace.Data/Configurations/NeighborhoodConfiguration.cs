@@ -13,6 +13,11 @@ public class NeighborhoodConfiguration : IEntityTypeConfiguration<Neighborhood>
         builder.HasIndex(n => n.OwnerUserId);
         builder.HasIndex(n => n.CityId);
 
+        // Backs NeighborhoodWithSpecs's delta-sync "changes since" query
+        // (doc/local-first-sync-design.md §6): WHERE OwnerUserId = @p0 AND SyncVersion > @p1,
+        // ORDER BY SyncVersion.
+        builder.HasIndex(n => new { n.OwnerUserId, n.SyncVersion });
+
         builder.HasOne(n => n.Owner)
             .WithMany()
             .HasForeignKey(n => n.OwnerUserId)

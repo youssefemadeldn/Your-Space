@@ -32,6 +32,15 @@ public class NeighborhoodsController(INeighborhoodService neighborhoodService) :
         return new ResultActionResult<PaginatedResultDto<NeighborhoodProfileDto>>(result);
     }
 
+    // Delta-sync pull (doc/local-first-sync-design.md §6, row 8.23) — sibling flat action
+    // alongside GetAllMine above, same route-override convention.
+    [HttpGet("~/api/v{version:apiVersion}/neighborhoods/changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await neighborhoodService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<NeighborhoodChangesDto>(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int cityId, int id)
     {

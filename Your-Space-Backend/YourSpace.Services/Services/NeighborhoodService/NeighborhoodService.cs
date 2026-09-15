@@ -6,6 +6,7 @@ using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.LocationSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
 using YourSpace.Repository.Specifications.PeopleSpecifications;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.NeighborhoodService.Dtos;
@@ -16,13 +17,24 @@ public class NeighborhoodService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<NeighborhoodService> logger) : INeighborhoodService
 {
+    // Postgres sequence backing Neighborhood.SyncVersion (doc/local-first-sync-design.md §6) —
+    // one per synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "Neighborhoods_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is "small, low cardinality"
+    // (design doc §1/§2), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "Neighborhood.NotFound";
         public const string CityNotFound = "Neighborhood.CityNotFound";
         public const string HasActivePersons = "Neighborhood.HasActivePersons";
+        public const string SinceInvalid = "Neighborhood.Since.Invalid";
     }
 
     public async Task<ServiceResult<NeighborhoodDetailsDto>> GetDetailsAsync(string ownerUserId, int cityId, int id)
@@ -102,7 +114,8 @@ public class NeighborhoodService(
             OwnerUserId = ownerUserId,
             CityId = cityId,
             Name = dto.Name,
-            NameAr = dto.NameAr
+            NameAr = dto.NameAr,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(neighborhood);
@@ -133,6 +146,7 @@ public class NeighborhoodService(
         }
 
         neighborhood.UpdatedAt = DateTime.UtcNow;
+        neighborhood.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(neighborhood);
         await unitOfWork.SaveChangesAsync();
 
@@ -161,10 +175,41 @@ public class NeighborhoodService(
 
         neighborhood.DeletedAt = DateTime.UtcNow;
         neighborhood.UpdatedAt = DateTime.UtcNow;
+        neighborhood.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(neighborhood);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("Neighborhood {NeighborhoodId} soft-deleted for city {CityId}, user {UserId}", id, cityId, ownerUserId);
         return ServiceResult.Ok("Neighborhood deleted successfully.");
+    }
+
+    public async Task<ServiceResult<NeighborhoodChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<NeighborhoodChangesDto>.Fail(localizer["Neighborhood.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<Neighborhood, int>();
+        var rows = await repo.ListAllWithSpecAsync(new NeighborhoodWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(n => n.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(n => n.DeletedAt != null).Select(n => n.Id).ToList();
+
+        var upserts = upsertRows.Select(mapper.Map<NeighborhoodProfileDto>).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(n => n.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<NeighborhoodChangesDto>.Ok(new NeighborhoodChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 }

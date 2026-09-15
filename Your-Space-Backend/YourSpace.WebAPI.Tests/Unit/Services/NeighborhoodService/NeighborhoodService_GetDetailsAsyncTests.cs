@@ -4,6 +4,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using NeighborhoodServiceImpl = YourSpace.Services.Services.NeighborhoodService.NeighborhoodService;
 
@@ -23,6 +24,7 @@ public class NeighborhoodService_GetDetailsAsyncTests
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        Mock.Of<ISyncVersionProvider>(),
         Mock.Of<ILogger<NeighborhoodServiceImpl>>());
 
     [Fact]

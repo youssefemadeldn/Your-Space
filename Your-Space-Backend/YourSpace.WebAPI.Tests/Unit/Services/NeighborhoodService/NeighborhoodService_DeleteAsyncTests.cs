@@ -4,6 +4,7 @@ using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using NeighborhoodServiceImpl = YourSpace.Services.Services.NeighborhoodService.NeighborhoodService;
 
@@ -14,17 +15,20 @@ public class NeighborhoodService_DeleteAsyncTests
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Neighborhood, int>> _neighborhoodRepo = new();
     private readonly Mock<IGenericRepository<Person, int>> _personRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public NeighborhoodService_DeleteAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Neighborhood, int>()).Returns(_neighborhoodRepo.Object);
         _unitOfWork.Setup(u => u.Repository<Person, int>()).Returns(_personRepo.Object);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private NeighborhoodServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<NeighborhoodServiceImpl>>());
 
     [Fact]
