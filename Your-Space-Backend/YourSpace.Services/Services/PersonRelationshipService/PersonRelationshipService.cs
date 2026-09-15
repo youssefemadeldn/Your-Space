@@ -28,6 +28,18 @@ public class PersonRelationshipService(
     private static readonly HashSet<RelationType> ParentTypes = [RelationType.Father, RelationType.Mother];
     private static readonly HashSet<RelationType> ChildTypes = [RelationType.Son, RelationType.Daughter];
 
+    // Flat "all mine" pull (row 9.13/9.16) — person-agnostic, spans every person the owner has.
+    // Feeds Tier 1's bulk local population and (row 9.14) the permanent full-refetch-as-delta
+    // pull; PersonRelationship never gets a real cursor endpoint (row 9 cross-cutting decision —
+    // hard-delete only, no tombstone stream possible without a soft-delete column).
+    public async Task<ServiceResult<List<PersonRelationshipProfileDto>>> GetAllMineAsync(string ownerUserId)
+    {
+        var repo = unitOfWork.Repository<PersonRelationship, int>();
+        var relationships = await repo.ListAllWithSpecAsync(PersonRelationshipWithSpecs.ForOwner(ownerUserId));
+
+        return ServiceResult<List<PersonRelationshipProfileDto>>.Ok(relationships.Select(BuildProfileDto).ToList());
+    }
+
     public async Task<ServiceResult<IReadOnlyList<PersonRelationshipProfileDto>>> GetAllAsync(string ownerUserId, int personId)
     {
         if (!await PersonExistsAsync(personId, ownerUserId))
@@ -139,7 +151,9 @@ public class PersonRelationshipService(
             RelatedPersonId = relatedPerson.Id,
             RelatedPersonName = relatedPerson.Name,
             RelationType = original.RelationType,
-            CreatedAt = original.CreatedAt
+            CreatedAt = original.CreatedAt,
+            InverseId = inverse.Id,
+            InverseRelationType = inverse.RelationType
         });
     }
 
@@ -247,8 +261,10 @@ public class PersonRelationshipService(
     private static PersonRelationshipProfileDto BuildProfileDto(PersonRelationship relationship) => new()
     {
         Id = relationship.Id,
+        PersonId = relationship.PersonId,
         RelatedPersonId = relationship.RelatedPersonId,
         RelatedPersonName = relationship.RelatedPerson.Name,
-        RelationType = relationship.RelationType
+        RelationType = relationship.RelationType,
+        InverseRelationshipId = relationship.InverseRelationshipId
     };
 }

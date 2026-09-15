@@ -18,6 +18,16 @@ namespace YourSpace.WebAPI.Controllers;
 [Route("api/v{version:apiVersion}/persons/{personId:int}/relationships")]
 public class PersonRelationshipsController(IPersonRelationshipService personRelationshipService) : ControllerBase
 {
+    // Flat "all mine" pull (row 9.13/9.16, design doc §6) — person-agnostic, feeds the mobile
+    // client's Tier 1 read cache and (row 9.14) its permanent full-refetch-as-delta Tier 3 pull.
+    // Same `~/api/v{version:apiVersion}/` absolute-path override convention as Cities/SubGroups.
+    [HttpGet("~/api/v{version:apiVersion}/person-relationships")]
+    public async Task<IActionResult> GetAllMine()
+    {
+        var result = await personRelationshipService.GetAllMineAsync(GetUserId());
+        return new ResultActionResult<List<PersonRelationshipProfileDto>>(result);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll(int personId)
     {

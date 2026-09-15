@@ -10,4 +10,10 @@ public class PersonRelationshipDetailsDto
     public required string RelatedPersonName { get; set; }
     public required RelationType RelationType { get; set; }
     public required DateTime CreatedAt { get; set; }
+
+    // The auto-derived inverse row's id/type (row 9.13) — lets the mobile client reconcile both
+    // halves of the pair it optimistically created offline (its own PersonId/RelatedPersonId/
+    // RelatedPersonName mirror what the caller already knows: RelatedPersonId and Person.Name).
+    public required int InverseId { get; set; }
+    public required RelationType InverseRelationType { get; set; }
 }
