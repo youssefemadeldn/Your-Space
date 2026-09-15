@@ -22,6 +22,12 @@ abstract class NeighborhoodRepository {
     String? nameAr,
   });
 
+  Future<Either<Failure, Neighborhood>> createNeighborhoodAndSync({
+    required int cityId,
+    required String name,
+    String? nameAr,
+  });
+
   Future<Either<Failure, Neighborhood>> updateNeighborhood({
     required int cityId,
     required int id,

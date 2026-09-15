@@ -163,6 +163,52 @@ void main() {
     expect(await database.select(database.outboxTable).get(), isEmpty);
   });
 
+  test(
+    'row 8.21: rewrites a dependent NeighborhoodsTable row and a still-queued neighborhood outbox payload '
+    'referencing the temp city id',
+    () async {
+      const tempId = -777;
+      final cityRowId = await dataSource.queueCityMutation(
+        city: const City(id: tempId, governorateId: 7, name: 'Offline City'),
+        operation: 'create',
+        payloadJson: '{"governorateId":7,"name":"Offline City"}',
+      );
+      await database.into(database.neighborhoodsTable).insert(
+            NeighborhoodsTableCompanion.insert(
+              id: const Value(-1),
+              name: 'Offline Neighborhood',
+              cityId: tempId,
+              isDirty: const Value(true),
+            ),
+          );
+      await database.into(database.outboxTable).insert(
+            OutboxTableCompanion.insert(
+              entityType: 'neighborhood',
+              entityId: -1,
+              operation: 'create',
+              payloadJson: '{"cityId":$tempId,"name":"Offline Neighborhood"}',
+            ),
+          );
+
+      const realCity = City(id: 999, governorateId: 7, name: 'Offline City');
+      await dataSource.reconcileCreatedCity(
+        tempId: tempId,
+        realCity: realCity,
+        replayedOutboxRowId: cityRowId,
+      );
+
+      final neighborhoodRow =
+          await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(-1))).getSingle();
+      expect(neighborhoodRow.cityId, 999);
+
+      final neighborhoodOutboxRow = (await (database.select(database.outboxTable)
+                ..where((t) => t.entityType.equals('neighborhood')))
+              .get())
+          .single;
+      expect(neighborhoodOutboxRow.payloadJson, contains('"cityId":999'));
+    },
+  );
+
   group('queueDeletedCity', () {
     test('a real (positive) id is soft-tombstoned and queued for the outbox', () async {
       await dataSource.saveCity(const City(id: 1, governorateId: 7, name: 'Maadi'));

@@ -122,4 +122,96 @@ void main() {
     final neighborhoods = await dataSource.watchNeighborhoods(cityId: 7, limit: 10).first;
     expect(neighborhoods, isEmpty);
   });
+
+  test('queueNeighborhoodMutation writes a dirty row and appends one outbox row', () async {
+    final rowId = await dataSource.queueNeighborhoodMutation(
+      neighborhood: const Neighborhood(id: -1, cityId: 7, name: 'Book club'),
+      operation: 'create',
+      payloadJson: '{"cityId":7,"name":"Book club"}',
+    );
+
+    final neighborhoods = await dataSource.watchNeighborhoods(cityId: 7, limit: 10).first;
+    expect(neighborhoods.single.name, 'Book club');
+    final outboxRows = await database.select(database.outboxTable).get();
+    expect(outboxRows.single.id, rowId);
+    expect(outboxRows.single.entityType, 'neighborhood');
+    expect(outboxRows.single.operation, 'create');
+  });
+
+  test('confirmSyncedNeighborhood overwrites the row and removes the outbox row', () async {
+    final rowId = await dataSource.queueNeighborhoodMutation(
+      neighborhood: const Neighborhood(id: 1, cityId: 7, name: 'Zamalek'),
+      operation: 'update',
+      payloadJson: '{}',
+    );
+
+    await dataSource.confirmSyncedNeighborhood(
+      const Neighborhood(id: 1, cityId: 7, name: 'Zamalek (Confirmed)'),
+      replayedOutboxRowId: rowId,
+    );
+
+    final neighborhoods = await dataSource.watchNeighborhoods(cityId: 7, limit: 10).first;
+    expect(neighborhoods.single.name, 'Zamalek (Confirmed)');
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
+
+  test('reconcileCreatedNeighborhood swaps the temp id for the real one and clears the outbox row', () async {
+    final rowId = await dataSource.queueNeighborhoodMutation(
+      neighborhood: const Neighborhood(id: -42, cityId: 7, name: 'Book club'),
+      operation: 'create',
+      payloadJson: '{}',
+    );
+
+    await dataSource.reconcileCreatedNeighborhood(
+      tempId: -42,
+      realNeighborhood: const Neighborhood(id: 5, cityId: 7, name: 'Book club'),
+      replayedOutboxRowId: rowId,
+    );
+
+    final neighborhoods = await dataSource.watchNeighborhoods(cityId: 7, limit: 10).first;
+    expect(neighborhoods.map((n) => n.id), [5]);
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
+
+  group('queueDeletedNeighborhood', () {
+    test('a real (positive) id is soft-tombstoned and queued for the outbox', () async {
+      await dataSource.saveNeighborhood(const Neighborhood(id: 1, cityId: 7, name: 'Zamalek'));
+
+      await dataSource.queueDeletedNeighborhood(1, payloadJson: '{"cityId":7}');
+
+      final neighborhoods = await dataSource.watchNeighborhoods(cityId: 7, limit: 10).first;
+      expect(neighborhoods, isEmpty);
+      final outboxRows = await database.select(database.outboxTable).get();
+      expect(outboxRows.single.entityType, 'neighborhood');
+      expect(outboxRows.single.operation, 'delete');
+      expect(outboxRows.single.entityId, 1);
+    });
+
+    test('a never-synced temp (negative) id is removed locally with no outbox row', () async {
+      final rowId = await dataSource.queueNeighborhoodMutation(
+        neighborhood: const Neighborhood(id: -7, cityId: 7, name: 'Book club'),
+        operation: 'create',
+        payloadJson: '{}',
+      );
+
+      await dataSource.queueDeletedNeighborhood(-7, payloadJson: '{"cityId":7}');
+
+      final neighborhoods = await dataSource.watchAllNeighborhoods(limit: 10).first;
+      expect(neighborhoods.where((n) => n.id == -7), isEmpty);
+      final outboxRows = await database.select(database.outboxTable).get();
+      expect(outboxRows.where((r) => r.id == rowId), isEmpty);
+    });
+  });
+
+  test('confirmDeletedNeighborhood hard-removes the tombstoned row and its outbox row', () async {
+    await dataSource.saveNeighborhood(const Neighborhood(id: 1, cityId: 7, name: 'Zamalek'));
+    await dataSource.queueDeletedNeighborhood(1, payloadJson: '{"cityId":7}');
+    final outboxRowId = (await database.select(database.outboxTable).get()).single.id;
+
+    await dataSource.confirmDeletedNeighborhood(1, replayedOutboxRowId: outboxRowId);
+
+    final neighborhoods = await dataSource.watchAllNeighborhoods(limit: 10).first;
+    expect(neighborhoods, isEmpty);
+    expect(await database.select(database.outboxTable).get(), isEmpty);
+  });
 }

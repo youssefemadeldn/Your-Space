@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
 
@@ -127,10 +129,14 @@ class CityLocalDataSourceImpl {
   ///  2. delete the temp-id row
   ///  3. delete the just-replayed outbox row
   ///  4. rewrite any dependent `NeighborhoodsTable` row (and any still-queued
-  ///     `entityType='neighborhood'` outbox payload) that references [tempId]
-  ///     — see row 8.21, Neighborhood's own Tier 2 step, which is what
-  ///     actually adds this 4th step; nothing depends on City's temp id yet
-  ///     at row 8.9. Mirrors `GroupLocalDataSourceImpl.reconcileCreatedGroup`.
+  ///     `entityType='neighborhood'` outbox payload) that references
+  ///     [tempId] — City is Group's peer as a real parent here (row 8.21,
+  ///     Neighborhood's own Tier 2 step; SubGroup's equivalent landed for
+  ///     Group at row 8.15). Mirrors
+  ///     `GovernorateLocalDataSourceImpl.reconcileCreatedGovernorate`'s own
+  ///     4th step (decode/patch/re-encode, never string-replace — avoids
+  ///     corrupting a `name`/`nameAr` field that could coincidentally
+  ///     contain the tempId's digits).
   Future<void> reconcileCreatedCity({
     required int tempId,
     required City realCity,
@@ -140,6 +146,20 @@ class CityLocalDataSourceImpl {
         await _db.into(_db.citiesTable).insertOnConflictUpdate(_toCompanion(realCity));
         await (_db.delete(_db.citiesTable)..where((t) => t.id.equals(tempId))).go();
         await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+
+        await (_db.update(_db.neighborhoodsTable)..where((t) => t.cityId.equals(tempId)))
+            .write(NeighborhoodsTableCompanion(cityId: Value(realCity.id)));
+
+        final pendingNeighborhoodRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('neighborhood') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingNeighborhoodRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['cityId'] != tempId) continue;
+          payload['cityId'] = realCity.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
       });
 
   /// Tier 2 optimistic delete (design doc §5) — City is Row 8's first
