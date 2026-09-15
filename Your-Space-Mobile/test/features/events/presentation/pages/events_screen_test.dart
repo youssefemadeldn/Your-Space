@@ -45,7 +45,7 @@ void main() {
     final cubit = _TestEventsListCubit(MockEventRepository(), DataRefreshBus());
     addTearDown(cubit.close);
 
-    cubit.pushState(const EventsListSuccess([], pageIndex: 1, hasNextPage: false));
+    cubit.pushState(const EventsListSuccess([], limit: 20, hasNextPage: false));
     await tester.pumpWidget(
       EasyLocalization(
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -76,7 +76,7 @@ void main() {
     const events = [
       Event(id: 1, name: "Sara's Birthday", totalGuestCount: 5),
     ];
-    cubit.pushState(const EventsListSuccess(events, pageIndex: 1, hasNextPage: false));
+    cubit.pushState(const EventsListSuccess(events, limit: 20, hasNextPage: false));
     await tester.pumpAndSettle();
     expect(find.text("Sara's Birthday"), findsOneWidget);
 
