@@ -117,21 +117,25 @@ class NeighborhoodRepositoryImpl implements NeighborhoodRepository {
   @override
   Future<Either<Failure, Unit>> refreshNeighborhoods() async {
     const pageSize = 200;
-    // Defensive cap against a pathological `hasMore`/`totalPages` loop — this
-    // data shape is meant to be small (a user's own custom neighborhoods),
-    // never expected to trip.
+    // Defensive cap against a pathological `hasMore` loop — this data shape
+    // is meant to be small (a user's own custom neighborhoods), never
+    // expected to trip.
     const maxPages = 50;
-    final all = <Neighborhood>[];
-    for (var pageIndex = 1; pageIndex <= maxPages; pageIndex++) {
-      final result = await _remote.getAllMineNeighborhoods(pageIndex: pageIndex, pageSize: pageSize);
+    var cursor = await _local.getNeighborhoodsSyncCursor();
+    for (var page = 0; page < maxPages; page++) {
+      final result = await _remote.getNeighborhoodChanges(since: cursor, pageSize: pageSize);
       if (result.isLeft()) {
         return result.fold(Left.new, (_) => throw StateError('unreachable'));
       }
-      final page = result.getOrElse(() => throw StateError('unreachable'));
-      all.addAll(page.items.map((r) => r.toEntity()));
-      if (pageIndex >= page.totalPages) break;
+      final changes = result.getOrElse(() => throw StateError('unreachable'));
+      await _local.applyNeighborhoodChanges(
+        upserts: changes.upserts.map((r) => r.toEntity()).toList(),
+        tombstoneIds: changes.tombstoneIds,
+      );
+      await _local.saveNeighborhoodsSyncCursor(changes.cursor);
+      cursor = changes.cursor;
+      if (!changes.hasMore) break;
     }
-    await _local.applyNeighborhoodsSnapshot(all);
     return const Right(unit);
   }
 }

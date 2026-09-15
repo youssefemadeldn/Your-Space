@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -255,6 +256,99 @@ void main() {
       final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
       expect(row.isDeleted, isFalse);
       expect(row.name, 'Back Again');
+    });
+  });
+
+  group('applyNeighborhoodChanges', () {
+    test('upserts a clean row given in upserts', () async {
+      await dataSource.applyNeighborhoodChanges(
+        upserts: const [Neighborhood(id: 1, cityId: 7, name: 'From Server')],
+        tombstoneIds: const [],
+      );
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a dirty row is not overwritten by an upsert for the same id', () async {
+      await dataSource.queueNeighborhoodMutation(
+        neighborhood: const Neighborhood(id: 1, cityId: 7, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyNeighborhoodChanges(
+        upserts: const [Neighborhood(id: 1, cityId: 7, name: 'From Server')],
+        tombstoneIds: const [],
+      );
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDirty, isTrue);
+    });
+
+    test('tombstones exactly the ids given in tombstoneIds — no absence inference', () async {
+      await dataSource.saveNeighborhoods(const [
+        Neighborhood(id: 1, cityId: 7, name: 'Untouched'),
+        Neighborhood(id: 2, cityId: 7, name: 'Removed'),
+      ]);
+
+      await dataSource.applyNeighborhoodChanges(upserts: const [], tombstoneIds: const [2]);
+
+      final untouched =
+          await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(untouched.isDeleted, isFalse);
+      final removed =
+          await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(2))).getSingle();
+      expect(removed.isDeleted, isTrue);
+    });
+
+    test('a dirty row is not tombstoned even if its id is given in tombstoneIds', () async {
+      await dataSource.queueNeighborhoodMutation(
+        neighborhood: const Neighborhood(id: 1, cityId: 7, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyNeighborhoodChanges(upserts: const [], tombstoneIds: const [1]);
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.isDirty, isTrue);
+    });
+  });
+
+  group('getNeighborhoodsSyncCursor / saveNeighborhoodsSyncCursor', () {
+    test('reads 0 when never synced', () async {
+      expect(await dataSource.getNeighborhoodsSyncCursor(), 0);
+    });
+
+    test('round-trips a saved cursor', () async {
+      await dataSource.saveNeighborhoodsSyncCursor(137);
+
+      expect(await dataSource.getNeighborhoodsSyncCursor(), 137);
+    });
+
+    test('a later save overwrites the earlier value', () async {
+      await dataSource.saveNeighborhoodsSyncCursor(50);
+      await dataSource.saveNeighborhoodsSyncCursor(90);
+
+      expect(await dataSource.getNeighborhoodsSyncCursor(), 90);
+    });
+
+    test('does not clobber a previously-written lastSyncedAt', () async {
+      final syncedAt = DateTime(2026, 9, 15);
+      await database.into(database.syncStateTable).insertOnConflictUpdate(
+            SyncStateTableCompanion.insert(collection: 'neighborhoods', lastSyncedAt: Value(syncedAt)),
+          );
+
+      await dataSource.saveNeighborhoodsSyncCursor(137);
+
+      final row = await (database.select(database.syncStateTable)
+            ..where((t) => t.collection.equals('neighborhoods')))
+          .getSingle();
+      expect(row.cursor, '137');
+      expect(row.lastSyncedAt, syncedAt);
     });
   });
 }

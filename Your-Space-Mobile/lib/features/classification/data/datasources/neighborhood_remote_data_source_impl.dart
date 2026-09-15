@@ -7,6 +7,7 @@ import 'package:your_space_mobile/core/network/api_manager.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_neighborhood_request.dart';
+import '../models/neighborhood_changes_response.dart';
 import '../models/neighborhood_response.dart';
 import '../models/update_neighborhood_request.dart';
 import 'base_neighborhood_data_source.dart';
@@ -92,5 +93,22 @@ class NeighborhoodRemoteDataSourceImpl implements BaseNeighborhoodDataSource {
   Future<Either<Failure, Unit>> deleteNeighborhood(int cityId, int id) => _api.delete<Unit>(
         path: '${_basePath(cityId)}/$id',
         fromJson: (_) => unit,
+      );
+
+  @override
+  Future<Either<Failure, NeighborhoodChangesResponse>> getNeighborhoodChanges({
+    required int since,
+    required int pageSize,
+  }) =>
+      _api.get<NeighborhoodChangesResponse>(
+        path: '${ApiConstants.neighborhoods}/changes',
+        queryParameters: {
+          'since': since,
+          'pageSize': pageSize,
+        },
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => NeighborhoodChangesResponse.fromJson(inner as Map<String, dynamic>),
+        ),
       );
 }
