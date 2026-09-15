@@ -3378,6 +3378,555 @@ class NeighborhoodsTableCompanion
   }
 }
 
+class $EventsTableTable extends EventsTable
+    with TableInfo<$EventsTableTable, EventsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EventsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameArMeta = const VerificationMeta('nameAr');
+  @override
+  late final GeneratedColumn<String> nameAr = GeneratedColumn<String>(
+    'name_ar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventDateMeta = const VerificationMeta(
+    'eventDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> eventDate = GeneratedColumn<DateTime>(
+    'event_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalGuestCountMeta = const VerificationMeta(
+    'totalGuestCount',
+  );
+  @override
+  late final GeneratedColumn<int> totalGuestCount = GeneratedColumn<int>(
+    'total_guest_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDirtyMeta = const VerificationMeta(
+    'isDirty',
+  );
+  @override
+  late final GeneratedColumn<bool> isDirty = GeneratedColumn<bool>(
+    'is_dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    nameAr,
+    eventDate,
+    notes,
+    totalGuestCount,
+    updatedAt,
+    isDeleted,
+    isDirty,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'events_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EventsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('name_ar')) {
+      context.handle(
+        _nameArMeta,
+        nameAr.isAcceptableOrUnknown(data['name_ar']!, _nameArMeta),
+      );
+    }
+    if (data.containsKey('event_date')) {
+      context.handle(
+        _eventDateMeta,
+        eventDate.isAcceptableOrUnknown(data['event_date']!, _eventDateMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('total_guest_count')) {
+      context.handle(
+        _totalGuestCountMeta,
+        totalGuestCount.isAcceptableOrUnknown(
+          data['total_guest_count']!,
+          _totalGuestCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('is_dirty')) {
+      context.handle(
+        _isDirtyMeta,
+        isDirty.isAcceptableOrUnknown(data['is_dirty']!, _isDirtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EventsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EventsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      nameAr: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name_ar'],
+      ),
+      eventDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}event_date'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      totalGuestCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_guest_count'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      isDirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dirty'],
+      )!,
+    );
+  }
+
+  @override
+  $EventsTableTable createAlias(String alias) {
+    return $EventsTableTable(attachedDatabase, alias);
+  }
+}
+
+class EventsTableData extends DataClass implements Insertable<EventsTableData> {
+  final int id;
+  final String name;
+  final String? nameAr;
+  final DateTime? eventDate;
+  final String? notes;
+  final int totalGuestCount;
+  final DateTime? updatedAt;
+  final bool isDeleted;
+  final bool isDirty;
+  const EventsTableData({
+    required this.id,
+    required this.name,
+    this.nameAr,
+    this.eventDate,
+    this.notes,
+    required this.totalGuestCount,
+    this.updatedAt,
+    required this.isDeleted,
+    required this.isDirty,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || nameAr != null) {
+      map['name_ar'] = Variable<String>(nameAr);
+    }
+    if (!nullToAbsent || eventDate != null) {
+      map['event_date'] = Variable<DateTime>(eventDate);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['total_guest_count'] = Variable<int>(totalGuestCount);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_dirty'] = Variable<bool>(isDirty);
+    return map;
+  }
+
+  EventsTableCompanion toCompanion(bool nullToAbsent) {
+    return EventsTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      nameAr: nameAr == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nameAr),
+      eventDate: eventDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eventDate),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      totalGuestCount: Value(totalGuestCount),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      isDeleted: Value(isDeleted),
+      isDirty: Value(isDirty),
+    );
+  }
+
+  factory EventsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EventsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      nameAr: serializer.fromJson<String?>(json['nameAr']),
+      eventDate: serializer.fromJson<DateTime?>(json['eventDate']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      totalGuestCount: serializer.fromJson<int>(json['totalGuestCount']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isDirty: serializer.fromJson<bool>(json['isDirty']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'nameAr': serializer.toJson<String?>(nameAr),
+      'eventDate': serializer.toJson<DateTime?>(eventDate),
+      'notes': serializer.toJson<String?>(notes),
+      'totalGuestCount': serializer.toJson<int>(totalGuestCount),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isDirty': serializer.toJson<bool>(isDirty),
+    };
+  }
+
+  EventsTableData copyWith({
+    int? id,
+    String? name,
+    Value<String?> nameAr = const Value.absent(),
+    Value<DateTime?> eventDate = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    int? totalGuestCount,
+    Value<DateTime?> updatedAt = const Value.absent(),
+    bool? isDeleted,
+    bool? isDirty,
+  }) => EventsTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    nameAr: nameAr.present ? nameAr.value : this.nameAr,
+    eventDate: eventDate.present ? eventDate.value : this.eventDate,
+    notes: notes.present ? notes.value : this.notes,
+    totalGuestCount: totalGuestCount ?? this.totalGuestCount,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isDirty: isDirty ?? this.isDirty,
+  );
+  EventsTableData copyWithCompanion(EventsTableCompanion data) {
+    return EventsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
+      eventDate: data.eventDate.present ? data.eventDate.value : this.eventDate,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      totalGuestCount: data.totalGuestCount.present
+          ? data.totalGuestCount.value
+          : this.totalGuestCount,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isDirty: data.isDirty.present ? data.isDirty.value : this.isDirty,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EventsTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('nameAr: $nameAr, ')
+          ..write('eventDate: $eventDate, ')
+          ..write('notes: $notes, ')
+          ..write('totalGuestCount: $totalGuestCount, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    nameAr,
+    eventDate,
+    notes,
+    totalGuestCount,
+    updatedAt,
+    isDeleted,
+    isDirty,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EventsTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.nameAr == this.nameAr &&
+          other.eventDate == this.eventDate &&
+          other.notes == this.notes &&
+          other.totalGuestCount == this.totalGuestCount &&
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.isDirty == this.isDirty);
+}
+
+class EventsTableCompanion extends UpdateCompanion<EventsTableData> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> nameAr;
+  final Value<DateTime?> eventDate;
+  final Value<String?> notes;
+  final Value<int> totalGuestCount;
+  final Value<DateTime?> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<bool> isDirty;
+  const EventsTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.nameAr = const Value.absent(),
+    this.eventDate = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.totalGuestCount = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  });
+  EventsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.nameAr = const Value.absent(),
+    this.eventDate = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.totalGuestCount = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<EventsTableData> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? nameAr,
+    Expression<DateTime>? eventDate,
+    Expression<String>? notes,
+    Expression<int>? totalGuestCount,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<bool>? isDirty,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (nameAr != null) 'name_ar': nameAr,
+      if (eventDate != null) 'event_date': eventDate,
+      if (notes != null) 'notes': notes,
+      if (totalGuestCount != null) 'total_guest_count': totalGuestCount,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isDirty != null) 'is_dirty': isDirty,
+    });
+  }
+
+  EventsTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String?>? nameAr,
+    Value<DateTime?>? eventDate,
+    Value<String?>? notes,
+    Value<int>? totalGuestCount,
+    Value<DateTime?>? updatedAt,
+    Value<bool>? isDeleted,
+    Value<bool>? isDirty,
+  }) {
+    return EventsTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      nameAr: nameAr ?? this.nameAr,
+      eventDate: eventDate ?? this.eventDate,
+      notes: notes ?? this.notes,
+      totalGuestCount: totalGuestCount ?? this.totalGuestCount,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isDirty: isDirty ?? this.isDirty,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (nameAr.present) {
+      map['name_ar'] = Variable<String>(nameAr.value);
+    }
+    if (eventDate.present) {
+      map['event_date'] = Variable<DateTime>(eventDate.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (totalGuestCount.present) {
+      map['total_guest_count'] = Variable<int>(totalGuestCount.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (isDirty.present) {
+      map['is_dirty'] = Variable<bool>(isDirty.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EventsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('nameAr: $nameAr, ')
+          ..write('eventDate: $eventDate, ')
+          ..write('notes: $notes, ')
+          ..write('totalGuestCount: $totalGuestCount, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTableTable extends OutboxTable
     with TableInfo<$OutboxTableTable, OutboxTableData> {
   @override
@@ -4235,6 +4784,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SubGroupsTableTable subGroupsTable = $SubGroupsTableTable(this);
   late final $NeighborhoodsTableTable neighborhoodsTable =
       $NeighborhoodsTableTable(this);
+  late final $EventsTableTable eventsTable = $EventsTableTable(this);
   late final $OutboxTableTable outboxTable = $OutboxTableTable(this);
   late final $SyncStateTableTable syncStateTable = $SyncStateTableTable(this);
   @override
@@ -4248,6 +4798,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     citiesTable,
     subGroupsTable,
     neighborhoodsTable,
+    eventsTable,
     outboxTable,
     syncStateTable,
   ];
@@ -6004,6 +6555,287 @@ typedef $$NeighborhoodsTableTableProcessedTableManager =
       NeighborhoodsTableData,
       PrefetchHooks Function()
     >;
+typedef $$EventsTableTableCreateCompanionBuilder =
+    EventsTableCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<String?> nameAr,
+      Value<DateTime?> eventDate,
+      Value<String?> notes,
+      Value<int> totalGuestCount,
+      Value<DateTime?> updatedAt,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+typedef $$EventsTableTableUpdateCompanionBuilder =
+    EventsTableCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String?> nameAr,
+      Value<DateTime?> eventDate,
+      Value<String?> notes,
+      Value<int> totalGuestCount,
+      Value<DateTime?> updatedAt,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+
+class $$EventsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $EventsTableTable> {
+  $$EventsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nameAr => $composableBuilder(
+    column: $table.nameAr,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get eventDate => $composableBuilder(
+    column: $table.eventDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalGuestCount => $composableBuilder(
+    column: $table.totalGuestCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EventsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $EventsTableTable> {
+  $$EventsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nameAr => $composableBuilder(
+    column: $table.nameAr,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get eventDate => $composableBuilder(
+    column: $table.eventDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalGuestCount => $composableBuilder(
+    column: $table.totalGuestCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EventsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EventsTableTable> {
+  $$EventsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get nameAr =>
+      $composableBuilder(column: $table.nameAr, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get eventDate =>
+      $composableBuilder(column: $table.eventDate, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get totalGuestCount => $composableBuilder(
+    column: $table.totalGuestCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDirty =>
+      $composableBuilder(column: $table.isDirty, builder: (column) => column);
+}
+
+class $$EventsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EventsTableTable,
+          EventsTableData,
+          $$EventsTableTableFilterComposer,
+          $$EventsTableTableOrderingComposer,
+          $$EventsTableTableAnnotationComposer,
+          $$EventsTableTableCreateCompanionBuilder,
+          $$EventsTableTableUpdateCompanionBuilder,
+          (
+            EventsTableData,
+            BaseReferences<_$AppDatabase, $EventsTableTable, EventsTableData>,
+          ),
+          EventsTableData,
+          PrefetchHooks Function()
+        > {
+  $$EventsTableTableTableManager(_$AppDatabase db, $EventsTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EventsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EventsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EventsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> nameAr = const Value.absent(),
+                Value<DateTime?> eventDate = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<int> totalGuestCount = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => EventsTableCompanion(
+                id: id,
+                name: name,
+                nameAr: nameAr,
+                eventDate: eventDate,
+                notes: notes,
+                totalGuestCount: totalGuestCount,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<String?> nameAr = const Value.absent(),
+                Value<DateTime?> eventDate = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<int> totalGuestCount = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => EventsTableCompanion.insert(
+                id: id,
+                name: name,
+                nameAr: nameAr,
+                eventDate: eventDate,
+                notes: notes,
+                totalGuestCount: totalGuestCount,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$EventsTableTable, EventsTableData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $EventsTableTable,
+                    EventsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EventsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EventsTableTable,
+      EventsTableData,
+      $$EventsTableTableFilterComposer,
+      $$EventsTableTableOrderingComposer,
+      $$EventsTableTableAnnotationComposer,
+      $$EventsTableTableCreateCompanionBuilder,
+      $$EventsTableTableUpdateCompanionBuilder,
+      (
+        EventsTableData,
+        BaseReferences<_$AppDatabase, $EventsTableTable, EventsTableData>,
+      ),
+      EventsTableData,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxTableTableCreateCompanionBuilder =
     OutboxTableCompanion Function({
       Value<int> id,
@@ -6488,6 +7320,8 @@ class $AppDatabaseManager {
       $$SubGroupsTableTableTableManager(_db, _db.subGroupsTable);
   $$NeighborhoodsTableTableTableManager get neighborhoodsTable =>
       $$NeighborhoodsTableTableTableManager(_db, _db.neighborhoodsTable);
+  $$EventsTableTableTableManager get eventsTable =>
+      $$EventsTableTableTableManager(_db, _db.eventsTable);
   $$OutboxTableTableTableManager get outboxTable =>
       $$OutboxTableTableTableManager(_db, _db.outboxTable);
   $$SyncStateTableTableTableManager get syncStateTable =>

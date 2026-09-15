@@ -19,12 +19,13 @@ void main() {
     expect(await database.select(database.citiesTable).get(), isEmpty);
     expect(await database.select(database.subGroupsTable).get(), isEmpty);
     expect(await database.select(database.neighborhoodsTable).get(), isEmpty);
+    expect(await database.select(database.eventsTable).get(), isEmpty);
     expect(await database.select(database.outboxTable).get(), isEmpty);
     expect(await database.select(database.syncStateTable).get(), isEmpty);
   });
 
   test('OutboxTable.lastAttemptAt is reachable', () async {
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
 
     final id = await database.into(database.outboxTable).insert(
           OutboxTableCompanion.insert(
@@ -40,7 +41,7 @@ void main() {
   });
 
   test('schema is at v3 and GroupsTable is reachable', () async {
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
 
     final id = await database.into(database.groupsTable).insert(
           GroupsTableCompanion.insert(id: const Value(1), name: 'Family'),
@@ -52,7 +53,7 @@ void main() {
   });
 
   test('schema is at v4 and GovernoratesTable is reachable', () async {
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
 
     final id = await database.into(database.governoratesTable).insert(
           GovernoratesTableCompanion.insert(id: const Value(1), name: 'Cairo', isLocked: const Value(true)),
@@ -66,7 +67,7 @@ void main() {
   });
 
   test('schema is at v5 and CitiesTable is reachable', () async {
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
 
     final id = await database.into(database.citiesTable).insert(
           CitiesTableCompanion.insert(id: const Value(1), name: 'Nasr City', governorateId: 1),
@@ -79,7 +80,7 @@ void main() {
   });
 
   test('schema is at v6 and SubGroupsTable is reachable', () async {
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
 
     final id = await database.into(database.subGroupsTable).insert(
           SubGroupsTableCompanion.insert(id: const Value(1), name: 'University Friends', groupId: 1),
@@ -92,7 +93,7 @@ void main() {
   });
 
   test('schema is at v7 and NeighborhoodsTable is reachable', () async {
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
 
     final id = await database.into(database.neighborhoodsTable).insert(
           NeighborhoodsTableCompanion.insert(id: const Value(1), name: 'Zamalek', cityId: 1),
@@ -101,6 +102,18 @@ void main() {
         await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(id))).getSingle();
     expect(row.name, 'Zamalek');
     expect(row.cityId, 1);
+    expect(row.isDeleted, isFalse);
+    expect(row.isDirty, isFalse);
+  });
+
+  test('schema is at v8 and EventsTable is reachable', () async {
+    expect(database.schemaVersion, 8);
+
+    final id = await database.into(database.eventsTable).insert(
+          EventsTableCompanion.insert(id: const Value(1), name: 'Birthday Party'),
+        );
+    final row = await (database.select(database.eventsTable)..where((t) => t.id.equals(id))).getSingle();
+    expect(row.name, 'Birthday Party');
     expect(row.isDeleted, isFalse);
     expect(row.isDirty, isFalse);
   });
