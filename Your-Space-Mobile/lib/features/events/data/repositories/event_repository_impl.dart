@@ -32,10 +32,27 @@ class EventRepositoryImpl implements EventRepository {
     return result.fold(Left.new, (response) => Right(response.toResult((r) => r.toEntity())));
   }
 
+  /// Cache-then-network (design doc §7), mirrors
+  /// `PersonRepositoryImpl.getPersonById`: this is a one-shot `Future`, not a
+  /// reactive `Stream`, so it tries the network first and only reaches for
+  /// drift on a genuine connectivity failure. A `NetworkFailure` with a
+  /// cached row falls back to it; any other failure or a cache miss still
+  /// surfaces as before.
   @override
   Future<Either<Failure, Event>> getEventById(int id) async {
     final result = await _remote.getEventById(id);
-    return result.fold(Left.new, (response) => Right(response.toEntity()));
+    return result.fold(
+      (failure) async {
+        if (failure is! NetworkFailure) return Left(failure);
+        final cached = await _local.getCachedEventById(id);
+        return cached == null ? Left(failure) : Right(cached);
+      },
+      (response) async {
+        final event = response.toEntity();
+        await _local.saveEvent(event);
+        return Right(event);
+      },
+    );
   }
 
   @override

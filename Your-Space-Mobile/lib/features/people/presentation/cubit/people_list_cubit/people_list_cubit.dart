@@ -31,10 +31,10 @@ const _refPageSize = 50;
 ///
 /// People is local-first (CLAUDE.md Architecture rule 7): the people list
 /// itself is read from a reactive drift `Stream` via `watchPersons()`, with
-/// `refreshPersons()` running the network leg in the background. Only the
+/// `refreshPersons()` running the network leg in the background. The
 /// reference/filter-option lists (groups, subgroups, governorates, cities,
-/// neighborhoods) are still plain one-shot `Future` calls — those features
-/// aren't migrated yet.
+/// neighborhoods) are all local-first too — each is a one-shot
+/// `watchXxx(...).first` read off the local drift store, not a network call.
 @injectable
 class PeopleListCubit extends Cubit<PeopleListState> {
   final PersonRepository _personRepository;
@@ -72,8 +72,9 @@ class PeopleListCubit extends Cubit<PeopleListState> {
 
   Future<void> load() async {
     emit(const PeopleListLoading());
-    final groupsResult = await _groupRepository.getGroups(pageIndex: 1, pageSize: _refPageSize);
-    final groups = groupsResult.fold((_) => const <Group>[], (page) => page.items);
+    // Group is local-first (CLAUDE.md Architecture rule 7) — a local read
+    // can't fail the way a network call can.
+    final groups = await _groupRepository.watchGroups(limit: _refPageSize).first;
     // Governorate is local-first (row 8.2) — a local read can't fail the way
     // a network call can.
     final governorates = await _governorateRepository.watchGovernorates(limit: _refPageSize).first;
@@ -260,8 +261,8 @@ class PeopleListCubit extends Cubit<PeopleListState> {
   Future<void> refreshGroups() async {
     final current = state;
     if (current is! PeopleListSuccess) return;
-    final result = await _groupRepository.getGroups(pageIndex: 1, pageSize: _refPageSize);
-    result.fold((_) {}, (page) => emit(current.copyWith(groups: page.items)));
+    final groups = await _groupRepository.watchGroups(limit: _refPageSize).first;
+    emit(current.copyWith(groups: groups));
   }
 
   /// Cancels any existing local subscription and resubscribes to

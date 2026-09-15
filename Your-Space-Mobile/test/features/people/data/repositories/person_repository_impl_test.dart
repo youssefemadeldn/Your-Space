@@ -9,6 +9,7 @@ import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart';
+import 'package:your_space_mobile/features/people/data/datasources/person_relationship_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/people/data/datasources/person_remote_data_source_impl.dart';
 import 'package:your_space_mobile/features/people/data/models/add_occasion_history_request.dart';
 import 'package:your_space_mobile/features/people/data/models/create_person_request.dart';
@@ -22,6 +23,9 @@ import 'package:your_space_mobile/features/people/data/repositories/person_repos
 class MockPersonRemoteDataSourceImpl extends Mock implements PersonRemoteDataSourceImpl {}
 
 class MockPersonLocalDataSourceImpl extends Mock implements PersonLocalDataSourceImpl {}
+
+class MockPersonRelationshipLocalDataSourceImpl extends Mock
+    implements PersonRelationshipLocalDataSourceImpl {}
 
 class MockSyncService extends Mock implements SyncService {}
 
@@ -38,6 +42,7 @@ const _person = Person(
 void main() {
   late MockPersonRemoteDataSourceImpl remote;
   late MockPersonLocalDataSourceImpl local;
+  late MockPersonRelationshipLocalDataSourceImpl relationshipsLocal;
   late MockSyncService syncService;
   late PersonRepositoryImpl repository;
 
@@ -56,8 +61,9 @@ void main() {
   setUp(() {
     remote = MockPersonRemoteDataSourceImpl();
     local = MockPersonLocalDataSourceImpl();
+    relationshipsLocal = MockPersonRelationshipLocalDataSourceImpl();
     syncService = MockSyncService();
-    repository = PersonRepositoryImpl(remote, local, syncService);
+    repository = PersonRepositoryImpl(remote, local, relationshipsLocal, syncService);
     when(() => local.savePerson(any())).thenAnswer((_) async {});
     when(() => local.savePersons(any())).thenAnswer((_) async {});
     when(() => local.applyPersonsSnapshot(any())).thenAnswer((_) async {});
@@ -114,13 +120,37 @@ void main() {
     expect(details.occasionHistory, isEmpty);
   });
 
-  test('getPersonById propagates a failure unchanged', () async {
+  test('getPersonById propagates a non-network failure unchanged', () async {
     const failure = ServerFailure(statusCode: 404, message: 'Not found', errorCode: 'Person.NotFound');
     when(() => remote.getPersonById(999)).thenAnswer((_) async => const Left(failure));
 
     final result = await repository.getPersonById(999);
 
     expect(result, const Left(failure));
+  });
+
+  test('getPersonById falls back to the cached person and relationships on a NetworkFailure', () async {
+    when(() => remote.getPersonById(10)).thenAnswer((_) async => const Left(NetworkFailure()));
+    when(() => local.getCachedPersonById(10)).thenAnswer((_) async => _person);
+    when(() => relationshipsLocal.getCachedRelationships(10)).thenAnswer((_) async => const []);
+
+    final result = await repository.getPersonById(10);
+
+    expect(result, isA<Right<Failure, dynamic>>());
+    final details = result.getOrElse(() => throw StateError('expected Right'));
+    expect(details.person, _person);
+    expect(details.occasionHistory, isEmpty);
+    expect(details.relationships, isEmpty);
+    expect(details.createdAt, isNull);
+  });
+
+  test('getPersonById surfaces the NetworkFailure when nothing is cached', () async {
+    when(() => remote.getPersonById(11)).thenAnswer((_) async => const Left(NetworkFailure()));
+    when(() => local.getCachedPersonById(11)).thenAnswer((_) async => null);
+
+    final result = await repository.getPersonById(11);
+
+    expect(result, const Left(NetworkFailure()));
   });
 
   test('watchPersons delegates straight to the local data source', () {

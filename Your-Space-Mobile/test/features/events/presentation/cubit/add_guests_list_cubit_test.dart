@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/gender.dart';
-import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
@@ -124,10 +123,8 @@ void main() {
   tearDown(() => cubit.close());
 
   test('emits [Loading, Success] excluding persons already on the guest list', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async =>
-          const Right(PaginatedResult(items: [person1, person2], pageIndex: 1, totalPages: 1, totalItems: 2)),
-    );
+    when(() => personRepository.watchPersons(limit: 20)).thenAnswer((_) => Stream.value(const [person1, person2]));
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 2);
 
     final expectation = expectLater(
       cubit.stream,
@@ -141,10 +138,9 @@ void main() {
     await expectation;
   });
 
-  test('availableCountForGroup reads from the progress endpoint, not the paginated people list', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+  test('availableCountForGroup reads from the progress endpoint, not the local people list', () async {
+    when(() => personRepository.watchPersons(limit: 20)).thenAnswer((_) => Stream.value(const [person2]));
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 1);
     await cubit.load(1);
 
     final state = cubit.state as AddGuestsListSuccess;
@@ -154,70 +150,61 @@ void main() {
     expect(state.availableCountForGroup(2), 1);
   });
 
-  test('loadMore appends the next page, still excluding existing guests', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 2, totalItems: 3)),
-    );
+  test('loadMore grows the local window, still excluding existing guests', () async {
+    when(() => personRepository.watchPersons(limit: 20)).thenAnswer((_) => Stream.value(const [person1]));
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 2);
     await cubit.load(1);
 
-    when(() => personRepository.getPersons(pageIndex: 2, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 2, totalPages: 2, totalItems: 3)),
-    );
+    // Local-first: growing the limit re-queries the full window, not a
+    // separate "next page" — person1 is still present, plus person2 now
+    // falls inside the wider limit.
+    when(() => personRepository.watchPersons(limit: 40)).thenAnswer((_) => Stream.value(const [person1, person2]));
 
     await cubit.loadMore();
 
     final state = cubit.state as AddGuestsListSuccess;
     expect(state.availablePeople, [person2]);
-    expect(state.pageIndex, 2);
+    expect(state.limit, 40);
     expect(state.hasNextPage, isFalse);
   });
 
   test('loadMore is a no-op when hasNextPage is already false', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+    when(() => personRepository.watchPersons(limit: 20)).thenAnswer((_) => Stream.value(const [person2]));
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 1);
     await cubit.load(1);
 
     await cubit.loadMore();
 
-    verifyNever(() => personRepository.getPersons(pageIndex: 2, pageSize: any(named: 'pageSize')));
+    verifyNever(() => personRepository.watchPersons(limit: 40));
   });
 
   test('loadMore ignores a second concurrent call while the first is in flight', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person1], pageIndex: 1, totalPages: 2, totalItems: 3)),
-    );
+    when(() => personRepository.watchPersons(limit: 20)).thenAnswer((_) => Stream.value(const [person1]));
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 3);
     await cubit.load(1);
 
-    final completer = Completer<Either<Failure, PaginatedResult<Person>>>();
-    when(() => personRepository.getPersons(pageIndex: 2, pageSize: 20)).thenAnswer((_) => completer.future);
+    final controller = StreamController<List<Person>>();
+    when(() => personRepository.watchPersons(limit: 40)).thenAnswer((_) => controller.stream);
 
     final first = cubit.loadMore();
     final second = cubit.loadMore();
-    completer.complete(
-      const Right(PaginatedResult(items: [person2], pageIndex: 2, totalPages: 2, totalItems: 3)),
-    );
+    controller.add(const [person1, person2]);
     await first;
     await second;
+    await controller.close();
 
-    verify(() => personRepository.getPersons(pageIndex: 2, pageSize: 20)).called(1);
+    verify(() => personRepository.watchPersons(limit: 40)).called(1);
   });
 
-  test('loadMore preserves existing items and resets isLoadingMore on failure', () async {
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 20)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [person2], pageIndex: 1, totalPages: 2, totalItems: 3)),
-    );
+  test('loadMore surfaces an error state when the local stream errors', () async {
+    when(() => personRepository.watchPersons(limit: 20)).thenAnswer((_) => Stream.value(const [person2]));
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 3);
     await cubit.load(1);
 
-    when(() => personRepository.getPersons(pageIndex: 2, pageSize: 20))
-        .thenAnswer((_) async => const Left(NetworkFailure()));
+    when(() => personRepository.watchPersons(limit: 40)).thenAnswer((_) => Stream.error(const NetworkFailure()));
 
     await cubit.loadMore();
 
-    final state = cubit.state as AddGuestsListSuccess;
-    expect(state.availablePeople, [person2]);
-    expect(state.pageIndex, 1);
-    expect(state.hasNextPage, isTrue);
-    expect(state.isLoadingMore, isFalse);
+    expect(cubit.state, isA<AddGuestsListError>());
   });
 }

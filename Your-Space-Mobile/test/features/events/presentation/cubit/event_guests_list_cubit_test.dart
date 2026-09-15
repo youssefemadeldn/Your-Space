@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
@@ -59,8 +57,7 @@ void main() {
     groupRepository = MockGroupRepository();
     cubit = EventGuestsListCubit(eventGuestRepository, groupRepository);
 
-    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50))
-        .thenAnswer((_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 0)));
+    when(() => groupRepository.watchGroups(limit: 50)).thenAnswer((_) => Stream.value(const []));
   });
 
   tearDown(() => cubit.close());

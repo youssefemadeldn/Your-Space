@@ -7,7 +7,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
 import 'package:your_space_mobile/core/entities/governorate.dart';
 import 'package:your_space_mobile/core/entities/group.dart';
-import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
@@ -117,10 +116,7 @@ void main() {
       dataRefreshBus,
     );
 
-    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50)).thenAnswer(
-      (_) async =>
-          const Right(PaginatedResult(items: [family, closeFriends], pageIndex: 1, totalPages: 1, totalItems: 2)),
-    );
+    when(() => groupRepository.watchGroups(limit: 50)).thenAnswer((_) => Stream.value(const [family, closeFriends]));
     when(() => governorateRepository.watchGovernorates(limit: 50))
         .thenAnswer((_) => Stream.value(const <Governorate>[]));
     when(() => subGroupRepository.watchSubGroups(groupId: family.id, limit: 50))
@@ -300,11 +296,8 @@ void main() {
       await cubit.load();
 
       const newGroup = Group(id: 3, name: 'Book club');
-      when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 50)).thenAnswer(
-        (_) async => const Right(
-          PaginatedResult(items: [family, closeFriends, newGroup], pageIndex: 1, totalPages: 1, totalItems: 3),
-        ),
-      );
+      when(() => groupRepository.watchGroups(limit: 50))
+          .thenAnswer((_) => Stream.value(const [family, closeFriends, newGroup]));
 
       dataRefreshBus.notify(DataScope.groups);
       await Future<void>.delayed(Duration.zero);

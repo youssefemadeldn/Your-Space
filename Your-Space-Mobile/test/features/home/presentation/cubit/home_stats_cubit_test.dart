@@ -12,11 +12,9 @@ import 'package:your_space_mobile/features/auth/domain/entities/user_profile.dar
 import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
-import 'package:your_space_mobile/core/entities/group.dart';
 import 'package:your_space_mobile/features/groups/domain/repositories/base_group_repository.dart';
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_cubit.dart';
 import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cubit/home_stats_state.dart';
-import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/features/people/domain/repositories/base_person_repository.dart';
 
 class MockGroupRepository extends Mock implements GroupRepository {}
@@ -58,29 +56,9 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  test('emits [Loading, Success] with totalItems from each list endpoint', () async {
-    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async =>
-          const Right(PaginatedResult(items: [Group(id: 1, name: 'Family')], pageIndex: 1, totalPages: 4, totalItems: 4)),
-    );
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async => const Right(PaginatedResult(
-        items: [
-          Person(
-            id: 1,
-            name: 'Sara Adel',
-            gender: Gender.female,
-            groupId: 1,
-            groupName: 'Family',
-            governorateId: 1,
-            governorateName: 'Cairo',
-          ),
-        ],
-        pageIndex: 1,
-        totalPages: 10,
-        totalItems: 10,
-      )),
-    );
+  test('emits [Loading, Success] with counts from each source', () async {
+    when(() => groupRepository.countGroups()).thenAnswer((_) async => 4);
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 10);
     when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1)).thenAnswer(
       (_) async => const Right(
         PaginatedResult(items: [Event(id: 1, name: 'Birthday')], pageIndex: 1, totalPages: 2, totalItems: 2),
@@ -104,21 +82,55 @@ void main() {
     await expectation;
   });
 
-  test('emits an Error when the profile fetch fails, even if all three counts succeed', () async {
-    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
-    );
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
-    );
+  // A failed profile fetch on a cold start (e.g. offline) has no prior
+  // greeting to fall back to — it degrades to an empty name/avatar rather
+  // than discarding the counts that did succeed and blanking the dashboard.
+  test('a failed profile fetch on initial load does not blank the dashboard — it falls back to an empty greeting',
+      () async {
+    when(() => groupRepository.countGroups()).thenAnswer((_) async => 4);
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 10);
     when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
+      (_) async => const Right(
+        PaginatedResult(items: [Event(id: 1, name: 'Birthday')], pageIndex: 1, totalPages: 2, totalItems: 2),
+      ),
     );
     when(() => getCurrentUserProfile()).thenAnswer((_) async => const Left(NetworkFailure()));
 
     final expectation = expectLater(
       cubit.stream,
-      emitsInOrder([const HomeStatsLoading(), isA<HomeStatsError>()]),
+      emitsInOrder([
+        const HomeStatsLoading(),
+        isA<HomeStatsSuccess>()
+            .having((s) => s.groupsCount, 'groupsCount', 4)
+            .having((s) => s.peopleCount, 'peopleCount', 10)
+            .having((s) => s.eventsCount, 'eventsCount', 2)
+            .having((s) => s.firstName, 'firstName', '')
+            .having((s) => s.avatarUrl, 'avatarUrl', isNull),
+      ]),
+    );
+
+    unawaited(cubit.load());
+    await expectation;
+  });
+
+  // Groups/People are local-first (CLAUDE.md Architecture rule 7) — a local
+  // count can't fail. Events has no local-first migration yet, so a failed
+  // Events fetch folds to 0 instead of blanking the whole dashboard.
+  test('a failed Events fetch does not blank the dashboard — it falls back to 0', () async {
+    when(() => groupRepository.countGroups()).thenAnswer((_) async => 4);
+    when(() => personRepository.countPersons()).thenAnswer((_) async => 10);
+    when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1))
+        .thenAnswer((_) async => const Left(NetworkFailure()));
+
+    final expectation = expectLater(
+      cubit.stream,
+      emitsInOrder([
+        const HomeStatsLoading(),
+        isA<HomeStatsSuccess>()
+            .having((s) => s.groupsCount, 'groupsCount', 4)
+            .having((s) => s.peopleCount, 'peopleCount', 10)
+            .having((s) => s.eventsCount, 'eventsCount', 0),
+      ]),
     );
 
     unawaited(cubit.load());
@@ -127,12 +139,8 @@ void main() {
 
   group('DataRefreshBus', () {
     Future<void> loadSuccessfully() async {
-      when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 1)).thenAnswer(
-        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 1)),
-      );
-      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
-        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 1)),
-      );
+      when(() => groupRepository.countGroups()).thenAnswer((_) async => 1);
+      when(() => personRepository.countPersons()).thenAnswer((_) async => 1);
       when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1)).thenAnswer(
         (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 1)),
       );
@@ -146,9 +154,7 @@ void main() {
     test('a bus notification triggers a silent re-fetch, without a Loading flash', () async {
       await loadSuccessfully();
 
-      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
-        (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 1, totalItems: 5)),
-      );
+      when(() => personRepository.countPersons()).thenAnswer((_) async => 5);
 
       final states = <dynamic>[];
       final sub = cubit.stream.listen(states.add);
@@ -161,12 +167,15 @@ void main() {
       expect(cubit.state, isA<HomeStatsSuccess>().having((s) => s.peopleCount, 'peopleCount', 5));
     });
 
-    test('a failed background refresh keeps the last-good stats on screen', () async {
+    // Unlike the initial `load()`, a refresh has a prior `HomeStatsSuccess`
+    // to fall back to: counts are re-fetched fresh, but a failed profile
+    // fetch keeps the existing greeting instead of blanking it — so with no
+    // other mocked value changed, the resulting state is identical.
+    test('a failed background refresh keeps the last-good greeting on screen', () async {
       await loadSuccessfully();
       final beforeRefresh = cubit.state;
 
-      when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1))
-          .thenAnswer((_) async => const Left(NetworkFailure()));
+      when(() => getCurrentUserProfile()).thenAnswer((_) async => const Left(NetworkFailure()));
 
       dataRefreshBus.notify(DataScope.people);
       await Future<void>.delayed(Duration.zero);
@@ -179,26 +188,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(cubit.state, isA<HomeStatsInitial>());
-      verifyNever(() => personRepository.getPersons(pageIndex: any(named: 'pageIndex'), pageSize: any(named: 'pageSize')));
+      verifyNever(() => personRepository.countPersons());
     });
-  });
-
-  test('emits an Error when any one of the three calls fails', () async {
-    when(() => groupRepository.getGroups(pageIndex: 1, pageSize: 1))
-        .thenAnswer((_) async => const Left(NetworkFailure()));
-    when(() => personRepository.getPersons(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
-    );
-    when(() => eventRepository.getEvents(pageIndex: 1, pageSize: 1)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [], pageIndex: 1, totalPages: 0, totalItems: 0)),
-    );
-
-    final expectation = expectLater(
-      cubit.stream,
-      emitsInOrder([const HomeStatsLoading(), isA<HomeStatsError>()]),
-    );
-
-    unawaited(cubit.load());
-    await expectation;
   });
 }

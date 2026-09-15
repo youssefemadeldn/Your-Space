@@ -7,7 +7,6 @@ import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
-import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
 import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
@@ -378,9 +377,12 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
         ),
       );
 
-  /// Debounced server-side lookup for the focused relationship row's person
-  /// field. Replaces the old fixed 200-row client snapshot so people beyond
-  /// the first page are still findable.
+  /// Debounced local-first lookup for the focused relationship row's person
+  /// field. Person is local-first (CLAUDE.md Architecture rule 7): the full
+  /// owned dataset is cached on-device, so `watchPersons(search:, limit:)`
+  /// searches the complete synced collection — not a capped page — and works
+  /// offline. This superseded an earlier server-side search that itself had
+  /// replaced an even older fixed 200-row client snapshot.
   void searchRelationshipPeople(String query) {
     _relationshipSearchDebounce?.cancel();
     _relationshipSearchDebounce =
@@ -393,16 +395,13 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     emit(current.copyWith(relationshipLookupLoading: true));
 
     final trimmed = query.trim();
-    final result = await _personRepository.getPersons(
-      search: trimmed.isEmpty ? null : trimmed,
-      pageIndex: 1,
-      pageSize: AppConstants.kDefaultPageSize,
-    );
+    final people = await _personRepository
+        .watchPersons(search: trimmed.isEmpty ? null : trimmed, limit: AppConstants.kDefaultPageSize)
+        .first;
     if (isClosed) return;
     final latest = state;
     if (latest is! PersonWizardReady) return;
 
-    final people = result.fold((_) => const <Person>[], (page) => page.items);
     // Edit mode: a person can't be related to itself.
     final filtered =
         latest.personId == null ? people : people.where((p) => p.id != latest.personId).toList();
