@@ -7,6 +7,7 @@ import 'package:your_space_mobile/core/network/api_manager.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_subgroup_request.dart';
+import '../models/subgroup_changes_response.dart';
 import '../models/subgroup_response.dart';
 import '../models/update_subgroup_request.dart';
 import 'base_subgroup_data_source.dart';
@@ -83,5 +84,22 @@ class SubGroupRemoteDataSourceImpl implements BaseSubGroupDataSource {
   Future<Either<Failure, Unit>> deleteSubGroup(int groupId, int id) => _api.delete<Unit>(
         path: '${_basePath(groupId)}/$id',
         fromJson: (_) => unit,
+      );
+
+  @override
+  Future<Either<Failure, SubGroupChangesResponse>> getSubGroupChanges({
+    required int since,
+    required int pageSize,
+  }) =>
+      _api.get<SubGroupChangesResponse>(
+        path: '${ApiConstants.subgroups}/changes',
+        queryParameters: {
+          'since': since,
+          'pageSize': pageSize,
+        },
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => SubGroupChangesResponse.fromJson(inner as Map<String, dynamic>),
+        ),
       );
 }
