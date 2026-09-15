@@ -305,20 +305,56 @@ real usage pattern demands it.
 
 ---
 
-## 7. Retiring `DataRefreshBus`
+## 7. `DataRefreshBus` — permanent cross-cutting infrastructure
 
-`core/events/data_refresh_bus.dart` exists today because `StatefulShellRoute.indexedStack`
-keeps branch cubits alive forever and nothing else tells a live cubit that data changed
-elsewhere (see its own doc comment). Once a feature is on a drift `Stream`, this problem
-disappears structurally — every cubit watching the same table sees the same write the instant
-it lands, with no explicit notification needed.
+`core/events/data_refresh_bus.dart` exists because `StatefulShellRoute.indexedStack` keeps
+branch cubits alive forever and nothing else tells a live cubit that data changed elsewhere
+(see its own doc comment). The original plan here was that once a feature moved to a drift
+`Stream`, that problem would disappear structurally and the corresponding `DataScope` case
+could be deleted — with the whole class retired once only `DataScope.profile` remained.
 
-**Migration is per-feature, not a flag day:** as each feature moves to Tier 1, its
-`DataScope` case (`people`, `groups`, `events`, `eventGuests`, `classification`) is deleted
-from every listener, and its `_dataRefreshBus.notify(...)` call sites in action cubits are
-deleted too. `DataScope.profile` (Settings, never migrated per §2) is the only case expected
-to survive long-term. Once every other case is gone, delete `DataRefreshBus` itself rather
-than leaving a one-case bus alive.
+**That assumption did not hold in practice**, and a Row 10 audit (2026-09-15) found real,
+live consumers for every case that don't go away just because a feature's *list* read is
+stream-backed. `DataRefreshBus` is reclassified as permanent infrastructure for these
+cross-cutting concerns:
+
+- **Fetch-based detail reads.** `PersonDetailsCubit.getPersonById()` and
+  `EventDetailsCubit.getEventById()` are one-shot `Future` calls, not drift `Stream`s — there
+  is no single-entity reactive read for either yet. Their bus listeners (`people` and
+  `events`/`eventGuests` respectively) are the only way these screens learn about an edit
+  made elsewhere. `PersonWizardCubit.notify(DataScope.people)` is what feeds
+  `PersonDetailsCubit`; it is **not** dead even though `PeopleListCubit`'s own `people` case
+  is (see below).
+- **Un-cached server-computed fields.** `EventsListCubit`'s list is stream-backed, but
+  `Event.totalGuestCount` is only refreshed when the server is actually pulled — a local
+  drift upsert doesn't recompute it. The bus is what triggers that background pull on an
+  `events`/`eventGuests` notification.
+- **Fetch-based reference/filter data.** `PeopleListCubit.refreshGroups()` (the group-filter
+  chip row) is still a one-shot fetch — Groups' *list* is local-first, but this particular
+  read isn't wired to it. `PersonWizardCubit.notify(DataScope.groups)` feeds this.
+- **Cross-feature aggregates with no stream of their own.** `HomeStatsCubit` subscribes to
+  *every* `DataScope` unconditionally to refresh Home's counts/greeting. It does one-off
+  count fetches across three repositories and has no reactive stream to watch — it needs
+  some "something changed" signal for as long as it exists in its current form, regardless
+  of how many individual features migrate underneath it.
+- **`DataScope.profile`** — Settings was never migrated (§2) and is the one case expected to
+  stay `Future`-based indefinitely. `ProfileFormCubit` notifies it; `HomeStatsCubit` is
+  currently its only consumer.
+
+**What is actually safe to delete:** only a listener branch proven to have *zero* remaining
+consumers across the whole codebase — not just the cubit you're looking at. `PeopleListCubit`
+had exactly one such case (`DataScope.people` — its own list read is already stream-backed
+via `watchPersons()`, confirmed dead and removed in Row 10), but the identically-named
+`.notify(DataScope.people)` call sites elsewhere stayed live because `PersonDetailsCubit`
+still needs them. Before deleting a case or a notify call site in the future, grep for every
+listener of that case across the codebase, not just the cubit that originally owned it — an
+earlier handoff (Row 9's) asserted `PersonWizardCubit`'s notify calls were dead by checking
+only one downstream cubit, and was wrong.
+
+There is currently no plan to delete `DataRefreshBus`. It would only become deletable if
+every one of the consumers above were separately given a reactive alternative (single-entity
+drift streams, a locally-computed guest count, a Home-stats reactive query) — a larger,
+deliberate effort, not a byproduct of any single feature's migration.
 
 ---
 
@@ -405,7 +441,7 @@ previous one is verified.
 | 7 | Repeat rows 1–6 for Groups | Groups | as needed |
 | 8 | Repeat for Classification (Governorate/City/SubGroup/Neighborhood) | Classification | as needed |
 | 9 | Repeat for Events + EventGuests, including the soft-delete-column decision for `EventGuest`/`PersonRelationship`/`PersonImage` (§6) | Events | **yes** |
-| 10 | Retire `DataRefreshBus` once its last `DataScope` case (other than `profile`) is gone | — (cleanup) | none |
+| 10 | **Closed, revised scope:** removed the one dead no-op `DataScope.people` branch in `PeopleListCubit`; `DataRefreshBus` reclassified as permanent cross-cutting infrastructure, not a migration shim — see §7 | — (cleanup) | none |
 
 People's rows 1–6 are the reference implementation every later feature copies — get code
 review depth there, move faster on the repeats.
