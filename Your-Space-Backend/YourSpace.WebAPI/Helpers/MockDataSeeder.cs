@@ -13,9 +13,14 @@ using Person = YourSpace.Data.Entities.Person; // disambiguates from Bogus.Perso
 
 namespace YourSpace.WebAPI.Helpers;
 
-// Development-only sample data — never runs outside app.Environment.IsDevelopment() (CLAUDE.md
-// "Development Data Seeding"). Distinct from IdentitySeeder, which bootstraps real, production-needed
-// data (roles, the first SuperAdmin) and therefore runs in every environment.
+// Mock/demo sample data — runs unconditionally in every environment, including Production
+// (CLAUDE.md "Mock Seed Data"), same as IdentitySeeder/ReferenceDataSeeder. Distinct from those two
+// only in *what* it seeds (mock/demo rows vs. real bootstrap data), not *when* it runs. Every
+// Seed*Async method below must scope its idempotency check to the specific seed-owned rows
+// (activeUserId/lockedUserId, or a join through them) rather than a table-wide AnyAsync() — a
+// table-wide check silently skips seeding the moment any real user's own data exists in that table,
+// while downstream methods still assume the seed fixtures exist, which crash-looped Production on
+// 2026-09-15 (MockDataSeeder.SeedSubGroupsAsync threw on a missing "Relatives" group).
 public static class MockDataSeeder
 {
     private const string ActiveUserEmail = "seed.active@yourspace.dev";
@@ -86,7 +91,9 @@ public static class MockDataSeeder
 
     private static async Task SeedRefreshTokensAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
     {
-        if (await context.RefreshTokens.AnyAsync())
+        // Scoped to the seed users, not the whole table — a real user's own RefreshTokens must
+        // never cause this to skip seeding the fixtures activeUserId/lockedUserId need.
+        if (await context.RefreshTokens.AnyAsync(r => r.UserId == activeUserId || r.UserId == lockedUserId))
         {
             return;
         }
@@ -124,7 +131,9 @@ public static class MockDataSeeder
 
     private static async Task SeedEmailConfirmationCodesAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
     {
-        if (await context.EmailConfirmationCodes.AnyAsync())
+        // Scoped to the seed users — see SeedRefreshTokensAsync's comment for why a table-wide
+        // AnyAsync() would wrongly skip seeding once any real user has their own codes.
+        if (await context.EmailConfirmationCodes.AnyAsync(c => c.UserId == activeUserId || c.UserId == lockedUserId))
         {
             return;
         }
@@ -166,7 +175,9 @@ public static class MockDataSeeder
 
     private static async Task SeedPasswordResetCodesAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
     {
-        if (await context.PasswordResetCodes.AnyAsync())
+        // Scoped to the seed users — see SeedRefreshTokensAsync's comment for why a table-wide
+        // AnyAsync() would wrongly skip seeding once any real user has their own codes.
+        if (await context.PasswordResetCodes.AnyAsync(c => c.UserId == activeUserId || c.UserId == lockedUserId))
         {
             return;
         }
@@ -208,7 +219,11 @@ public static class MockDataSeeder
 
     private static async Task SeedGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
-        if (await context.Groups.AnyAsync())
+        // Scoped to the seed users — a table-wide AnyAsync() here was the root cause of a production
+        // crash loop: once any real user had created their own Groups, this returned true and skipped
+        // seeding "Relatives"/etc. for activeUserId, while SeedSubGroupsAsync downstream unconditionally
+        // assumed those rows existed and threw on SingleAsync (2026-09-15 incident).
+        if (await context.Groups.AnyAsync(g => g.OwnerUserId == activeUserId || g.OwnerUserId == lockedUserId))
         {
             return;
         }
@@ -243,7 +258,9 @@ public static class MockDataSeeder
 
     private static async Task SeedSubGroupsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
-        if (await context.SubGroups.AnyAsync())
+        // Scoped to the seed users — see SeedGroupsAsync's comment for the production incident this
+        // same table-wide-AnyAsync() pattern caused.
+        if (await context.SubGroups.AnyAsync(s => s.OwnerUserId == activeUserId || s.OwnerUserId == lockedUserId))
         {
             return;
         }
@@ -301,7 +318,9 @@ public static class MockDataSeeder
 
     private static async Task SeedCitiesAsync(YourSpaceDbContext context, string activeUserId, ISyncVersionProvider syncVersionProvider)
     {
-        if (await context.Cities.AnyAsync())
+        // Scoped to the seed user — see SeedGroupsAsync's comment for why a table-wide AnyAsync()
+        // is unsafe once real users own rows in this table.
+        if (await context.Cities.AnyAsync(c => c.OwnerUserId == activeUserId))
         {
             return;
         }
@@ -332,7 +351,9 @@ public static class MockDataSeeder
 
     private static async Task SeedNeighborhoodsAsync(YourSpaceDbContext context, string activeUserId, ISyncVersionProvider syncVersionProvider)
     {
-        if (await context.Neighborhoods.AnyAsync())
+        // Scoped to the seed user — see SeedGroupsAsync's comment for why a table-wide AnyAsync()
+        // is unsafe once real users own rows in this table.
+        if (await context.Neighborhoods.AnyAsync(n => n.OwnerUserId == activeUserId))
         {
             return;
         }
@@ -368,7 +389,9 @@ public static class MockDataSeeder
 
     private static async Task SeedPersonsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
-        if (await context.People.AnyAsync())
+        // Scoped to the seed users — see SeedGroupsAsync's comment for why a table-wide AnyAsync()
+        // is unsafe once real users own rows in this table.
+        if (await context.People.AnyAsync(p => p.OwnerUserId == activeUserId || p.OwnerUserId == lockedUserId))
         {
             return;
         }
@@ -453,7 +476,9 @@ public static class MockDataSeeder
     // boundary with exactly one primary) so pagination/UI states have something to render against.
     private static async Task SeedPersonImagesAsync(YourSpaceDbContext context, string activeUserId)
     {
-        if (await context.PersonImages.AnyAsync())
+        // PersonImage has no OwnerUserId of its own — scope via the owning Person instead of a
+        // table-wide AnyAsync() (see SeedGroupsAsync's comment for why that pattern is unsafe).
+        if (await context.PersonImages.AnyAsync(pi => pi.Person.OwnerUserId == activeUserId))
         {
             return;
         }
@@ -488,7 +513,9 @@ public static class MockDataSeeder
 
     private static async Task SeedEventsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
-        if (await context.Events.AnyAsync())
+        // Scoped to the seed users — see SeedGroupsAsync's comment for why a table-wide AnyAsync()
+        // is unsafe once real users own rows in this table.
+        if (await context.Events.AnyAsync(e => e.OwnerUserId == activeUserId || e.OwnerUserId == lockedUserId))
         {
             return;
         }
@@ -534,7 +561,9 @@ public static class MockDataSeeder
 
     private static async Task SeedEventGuestsAsync(YourSpaceDbContext context, string activeUserId)
     {
-        if (await context.EventGuests.AnyAsync())
+        // EventGuest has no OwnerUserId of its own — scope via the owning Event instead of a
+        // table-wide AnyAsync() (see SeedGroupsAsync's comment for why that pattern is unsafe).
+        if (await context.EventGuests.AnyAsync(eg => eg.Event.OwnerUserId == activeUserId))
         {
             return;
         }
@@ -580,7 +609,9 @@ public static class MockDataSeeder
 
     private static async Task SeedPersonOccasionHistoriesAsync(YourSpaceDbContext context, string activeUserId)
     {
-        if (await context.PersonOccasionHistories.AnyAsync())
+        // PersonOccasionHistory has no OwnerUserId of its own — scope via the owning Person instead
+        // of a table-wide AnyAsync() (see SeedGroupsAsync's comment for why that pattern is unsafe).
+        if (await context.PersonOccasionHistories.AnyAsync(h => h.Person.OwnerUserId == activeUserId))
         {
             return;
         }
@@ -629,7 +660,9 @@ public static class MockDataSeeder
     // save (real Ids), cross-link InverseRelationshipId, save again.
     private static async Task SeedPersonRelationshipsAsync(YourSpaceDbContext context, string activeUserId)
     {
-        if (await context.PersonRelationships.AnyAsync())
+        // PersonRelationship has no OwnerUserId of its own — scope via the owning Person instead of
+        // a table-wide AnyAsync() (see SeedGroupsAsync's comment for why that pattern is unsafe).
+        if (await context.PersonRelationships.AnyAsync(pr => pr.Person.OwnerUserId == activeUserId))
         {
             return;
         }
@@ -667,7 +700,9 @@ public static class MockDataSeeder
 
     private static async Task SeedUserSettingsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
     {
-        if (await context.UserSettings.AnyAsync())
+        // Scoped to the seed users — see SeedGroupsAsync's comment for why a table-wide AnyAsync()
+        // is unsafe once real users own rows in this table.
+        if (await context.UserSettings.AnyAsync(u => u.UserId == activeUserId || u.UserId == lockedUserId))
         {
             return;
         }
