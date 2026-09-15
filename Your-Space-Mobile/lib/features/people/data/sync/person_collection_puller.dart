@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/network/failure.dart';
@@ -15,16 +16,18 @@ import '../../domain/repositories/base_person_repository.dart';
 /// with it under injectable's duplicate-registration check.
 /// `RegisterModule.collectionPullers` collects every tagged `CollectionPuller`
 /// back into the `List<CollectionPuller>` `SyncService` actually wants.
+/// Resolves [PersonRepository] lazily via [GetIt] at pull time rather than
+/// through constructor injection: `PersonRepositoryImpl` depends on
+/// `SyncService`, and `SyncService`'s own construction eagerly builds every
+/// registered `CollectionPuller` (via `RegisterModule.collectionPullers`) —
+/// a constructor-injected repository here would recreate that cycle.
 @Named('person')
 @LazySingleton(as: CollectionPuller)
 class PersonCollectionPuller implements CollectionPuller {
-  final PersonRepository _personRepository;
-
-  PersonCollectionPuller(this._personRepository);
-
   @override
   String get collection => 'persons';
 
   @override
-  Future<Either<Failure, Unit>> pull() => _personRepository.refreshPersons();
+  Future<Either<Failure, Unit>> pull() =>
+      GetIt.instance<PersonRepository>().refreshPersons();
 }

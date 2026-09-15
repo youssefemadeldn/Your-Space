@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/network/failure.dart';
@@ -14,16 +15,16 @@ import '../../domain/repositories/base_group_repository.dart';
 /// `PersonCollectionPuller`'s under injectable's duplicate-registration
 /// check. `RegisterModule.collectionPullers` collects both back into the
 /// `List<CollectionPuller>` `SyncService` actually wants.
+/// Resolves [GroupRepository] lazily via [GetIt] at pull time — see
+/// `PersonCollectionPuller`'s doc comment for why constructor injection here
+/// would recreate a circular dependency with `SyncService`.
 @Named('group')
 @LazySingleton(as: CollectionPuller)
 class GroupCollectionPuller implements CollectionPuller {
-  final GroupRepository _groupRepository;
-
-  GroupCollectionPuller(this._groupRepository);
-
   @override
   String get collection => 'groups';
 
   @override
-  Future<Either<Failure, Unit>> pull() => _groupRepository.refreshGroups();
+  Future<Either<Failure, Unit>> pull() =>
+      GetIt.instance<GroupRepository>().refreshGroups();
 }

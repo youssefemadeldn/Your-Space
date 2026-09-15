@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/network/failure.dart';
@@ -14,8 +15,11 @@ void main() {
 
   setUp(() {
     repository = MockEventGuestRepository();
-    puller = EventGuestCollectionPuller(repository);
+    GetIt.instance.registerSingleton<EventGuestRepository>(repository);
+    puller = EventGuestCollectionPuller();
   });
+
+  tearDown(() => GetIt.instance.reset());
 
   test('collection is eventGuests', () {
     expect(puller.collection, 'eventGuests');
