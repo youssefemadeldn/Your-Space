@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/network/failure.dart';
@@ -14,8 +15,11 @@ void main() {
 
   setUp(() {
     repository = MockPersonRelationshipRepository();
-    puller = PersonRelationshipCollectionPuller(repository);
+    GetIt.instance.registerSingleton<PersonRelationshipRepository>(repository);
+    puller = PersonRelationshipCollectionPuller();
   });
+
+  tearDown(() => GetIt.instance.reset());
 
   test('collection is personRelationships', () {
     expect(puller.collection, 'personRelationships');

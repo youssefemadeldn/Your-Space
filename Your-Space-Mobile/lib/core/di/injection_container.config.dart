@@ -270,11 +270,51 @@ extension GetItInjectableX on _i174.GetIt {
       dispose: (i) => i.dispose(),
     );
     gh.lazySingleton<_i0.ConnectivityHelper>(() => _i0.ConnectivityHelper());
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i509.EventCollectionPuller(),
+      instanceName: 'event',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i236.NeighborhoodCollectionPuller(),
+      instanceName: 'neighborhood',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i415.PersonImageCollectionPuller(),
+      instanceName: 'personImage',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i643.SubGroupCollectionPuller(),
+      instanceName: 'subgroup',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i946.PersonCollectionPuller(),
+      instanceName: 'person',
+    );
     gh.lazySingleton<_i134.SecureStorageHelper>(
       () => _i134.SecureStorageHelper(gh<_i558.FlutterSecureStorage>()),
     );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i544.GroupCollectionPuller(),
+      instanceName: 'group',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i379.EventGuestCollectionPuller(),
+      instanceName: 'eventGuest',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i1067.GovernorateCollectionPuller(),
+      instanceName: 'governorate',
+    );
     gh.lazySingleton<_i782.AppPreferencesHelper>(
       () => _i782.AppPreferencesHelper(gh<_i460.SharedPreferences>()),
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i816.PersonRelationshipCollectionPuller(),
+      instanceName: 'personRelationship',
+    );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () => _i975.CityCollectionPuller(),
+      instanceName: 'city',
     );
     gh.singleton<_i583.GoRouter>(
       () => registerModule.router(gh<_i718.GlobalKey<_i718.NavigatorState>>()),
@@ -395,11 +435,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i500.CityRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () =>
-          _i415.PersonImageCollectionPuller(gh<_i1005.PersonImageRepository>()),
-      instanceName: 'personImage',
-    );
     gh.lazySingleton<_i1073.AuthRemoteDataSourceImpl>(
       () => _i1073.AuthRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
@@ -418,10 +453,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i320.EventGuestRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i643.SubGroupCollectionPuller(gh<_i133.SubGroupRepository>()),
-      instanceName: 'subgroup',
-    );
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
     );
@@ -430,10 +461,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i157.SubGroupListCubit>(
       () => _i157.SubGroupListCubit(gh<_i133.SubGroupRepository>()),
-    );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i946.PersonCollectionPuller(gh<_i571.PersonRepository>()),
-      instanceName: 'person',
     );
     gh.lazySingleton<_i416.BaseEventDataSource>(
       () => _i557.EventRemoteDataSourceImpl(gh<_i531.ApiManager>()),
@@ -507,16 +534,8 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i134.SecureStorageHelper>(),
       ),
     );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i509.EventCollectionPuller(gh<_i219.EventRepository>()),
-      instanceName: 'event',
-    );
     gh.factory<_i755.EventFormCubit>(
       () => _i755.EventFormCubit(gh<_i219.EventRepository>()),
-    );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i975.CityCollectionPuller(gh<_i881.CityRepository>()),
-      instanceName: 'city',
     );
     gh.lazySingleton<_i681.NeighborhoodRepository>(
       () => _i412.NeighborhoodRepositoryImpl(
@@ -565,12 +584,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i410.EventGuestActionCubit>(
       () => _i410.EventGuestActionCubit(gh<_i235.EventGuestRepository>()),
     );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i236.NeighborhoodCollectionPuller(
-        gh<_i681.NeighborhoodRepository>(),
-      ),
-      instanceName: 'neighborhood',
-    );
     gh.factory<_i512.PeopleListCubit>(
       () => _i512.PeopleListCubit(
         gh<_i571.PersonRepository>(),
@@ -581,11 +594,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i681.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
-    );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () =>
-          _i1067.GovernorateCollectionPuller(gh<_i262.GovernorateRepository>()),
-      instanceName: 'governorate',
     );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i279.NeighborhoodOutboxReplayer(
@@ -665,22 +673,8 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i215.DataRefreshBus>(),
       ),
     );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i379.EventGuestCollectionPuller(gh<_i235.EventGuestRepository>()),
-      instanceName: 'eventGuest',
-    );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i544.GroupCollectionPuller(gh<_i994.GroupRepository>()),
-      instanceName: 'group',
-    );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
       () => _i84.GetCurrentUserProfileUseCase(gh<_i680.AuthRepository>()),
-    );
-    gh.lazySingleton<_i635.CollectionPuller>(
-      () => _i816.PersonRelationshipCollectionPuller(
-        gh<_i126.PersonRelationshipRepository>(),
-      ),
-      instanceName: 'personRelationship',
     );
     gh.factory<_i889.EventGuestsListCubit>(
       () => _i889.EventGuestsListCubit(
