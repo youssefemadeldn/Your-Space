@@ -10,6 +10,8 @@ public interface IEventGuestService
 {
     Task<ServiceResult<EventGuestDetailsDto>> GetDetailsAsync(string ownerUserId, int eventId, int guestId);
 
+    Task<ServiceResult<List<EventGuestProfileDto>>> GetAllMineAsync(string ownerUserId);
+
     Task<ServiceResult<PaginatedResultDto<EventGuestProfileDto>>> GetListAsync(
         string ownerUserId, int eventId, int? groupId, EventGuestStatus? status, PaginationSpecification pagination);
 

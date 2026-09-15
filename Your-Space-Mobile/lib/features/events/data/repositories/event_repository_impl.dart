@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
@@ -5,15 +7,20 @@ import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/repositories/base_event_repository.dart';
-import '../datasources/event_remote_data_source_impl.dart';
+import '../datasources/base_event_data_source.dart';
+import '../datasources/event_local_data_source_impl.dart';
 import '../models/create_event_request.dart';
 import '../models/update_event_request.dart';
 
 @LazySingleton(as: EventRepository)
 class EventRepositoryImpl implements EventRepository {
-  final EventRemoteDataSourceImpl _remote;
+  final BaseEventDataSource _remote;
+  final EventLocalDataSourceImpl _local;
 
-  EventRepositoryImpl(this._remote);
+  EventRepositoryImpl(
+    @Named('remote') this._remote,
+    @Named('local') this._local,
+  );
 
   @override
   Future<Either<Failure, PaginatedResult<Event>>> getEvents({
@@ -32,16 +39,50 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
+  Stream<List<Event>> watchEvents({String? search, required int limit}) =>
+      _local.watchEvents(search: search, limit: limit);
+
+  @override
+  Future<int> countEvents({String? search}) => _local.countEvents(search: search);
+
+  @override
+  Future<Either<Failure, Unit>> refreshEvents() async {
+    const pageSize = 200;
+    // Defensive cap against a pathological `hasMore` loop.
+    const maxPages = 50;
+    var cursor = await _local.getEventsSyncCursor();
+    for (var page = 0; page < maxPages; page++) {
+      final result = await _remote.getEventChanges(since: cursor, pageSize: pageSize);
+      if (result.isLeft()) {
+        return result.fold(Left.new, (_) => throw StateError('unreachable'));
+      }
+      final changes = result.getOrElse(() => throw StateError('unreachable'));
+      await _local.applyEventChanges(
+        upserts: changes.upserts.map((r) => r.toEntity()).toList(),
+        tombstoneIds: changes.tombstoneIds,
+      );
+      await _local.saveEventsSyncCursor(changes.cursor);
+      cursor = changes.cursor;
+      if (!changes.hasMore) break;
+    }
+    return const Right(unit);
+  }
+
+  int _newTempEventId() => -DateTime.now().microsecondsSinceEpoch;
+
+  @override
   Future<Either<Failure, Event>> createEvent({
     required String name,
     String? nameAr,
     DateTime? eventDate,
     String? notes,
   }) async {
-    final result = await _remote.createEvent(
-      CreateEventRequest(name: name, nameAr: nameAr, eventDate: eventDate, notes: notes),
+    final event = Event(id: _newTempEventId(), name: name, nameAr: nameAr, eventDate: eventDate, notes: notes);
+    final payloadJson = jsonEncode(
+      CreateEventRequest(name: name, nameAr: nameAr, eventDate: eventDate, notes: notes).toJson(),
     );
-    return result.fold(Left.new, (response) => Right(response.toEntity()));
+    await _local.queueEventMutation(event: event, operation: 'create', payloadJson: payloadJson);
+    return Right(event);
   }
 
   @override
@@ -52,9 +93,11 @@ class EventRepositoryImpl implements EventRepository {
     DateTime? eventDate,
     String? notes,
   }) async {
-    final result = await _remote.updateEvent(
-      UpdateEventRequest(id: id, name: name, nameAr: nameAr, eventDate: eventDate, notes: notes),
+    final event = Event(id: id, name: name, nameAr: nameAr, eventDate: eventDate, notes: notes);
+    final payloadJson = jsonEncode(
+      UpdateEventRequest(id: id, name: name, nameAr: nameAr, eventDate: eventDate, notes: notes).toJson(),
     );
-    return result.fold(Left.new, (response) => Right(response.toEntity()));
+    await _local.queueEventMutation(event: event, operation: 'update', payloadJson: payloadJson);
+    return Right(event);
   }
 }

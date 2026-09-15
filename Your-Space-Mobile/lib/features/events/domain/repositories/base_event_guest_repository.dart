@@ -19,8 +19,32 @@ abstract class EventGuestRepository {
     required int pageSize,
   });
 
+  /// Tier 1 read path for `EventGuestsListCubit`/`AddGuestsListCubit`
+  /// (local-first, CLAUDE.md rule 7) — reads local drift only, never touches
+  /// the network. `limit` grows as `loadMore()` is called (design doc §3).
+  Stream<List<EventGuest>> watchEventGuests({
+    required int eventId,
+    int? groupId,
+    EventGuestStatus? status,
+    required int limit,
+  });
+
+  /// One-shot exact count for the same filter set, local-only — backs
+  /// `hasNextPage` without a `length == limit` heuristic.
+  Future<int> countEventGuests({required int eventId, int? groupId, EventGuestStatus? status});
+
+  /// Tier 3 background pull (design doc §6) — **permanent**
+  /// full-refetch-as-delta, not an interim stage (row 9 cross-cutting
+  /// decision: EventGuest is hard-delete-only). Called by
+  /// `EventGuestCollectionPuller` from `SyncService`'s background pull
+  /// cadence, never awaited from a cubit or screen.
+  Future<Either<Failure, Unit>> refreshEventGuests();
+
+  /// Server-computed, stays network-only forever (design doc §8) — never
+  /// cached, never routed through local drift.
   Future<Either<Failure, EventGuestProgressSummary>> getProgress(int eventId);
 
+  /// Server-computed, stays network-only forever (design doc §8).
   Future<Either<Failure, PaginatedResult<Person>>> getReciprocitySuggestions(
     int eventId, {
     int? groupId,

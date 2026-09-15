@@ -34,8 +34,18 @@ namespace YourSpace.Data.Migrations
                 )
                 UPDATE "Governorates" g SET "SyncVersion" = ordered.rn FROM ordered WHERE g."Id" = ordered."Id";
                 """);
-            migrationBuilder.Sql(
-                "SELECT setval('\"Governorates_SyncVersion_seq\"', (SELECT COALESCE(MAX(\"SyncVersion\"), 0) FROM \"Governorates\"));");
+            // GREATEST(...,1) plus the is_called flag guards against Postgres's own setval bounds
+            // check on an empty table: setval(seq, 0) errors ("value 0 is out of bounds") because
+            // the sequence's default MINVALUE is 1. Passing is_called = false when there are no
+            // rows yet makes the *next* nextval() return exactly 1 instead of skipping it — fixes
+            // the empty-table setval bug flagged since row 8.17, applied solution-wide in row 9.5.
+            migrationBuilder.Sql("""
+                SELECT setval(
+                    '"Governorates_SyncVersion_seq"',
+                    GREATEST((SELECT COALESCE(MAX("SyncVersion"), 0) FROM "Governorates"), 1),
+                    (SELECT COUNT(*) FROM "Governorates") > 0
+                );
+                """);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Governorates_SyncVersion",

@@ -54,9 +54,23 @@ public class EventGuestWithSpecs : BaseSpecification<EventGuest>
         => new(eg => eventIds.Contains(eg.EventId) && eg.Event.OwnerUserId == ownerUserId);
 
     // Every guest row the user owns via any of their events, unpaginated — feeds a full account
-    // deletion (these join rows are removed before their parent People/Events).
+    // deletion (these join rows are removed before their parent People/Events). Deliberately no
+    // Person/Group include: AuthService.DeleteAccountAsync later loads and deletes People rows
+    // separately in the same DbContext, and an eager-loaded Person here would already be tracked
+    // by the time that second query runs, causing EF Core's "instance already tracked" identity
+    // conflict (hit and fixed while adding row 9.8's flat endpoint below).
     public static EventGuestWithSpecs ForOwner(string ownerUserId)
         => new(eg => eg.Event.OwnerUserId == ownerUserId);
+
+    // Same predicate as ForOwner, but with Person/Person.Group eager-loaded — for read-only
+    // callers that need to render guest rows (row 9.8's flat "all mine" endpoint), never for a
+    // deletion path sharing a DbContext with a separate People query.
+    public static EventGuestWithSpecs ForOwnerWithPersonDetails(string ownerUserId)
+    {
+        var spec = new EventGuestWithSpecs(eg => eg.Event.OwnerUserId == ownerUserId);
+        spec.AddInclude(eg => eg.Person.Group);
+        return spec;
+    }
 
     private static Expression<Func<EventGuest, bool>> BuildListPredicate(int eventId, string ownerUserId, int? groupId, EventGuestStatus? status)
         => eg => eg.EventId == eventId

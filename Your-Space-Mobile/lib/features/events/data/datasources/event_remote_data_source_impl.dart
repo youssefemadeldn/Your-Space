@@ -7,15 +7,19 @@ import 'package:your_space_mobile/core/network/api_manager.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_event_request.dart';
+import '../models/event_changes_response.dart';
 import '../models/event_response.dart';
 import '../models/update_event_request.dart';
+import 'base_event_data_source.dart';
 
-@lazySingleton
-class EventRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseEventDataSource)
+class EventRemoteDataSourceImpl implements BaseEventDataSource {
   final ApiManager _api;
 
   EventRemoteDataSourceImpl(this._api);
 
+  @override
   Future<Either<Failure, PaginatedResponse<EventResponse>>> getEvents({
     String? search,
     required int pageIndex,
@@ -37,6 +41,7 @@ class EventRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, EventResponse>> getEventById(int id) => _api.get<EventResponse>(
         path: '${ApiConstants.events}/$id',
         fromJson: (json) => unwrapServiceResult(
@@ -45,6 +50,7 @@ class EventRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, EventResponse>> createEvent(CreateEventRequest request) =>
       _api.post<EventResponse>(
         path: ApiConstants.events,
@@ -55,6 +61,18 @@ class EventRemoteDataSourceImpl {
         ),
       );
 
+  @override
+  Future<Either<Failure, EventChangesResponse>> getEventChanges({required int since, required int pageSize}) =>
+      _api.get<EventChangesResponse>(
+        path: '${ApiConstants.events}/changes',
+        queryParameters: {'since': since, 'pageSize': pageSize},
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => EventChangesResponse.fromJson(inner as Map<String, dynamic>),
+        ),
+      );
+
+  @override
   Future<Either<Failure, EventResponse>> updateEvent(UpdateEventRequest request) =>
       _api.put<EventResponse>(
         path: ApiConstants.events,

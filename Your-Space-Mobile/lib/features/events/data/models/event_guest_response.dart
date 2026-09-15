@@ -2,12 +2,14 @@ import 'package:your_space_mobile/core/entities/invite_method.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest.dart';
 import 'package:your_space_mobile/features/events/domain/entities/event_guest_status.dart';
 
-/// Parses `EventGuestProfileDto`'s fields (list/mutation responses) — the
-/// route already implies `eventId`, so unlike `EventGuestDetailsDto` neither
-/// this DTO nor this response model carries it; callers supply it explicitly
-/// to [toEntity] from the request context instead.
+/// Parses `EventGuestProfileDto`'s fields (list/mutation responses). The
+/// nested per-event routes never send `eventId` (the route already implies
+/// it) — [eventId] is nullable here and [toEntity] accepts an explicit
+/// override for those callers. Row 9.8's flat "all mine" endpoint does send
+/// it, since that response spans every event the owner has.
 class EventGuestResponse {
   final int id;
+  final int? eventId;
   final int personId;
   final String personName;
   final String? personPhoneNumber;
@@ -19,6 +21,7 @@ class EventGuestResponse {
 
   const EventGuestResponse({
     required this.id,
+    this.eventId,
     required this.personId,
     required this.personName,
     this.personPhoneNumber,
@@ -31,6 +34,7 @@ class EventGuestResponse {
 
   factory EventGuestResponse.fromJson(Map<String, dynamic> json) => EventGuestResponse(
         id: json['id'] as int,
+        eventId: json['eventId'] as int?,
         personId: json['personId'] as int,
         personName: json['personName'] as String,
         personPhoneNumber: json['personPhoneNumber'] as String?,
@@ -42,9 +46,9 @@ class EventGuestResponse {
         invitedAt: json['invitedAt'] == null ? null : DateTime.parse(json['invitedAt'] as String),
       );
 
-  EventGuest toEntity(int eventId) => EventGuest(
+  EventGuest toEntity([int? eventIdOverride]) => EventGuest(
         id: id,
-        eventId: eventId,
+        eventId: eventIdOverride ?? eventId ?? (throw StateError('EventGuestResponse.toEntity: no eventId available')),
         personId: personId,
         personName: personName,
         personPhoneNumber: personPhoneNumber,

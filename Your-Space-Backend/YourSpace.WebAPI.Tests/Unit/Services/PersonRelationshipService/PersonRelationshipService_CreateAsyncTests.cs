@@ -167,6 +167,10 @@ public class PersonRelationshipService_CreateAsyncTests
         result.Data.RelatedPersonId.Should().Be(20);
         result.Data.RelatedPersonName.Should().Be("Ahmed");
         result.Data.RelationType.Should().Be(RelationType.Father);
+        // row 9.13 — lets the mobile client reconcile the auto-derived inverse row's real id
+        // alongside the forward row's, without a second round trip.
+        result.Data.InverseRelationType.Should().Be(RelationType.Son);
+        result.Data.InverseId.Should().NotBe(result.Data.Id);
 
         // Male subject's Father -> inverse Son, per RelationInverseResolver.
         _relationshipRepo.Verify(

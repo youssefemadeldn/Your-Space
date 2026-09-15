@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 
@@ -10,12 +9,15 @@ import 'add_guests_action_state.dart';
 /// Shared between the Add-Guests screen (both tabs) and Reciprocity
 /// Suggestions — "add as guest" there is the exact same bulk-add operation
 /// with a single-element `personIds` list.
+///
+/// No `DataRefreshBus` notification on success (row 9.9, mirrors
+/// `EventGuestActionCubit`'s own retirement) — the outbox write already
+/// reaches every open `watchEventGuests` stream directly (design doc §7).
 @injectable
 class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
   final EventGuestRepository _eventGuestRepository;
-  final DataRefreshBus _dataRefreshBus;
 
-  AddGuestsActionCubit(this._eventGuestRepository, this._dataRefreshBus)
+  AddGuestsActionCubit(this._eventGuestRepository)
       : super(const AddGuestsActionInitial());
 
   Future<void> addPersons({required int eventId, required List<int> personIds}) async {
@@ -24,7 +26,6 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
       (bulkResult) {
-        _dataRefreshBus.notify(DataScope.eventGuests);
         emit(AddGuestsActionSuccess(bulkResult));
       },
     );
@@ -36,7 +37,6 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
       (bulkResult) {
-        _dataRefreshBus.notify(DataScope.eventGuests);
         emit(AddGuestsActionSuccess(bulkResult));
       },
     );
@@ -48,7 +48,6 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
       (bulkResult) {
-        _dataRefreshBus.notify(DataScope.eventGuests);
         emit(AddGuestsActionSuccess(bulkResult));
       },
     );
@@ -61,7 +60,6 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
       (bulkResult) {
-        _dataRefreshBus.notify(DataScope.eventGuests);
         emit(AddGuestsActionSuccess(bulkResult));
       },
     );
@@ -73,7 +71,6 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
       (bulkResult) {
-        _dataRefreshBus.notify(DataScope.eventGuests);
         emit(AddGuestsActionSuccess(bulkResult));
       },
     );
@@ -86,7 +83,6 @@ class AddGuestsActionCubit extends Cubit<AddGuestsActionState> {
     result.fold(
       (failure) => emit(AddGuestsActionError(core.failureToMessage(failure))),
       (bulkResult) {
-        _dataRefreshBus.notify(DataScope.eventGuests);
         emit(AddGuestsActionSuccess(bulkResult));
       },
     );

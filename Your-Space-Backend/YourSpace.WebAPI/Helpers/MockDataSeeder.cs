@@ -37,7 +37,7 @@ public static class MockDataSeeder
         await SeedNeighborhoodsAsync(context, activeUserId, syncVersionProvider);
         await SeedPersonsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedPersonImagesAsync(context, activeUserId);
-        await SeedEventsAsync(context, activeUserId, lockedUserId);
+        await SeedEventsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedEventGuestsAsync(context, activeUserId);
         await SeedPersonOccasionHistoriesAsync(context, activeUserId);
         await SeedPersonRelationshipsAsync(context, activeUserId);
@@ -486,15 +486,16 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedEventsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId)
+    private static async Task SeedEventsAsync(YourSpaceDbContext context, string activeUserId, string lockedUserId, ISyncVersionProvider syncVersionProvider)
     {
         if (await context.Events.AnyAsync())
         {
             return;
         }
 
-        await context.Events.AddRangeAsync(
-            new Event // normal case — upcoming, with date and notes
+        var events = new List<Event>
+        {
+            new() // normal case — upcoming, with date and notes
             {
                 OwnerUserId = activeUserId,
                 Name = "Brother's Wedding",
@@ -502,21 +503,32 @@ public static class MockDataSeeder
                 EventDate = DateTime.UtcNow.AddMonths(2),
                 Notes = "Village hall, evening reception."
             },
-            new Event // normal case — already happened
+            new() // normal case — already happened
             {
                 OwnerUserId = activeUserId,
                 Name = "Cousin's Engagement",
                 EventDate = DateTime.UtcNow.AddMonths(-3)
             },
-            new Event { OwnerUserId = activeUserId, Name = "Graduation Party" }, // edge case — no date set yet, still being planned
-            new Event // edge case — soft-deleted (cancelled)
+            new() { OwnerUserId = activeUserId, Name = "Graduation Party" }, // edge case — no date set yet, still being planned
+            new() // edge case — soft-deleted (cancelled)
             {
                 OwnerUserId = activeUserId,
                 Name = "Cancelled Gathering",
                 DeletedAt = DateTime.UtcNow.AddDays(-1)
             },
-            new Event { OwnerUserId = lockedUserId, Name = "Locked User's Event" });
+            new() { OwnerUserId = lockedUserId, Name = "Locked User's Event" }
+        };
 
+        // Seeding inserts directly via the DbContext, bypassing EventService — so SyncVersion
+        // (which EventService assigns on every real write, doc/local-first-sync-design.md §6)
+        // must be assigned here too, or every seeded row would be stuck at the column default
+        // and collide with each other under a `WHERE SyncVersion > @since` delta-sync query.
+        foreach (var @event in events)
+        {
+            @event.SyncVersion = await syncVersionProvider.NextValueAsync("Events_SyncVersion_seq");
+        }
+
+        await context.Events.AddRangeAsync(events);
         await context.SaveChangesAsync();
     }
 

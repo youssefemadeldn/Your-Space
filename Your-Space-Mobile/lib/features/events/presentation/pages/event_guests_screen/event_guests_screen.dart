@@ -29,11 +29,13 @@ class EventGuestsScreen extends StatelessWidget {
         onBack: () => context.pop(),
       ),
       body: SafeArea(
+        // EventGuest is local-first (row 9.8): a successful action already
+        // writes straight into drift via the outbox, so `EventGuestsListCubit`'s
+        // own `watchEventGuests` stream picks up the change on its own — no
+        // manual reload needed here (design doc §7).
         child: BlocListener<EventGuestActionCubit, EventGuestActionState>(
           listener: (context, state) {
-            if (state is EventGuestActionSuccess) {
-              context.read<EventGuestsListCubit>().reloadAfterAction();
-            } else if (state is EventGuestActionError) {
+            if (state is EventGuestActionError) {
               getIt<SnackBarHelper>().showError(state.message);
             }
           },

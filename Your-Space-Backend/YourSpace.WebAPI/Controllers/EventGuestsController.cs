@@ -21,6 +21,16 @@ namespace YourSpace.WebAPI.Controllers;
 [Route("api/v{version:apiVersion}/events/{eventId:int}/guests")]
 public class EventGuestsController(IEventGuestService eventGuestService) : ControllerBase
 {
+    // Flat "all mine" pull (row 9.8, design doc §6) — event-agnostic, feeds the mobile client's
+    // Tier 1 read cache and (row 9.10) its permanent full-refetch-as-delta Tier 3 pull. Same
+    // `~/api/v{version:apiVersion}/` absolute-path override convention as Cities/SubGroups.
+    [HttpGet("~/api/v{version:apiVersion}/event-guests")]
+    public async Task<IActionResult> GetAllMine()
+    {
+        var result = await eventGuestService.GetAllMineAsync(GetUserId());
+        return new ResultActionResult<List<EventGuestProfileDto>>(result);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetList(
         int eventId, [FromQuery] int? groupId, [FromQuery] EventGuestStatus? status, [FromQuery] PaginationSpecification pagination)

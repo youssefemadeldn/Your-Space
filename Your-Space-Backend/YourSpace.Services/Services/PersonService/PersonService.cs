@@ -451,9 +451,11 @@ public class PersonService(
         return relationships.Select(r => new PersonRelationshipProfileDto
         {
             Id = r.Id,
+            PersonId = r.PersonId,
             RelatedPersonId = r.RelatedPersonId,
             RelatedPersonName = r.RelatedPerson.Name,
-            RelationType = r.RelationType
+            RelationType = r.RelationType,
+            InverseRelationshipId = r.InverseRelationshipId
         }).ToList();
     }
 

@@ -4,7 +4,6 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/features/events/domain/entities/bulk_add_guests_result.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_guest_repository.dart';
 import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_action_cubit/add_guests_action_cubit.dart';
@@ -12,17 +11,13 @@ import 'package:your_space_mobile/features/events/presentation/cubit/add_guests_
 
 class MockEventGuestRepository extends Mock implements EventGuestRepository {}
 
-class MockDataRefreshBus extends Mock implements DataRefreshBus {}
-
 void main() {
   late MockEventGuestRepository repository;
-  late MockDataRefreshBus dataRefreshBus;
   late AddGuestsActionCubit cubit;
 
   setUp(() {
     repository = MockEventGuestRepository();
-    dataRefreshBus = MockDataRefreshBus();
-    cubit = AddGuestsActionCubit(repository, dataRefreshBus);
+    cubit = AddGuestsActionCubit(repository);
   });
 
   tearDown(() => cubit.close());
@@ -42,7 +37,6 @@ void main() {
 
     unawaited(cubit.addPersons(eventId: 1, personIds: [1, 2]));
     await expectation;
-    verify(() => dataRefreshBus.notify(DataScope.eventGuests)).called(1);
   });
 
   test('addGroup emits [Submitting, Success] adding the whole group', () async {
@@ -60,7 +54,6 @@ void main() {
 
     unawaited(cubit.addGroup(eventId: 1, groupId: 3));
     await expectation;
-    verify(() => dataRefreshBus.notify(DataScope.eventGuests)).called(1);
   });
 
   // Regression test for the original bug: AddGuestsActionSubmitting used to carry no

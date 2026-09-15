@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/features/events/domain/repositories/base_event_repository.dart';
 
 import '../failure_messages.dart';
@@ -10,12 +9,17 @@ import 'event_form_state.dart';
 /// Single cubit for both load+submit — mirrors `PersonFormCubit`/
 /// `ResetPasswordCubit`'s precedent for a full-navigation form with no
 /// simultaneous list.
+///
+/// No `DataRefreshBus` notification on success (row 9.3, mirrors
+/// `CityActionCubit`'s own row 8.9 retirement): `EventRepositoryImpl`'s
+/// create/update already write straight into drift via the outbox, so every
+/// open `watchEvents` stream — including `EventsListCubit`'s — sees the
+/// change directly (design doc §7).
 @injectable
 class EventFormCubit extends Cubit<EventFormState> {
   final EventRepository _eventRepository;
-  final DataRefreshBus _dataRefreshBus;
 
-  EventFormCubit(this._eventRepository, this._dataRefreshBus) : super(const EventFormInitial());
+  EventFormCubit(this._eventRepository) : super(const EventFormInitial());
 
   Future<void> initialize(int? eventId) async {
     if (eventId == null) {
@@ -49,10 +53,7 @@ class EventFormCubit extends Cubit<EventFormState> {
           );
     result.fold(
       (failure) => emit(EventFormError(failureToMessage(failure))),
-      (event) {
-        _dataRefreshBus.notify(DataScope.events);
-        emit(EventFormSuccess(event));
-      },
+      (event) => emit(EventFormSuccess(event)),
     );
   }
 }

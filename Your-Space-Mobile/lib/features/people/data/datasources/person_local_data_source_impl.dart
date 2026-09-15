@@ -202,13 +202,35 @@ class PersonLocalDataSourceImpl {
   ///  1. insert the confirmed server row under [realPerson.id]
   ///  2. delete the temp-id row
   ///  3. delete the just-replayed outbox row
-  ///  4. self-referential patch (cross-entity FK rewrite into other tables
-  ///     is explicitly deferred to Events, design doc §5): any OTHER
-  ///     still-pending outbox row for entityType 'person' whose `entityId`
-  ///     is still [tempId] gets both its `entityId` column and the `id` key
-  ///     embedded in its own `payloadJson` rewritten to the real id. This is
-  ///     the offline-create-then-offline-edit case: two outbox rows both
-  ///     keyed to the same temp id before either has synced.
+  ///  4. self-referential patch: any OTHER still-pending outbox row for
+  ///     entityType 'person' whose `entityId` is still [tempId] gets both
+  ///     its `entityId` column and the `id` key embedded in its own
+  ///     `payloadJson` rewritten to the real id. This is the
+  ///     offline-create-then-offline-edit case: two outbox rows both keyed
+  ///     to the same temp id before either has synced.
+  ///  5. Person's first cross-entity dependent-rewrite step (row 9.9) — the
+  ///     doc comment above this method used to defer this "to Events, design
+  ///     doc §5"; EventGuest is that first real dependent. Rewrites
+  ///     `EventGuestsTable.personId` for any row referencing [tempId], plus
+  ///     any still-queued `entityType='eventGuest'` outbox payload's
+  ///     `personId` key. `EventGuestsTable` lives in `core/database` like
+  ///     every synced table, so this is a Feature → Core access, not a
+  ///     Feature → Feature one. Mirrors `EventLocalDataSourceImpl.
+  ///     reconcileCreatedEvent`'s own 4th step (decode/patch/re-encode,
+  ///     never string-replace).
+  ///  6. row 9.14 — a second dependent-rewrite step, this time touching
+  ///     **two** FK columns on the same `PersonRelationshipsTable` row
+  ///     (`personId` and `relatedPersonId`), since either side of a
+  ///     relationship pair could reference an offline-created Person. Also
+  ///     rewrites any still-queued `entityType='personRelationship'` outbox
+  ///     payload's `personId`/`relatedPersonId` keys — that payload is the
+  ///     one queued by `PersonRelationshipRepositoryImpl.createRelationship`,
+  ///     shared by both halves of the pair (row 9.13).
+  ///  7. row 9.18 — Person's third and final dependent-rewrite step:
+  ///     rewrites any still-queued `entityType='personImage'` outbox
+  ///     payload's `personId` key. No `PersonImagesTable` row rewrite (unlike
+  ///     every other dependent) — a queued 'create' (upload) never inserts
+  ///     an optimistic local row in the first place.
   Future<void> reconcileCreatedPerson({
     required int tempId,
     required Person realPerson,
@@ -231,6 +253,61 @@ class PersonLocalDataSourceImpl {
               payloadJson: Value(jsonEncode(payload)),
             ),
           );
+        }
+
+        await (_db.update(_db.eventGuestsTable)..where((t) => t.personId.equals(tempId)))
+            .write(EventGuestsTableCompanion(personId: Value(realPerson.id)));
+
+        final pendingGuestRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('eventGuest') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingGuestRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['personId'] != tempId) continue;
+          payload['personId'] = realPerson.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
+
+        await (_db.update(_db.personRelationshipsTable)..where((t) => t.personId.equals(tempId)))
+            .write(PersonRelationshipsTableCompanion(personId: Value(realPerson.id)));
+        await (_db.update(_db.personRelationshipsTable)..where((t) => t.relatedPersonId.equals(tempId)))
+            .write(PersonRelationshipsTableCompanion(relatedPersonId: Value(realPerson.id)));
+
+        final pendingRelationshipRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('personRelationship') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingRelationshipRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          var changed = false;
+          if (payload['personId'] == tempId) {
+            payload['personId'] = realPerson.id;
+            changed = true;
+          }
+          if (payload['relatedPersonId'] == tempId) {
+            payload['relatedPersonId'] = realPerson.id;
+            changed = true;
+          }
+          if (!changed) continue;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
+
+        // row 9.18 — Person's third dependent-rewrite step. No
+        // PersonImagesTable row rewrite here (unlike every other dependent):
+        // a queued 'create' (upload) never inserts an optimistic local row
+        // in the first place (see `PersonImageLocalDataSourceImpl`'s own doc
+        // comment) — only the outbox payload's `personId` key can reference
+        // the temp id.
+        final pendingImageRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('personImage') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingImageRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['personId'] != tempId) continue;
+          payload['personId'] = realPerson.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
         }
       });
 

@@ -6,6 +6,7 @@ using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications.EventSpecifications;
 using YourSpace.Repository.Specifications.Paginated;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Helper;
 using YourSpace.Services.Resources;
 using YourSpace.Services.Services.EventService.Dtos;
@@ -16,11 +17,22 @@ public class EventService(
     IUnitOfWork unitOfWork,
     IMapper mapper,
     IStringLocalizer<SharedResource> localizer,
+    ISyncVersionProvider syncVersionProvider,
     ILogger<EventService> logger) : IEventService
 {
+    // Postgres sequence backing Event.SyncVersion (doc/local-first-sync-design.md §6) — one per
+    // synced entity table, bumped explicitly on every create/update/soft-delete since a
+    // bigserial-style column only auto-populates on INSERT, never on UPDATE.
+    private const string SyncVersionSequenceName = "Events_SyncVersion_seq";
+
+    // Defensive cap on GetChangesAsync's pageSize — this data shape is "small, low cardinality"
+    // (design doc §1/§2), never expected to need a larger page.
+    private const int MaxChangesPageSize = 500;
+
     private static class ErrorCodes
     {
         public const string NotFound = "Event.NotFound";
+        public const string SinceInvalid = "Event.Since.Invalid";
     }
 
     public async Task<ServiceResult<EventDetailsDto>> GetDetailsAsync(string ownerUserId, int id)
@@ -88,7 +100,8 @@ public class EventService(
             Name = dto.Name,
             NameAr = dto.NameAr,
             EventDate = dto.EventDate,
-            Notes = dto.Notes
+            Notes = dto.Notes,
+            SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName)
         };
 
         await repo.AddAsync(@event);
@@ -135,6 +148,7 @@ public class EventService(
         }
 
         @event.UpdatedAt = DateTime.UtcNow;
+        @event.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(@event);
         await unitOfWork.SaveChangesAsync();
 
@@ -164,10 +178,58 @@ public class EventService(
 
         @event.DeletedAt = DateTime.UtcNow;
         @event.UpdatedAt = DateTime.UtcNow;
+        @event.SyncVersion = await syncVersionProvider.NextValueAsync(SyncVersionSequenceName);
         repo.Update(@event);
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("Event {EventId} soft-deleted for user {UserId}", id, ownerUserId);
         return ServiceResult.Ok("Event deleted successfully.");
+    }
+
+    public async Task<ServiceResult<EventChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize)
+    {
+        if (since < 0)
+        {
+            logger.LogWarning("GetChanges rejected — negative since {Since} for user {UserId}", since, ownerUserId);
+            return ServiceResult<EventChangesDto>.Fail(localizer["Event.Since.Invalid"], ErrorCodes.SinceInvalid);
+        }
+
+        var clampedPageSize = Math.Clamp(pageSize, 1, MaxChangesPageSize);
+
+        var repo = unitOfWork.Repository<Event, int>();
+        var rows = await repo.ListAllWithSpecAsync(new EventWithSpecs(ownerUserId, since, clampedPageSize));
+
+        var upsertRows = rows.Where(e => e.DeletedAt == null).ToList();
+        var tombstoneIds = rows.Where(e => e.DeletedAt != null).Select(e => e.Id).ToList();
+
+        // Same batched-count shape as GetAllAsync (Architecture rule 11) — one query for every
+        // upserted event's guest count on this page, not one CountWithSpecAsync per row. A stale
+        // TotalGuestCount here would otherwise clobber the mobile client's locally-cached value
+        // on every delta pull that happens to touch this event.
+        var upsertEventIds = upsertRows.Select(e => e.Id).ToList();
+        var guestRepo = unitOfWork.Repository<EventGuest, int>();
+        var guestCountsByEventId = upsertEventIds.Count == 0
+            ? []
+            : (await guestRepo.ListAllWithSpecAsync(EventGuestWithSpecs.ForEvents(upsertEventIds, ownerUserId)))
+                .GroupBy(g => g.EventId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+        var upserts = upsertRows.Select(e =>
+        {
+            var dto = mapper.Map<EventProfileDto>(e);
+            dto.TotalGuestCount = guestCountsByEventId.GetValueOrDefault(e.Id);
+            return dto;
+        }).ToList();
+
+        var cursor = rows.Count > 0 ? rows.Max(e => e.SyncVersion) : since;
+        var hasMore = rows.Count == clampedPageSize;
+
+        return ServiceResult<EventChangesDto>.Ok(new EventChangesDto
+        {
+            Upserts = upserts,
+            TombstoneIds = tombstoneIds,
+            Cursor = cursor,
+            HasMore = hasMore
+        });
     }
 }

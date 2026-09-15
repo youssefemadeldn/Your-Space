@@ -33,21 +33,19 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
     this._neighborhoodRepository,
   ) : super(const AddGuestsListInitial());
 
-  /// Only the first 50 already-added guests are excluded — the same
-  /// personal-scale tradeoff the backend itself makes for reciprocity
-  /// suggestions (`EventGuestService.cs` comment) — there's no
-  /// `GET /Persons?excludeEventId=` filter to do this exactly server-side.
+  /// Every already-added guest for this event, from the local drift cache
+  /// (row 9.8) — unlike the pre-9.8 remote-paginated read, this is the
+  /// user's complete guest set for the event, not just the first page.
   Set<int> _existingGuestPersonIds = {};
 
   Future<void> load(int eventId) async {
     emit(const AddGuestsListLoading());
 
-    final existingGuestsResult =
-        await _eventGuestRepository.getEventGuests(eventId, pageIndex: 1, pageSize: 50);
-    _existingGuestPersonIds = existingGuestsResult.fold(
-      (_) => const <int>{},
-      (page) => page.items.map((g) => g.personId).toSet(),
-    );
+    // EventGuest is local-first (row 9.8) — a local read can't fail the way
+    // a network call can.
+    final existingGuests =
+        await _eventGuestRepository.watchEventGuests(eventId: eventId, limit: 1000000).first;
+    _existingGuestPersonIds = existingGuests.map((g) => g.personId).toSet();
 
     final progressResult = await _eventGuestRepository.getProgress(eventId);
     final groupProgress =

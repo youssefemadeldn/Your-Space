@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using YourSpace.Data.Entities;
 using YourSpace.Repository.Interfaces;
+using YourSpace.Repository.Sync;
 using YourSpace.Services.Services.EventService.Dtos;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using EventServiceImpl = YourSpace.Services.Services.EventService.EventService;
@@ -13,16 +14,19 @@ public class EventService_CreateAsyncTests
 {
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IGenericRepository<Event, int>> _eventRepo = new();
+    private readonly Mock<ISyncVersionProvider> _syncVersionProvider = new();
 
     public EventService_CreateAsyncTests()
     {
         _unitOfWork.Setup(u => u.Repository<Event, int>()).Returns(_eventRepo.Object);
+        _syncVersionProvider.Setup(s => s.NextValueAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     private EventServiceImpl CreateSut() => new(
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        _syncVersionProvider.Object,
         Mock.Of<ILogger<EventServiceImpl>>());
 
     [Fact]

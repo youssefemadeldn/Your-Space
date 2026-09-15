@@ -31,6 +31,17 @@ public class PersonRelationshipWithSpecs : BaseSpecification<PersonRelationship>
     public static PersonRelationshipWithSpecs ByPersonAndType(int personId, string ownerUserId, RelationType type)
         => new(r => r.PersonId == personId && r.Person.OwnerUserId == ownerUserId && r.RelationType == type);
 
+    // Every relationship row the user owns, unpaginated — feeds the flat "all mine" endpoint
+    // (row 9.13/9.16) for the mobile client's local-first cache. A single join on PersonId's
+    // owner suffices — RelatedPersonId is always validated against the same ownerUserId at
+    // create time (CreateAsync), so both sides of every row share one owner.
+    public static PersonRelationshipWithSpecs ForOwner(string ownerUserId)
+    {
+        var spec = new PersonRelationshipWithSpecs(r => r.Person.OwnerUserId == ownerUserId);
+        spec.AddInclude(r => r.RelatedPerson);
+        return spec;
+    }
+
     // All Father/Mother/Son/Daughter edges for one owner — feeds in-memory cycle detection.
     public static PersonRelationshipWithSpecs ParentChildEdgesForOwner(string ownerUserId)
         => new(r => r.Person.OwnerUserId == ownerUserId

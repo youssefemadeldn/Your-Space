@@ -30,6 +30,16 @@ public class EventsController(IEventService eventService) : ControllerBase
         return new ResultActionResult<EventDetailsDto>(result);
     }
 
+    // Delta-sync pull (doc/local-first-sync-design.md §6) — row 9.5 of the delivery plan. `since`
+    // is the caller's last-seen SyncVersion cursor (0 on a first-ever sync); `pageSize` is
+    // clamped server-side in EventService.
+    [HttpGet("changes")]
+    public async Task<IActionResult> GetChanges([FromQuery] long since = 0, [FromQuery] int pageSize = 200)
+    {
+        var result = await eventService.GetChangesAsync(GetUserId(), since, pageSize);
+        return new ResultActionResult<EventChangesDto>(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateEventDto dto)
     {

@@ -23,7 +23,11 @@ final class EventGuestsListSuccess extends EventGuestsListState {
   final List<Group> groups;
   final EventGuestStatus? selectedStatus;
   final int? selectedGroupId;
-  final int pageIndex;
+
+  /// How many rows the local `watchEventGuests` query is currently asking
+  /// for (grows by the page size on `loadMore()`) — a local read window, not
+  /// a server page index (Tier 1, design doc §3).
+  final int limit;
   final bool hasNextPage;
   final bool isLoadingMore;
 
@@ -32,14 +36,14 @@ final class EventGuestsListSuccess extends EventGuestsListState {
     required this.groups,
     this.selectedStatus,
     this.selectedGroupId,
-    required this.pageIndex,
+    required this.limit,
     required this.hasNextPage,
     this.isLoadingMore = false,
   });
 
   EventGuestsListSuccess copyWith({
     List<EventGuest>? guests,
-    int? pageIndex,
+    int? limit,
     bool? hasNextPage,
     bool? isLoadingMore,
   }) =>
@@ -48,14 +52,14 @@ final class EventGuestsListSuccess extends EventGuestsListState {
         groups: groups,
         selectedStatus: selectedStatus,
         selectedGroupId: selectedGroupId,
-        pageIndex: pageIndex ?? this.pageIndex,
+        limit: limit ?? this.limit,
         hasNextPage: hasNextPage ?? this.hasNextPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       );
 
   @override
   List<Object?> get props =>
-      [guests, groups, selectedStatus, selectedGroupId, pageIndex, hasNextPage, isLoadingMore];
+      [guests, groups, selectedStatus, selectedGroupId, limit, hasNextPage, isLoadingMore];
 }
 
 final class EventGuestsListError extends EventGuestsListState {

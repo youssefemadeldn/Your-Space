@@ -3,10 +3,14 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:injectable/injectable.dart';
 
 import 'tables/cities_table.dart';
+import 'tables/event_guests_table.dart';
+import 'tables/events_table.dart';
 import 'tables/governorates_table.dart';
 import 'tables/groups_table.dart';
 import 'tables/neighborhoods_table.dart';
 import 'tables/outbox_table.dart';
+import 'tables/person_images_table.dart';
+import 'tables/person_relationships_table.dart';
 import 'tables/persons_table.dart';
 import 'tables/subgroups_table.dart';
 import 'tables/sync_state_table.dart';
@@ -28,6 +32,10 @@ part 'app_database.g.dart';
     CitiesTable,
     SubGroupsTable,
     NeighborhoodsTable,
+    EventsTable,
+    EventGuestsTable,
+    PersonRelationshipsTable,
+    PersonImagesTable,
     OutboxTable,
     SyncStateTable,
   ],
@@ -40,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -82,6 +90,28 @@ class AppDatabase extends _$AppDatabase {
           // no shipped users yet).
           if (from < 7) {
             await m.createTable(neighborhoodsTable);
+          }
+          // v7 -> v8: EventsTable, Row 9.1 (local-first rollout for Event —
+          // same reasoning as above, no shipped users yet).
+          if (from < 8) {
+            await m.createTable(eventsTable);
+          }
+          // v8 -> v9: EventGuestsTable, Row 9.7 (local-first rollout for
+          // EventGuest — same reasoning as above, no shipped users yet).
+          if (from < 9) {
+            await m.createTable(eventGuestsTable);
+          }
+          // v9 -> v10: PersonRelationshipsTable, Row 9.11 (local-first
+          // rollout for PersonRelationship — same reasoning as above, no
+          // shipped users yet).
+          if (from < 10) {
+            await m.createTable(personRelationshipsTable);
+          }
+          // v10 -> v11: PersonImagesTable, Row 9.15 (local-first rollout for
+          // PersonImage — same reasoning as above, no shipped users yet).
+          // Final schema version for Row 9.
+          if (from < 11) {
+            await m.createTable(personImagesTable);
           }
         },
       );

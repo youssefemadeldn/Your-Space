@@ -27,6 +27,25 @@ public class PersonImageService(
         public const string MaxReached = "PersonImage.MaxReached";
     }
 
+    // Flat "all mine" pull (row 9.15/9.16) — person-agnostic, feeds Tier 1's bulk local
+    // population and (row 9.18) the permanent full-refetch-as-delta pull; PersonImage never gets
+    // a real cursor endpoint (row 9 cross-cutting decision — hard-delete only, no tombstone
+    // stream possible without a soft-delete column). Deliberately no presigned-URL resolution
+    // here — see PersonImageProfileDto's own doc comment.
+    public async Task<ServiceResult<List<PersonImageProfileDto>>> GetAllMineAsync(string ownerUserId)
+    {
+        var repo = unitOfWork.Repository<PersonImage, int>();
+        var images = await repo.ListAllWithSpecAsync(PersonImageWithSpecs.ForOwner(ownerUserId));
+
+        return ServiceResult<List<PersonImageProfileDto>>.Ok(images.Select(i => new PersonImageProfileDto
+        {
+            Id = i.Id,
+            PersonId = i.PersonId,
+            ObjectKey = i.ObjectKey,
+            IsPrimary = i.IsPrimary
+        }).ToList());
+    }
+
     public async Task<ServiceResult<IReadOnlyList<PersonImageDto>>> GetAllAsync(string ownerUserId, int personId)
     {
         if (!await PersonExistsAsync(personId, ownerUserId))
@@ -199,6 +218,7 @@ public class PersonImageService(
     {
         Id = image.Id,
         Url = url,
+        ObjectKey = image.ObjectKey,
         IsPrimary = image.IsPrimary,
         CreatedAt = image.CreatedAt
     };
