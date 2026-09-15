@@ -113,4 +113,25 @@ class NeighborhoodRepositoryImpl implements NeighborhoodRepository {
     await _local.queueDeletedNeighborhood(id, payloadJson: jsonEncode({'cityId': cityId}));
     return const Right(unit);
   }
+
+  @override
+  Future<Either<Failure, Unit>> refreshNeighborhoods() async {
+    const pageSize = 200;
+    // Defensive cap against a pathological `hasMore`/`totalPages` loop — this
+    // data shape is meant to be small (a user's own custom neighborhoods),
+    // never expected to trip.
+    const maxPages = 50;
+    final all = <Neighborhood>[];
+    for (var pageIndex = 1; pageIndex <= maxPages; pageIndex++) {
+      final result = await _remote.getAllMineNeighborhoods(pageIndex: pageIndex, pageSize: pageSize);
+      if (result.isLeft()) {
+        return result.fold(Left.new, (_) => throw StateError('unreachable'));
+      }
+      final page = result.getOrElse(() => throw StateError('unreachable'));
+      all.addAll(page.items.map((r) => r.toEntity()));
+      if (pageIndex >= page.totalPages) break;
+    }
+    await _local.applyNeighborhoodsSnapshot(all);
+    return const Right(unit);
+  }
 }

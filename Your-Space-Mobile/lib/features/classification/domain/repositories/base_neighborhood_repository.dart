@@ -36,4 +36,6 @@ abstract class NeighborhoodRepository {
   });
 
   Future<Either<Failure, Unit>> deleteNeighborhood({required int cityId, required int id});
+
+  Future<Either<Failure, Unit>> refreshNeighborhoods();
 }

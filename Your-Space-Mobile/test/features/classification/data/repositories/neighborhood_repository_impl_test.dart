@@ -191,4 +191,46 @@ void main() {
       verifyNever(() => remote.deleteNeighborhood(any(), any()));
     });
   });
+
+  group('refreshNeighborhoods', () {
+    test('loops every remote page and applies the concatenated, mapped entities as a snapshot', () async {
+      when(() => local.applyNeighborhoodsSnapshot(any())).thenAnswer((_) async {});
+      when(() => remote.getAllMineNeighborhoods(search: any(named: 'search'), pageIndex: 1, pageSize: 200))
+          .thenAnswer(
+        (_) async => const Right(PaginatedResponse(
+          items: [NeighborhoodResponse(id: 1, cityId: 7, name: 'Zamalek')],
+          pageIndex: 1,
+          totalPages: 2,
+          totalItems: 2,
+        )),
+      );
+      when(() => remote.getAllMineNeighborhoods(search: any(named: 'search'), pageIndex: 2, pageSize: 200))
+          .thenAnswer(
+        (_) async => const Right(PaginatedResponse(
+          items: [NeighborhoodResponse(id: 2, cityId: 7, name: 'Sarayat')],
+          pageIndex: 2,
+          totalPages: 2,
+          totalItems: 2,
+        )),
+      );
+
+      final result = await repository.refreshNeighborhoods();
+
+      expect(result, const Right(unit));
+      final captured =
+          verify(() => local.applyNeighborhoodsSnapshot(captureAny())).captured.single as List<Neighborhood>;
+      expect(captured.map((n) => n.id), [1, 2]);
+    });
+
+    test('stops and returns Left immediately on a failing page, without saving anything', () async {
+      const failure = NetworkFailure();
+      when(() => remote.getAllMineNeighborhoods(search: any(named: 'search'), pageIndex: 1, pageSize: 200))
+          .thenAnswer((_) async => const Left(failure));
+
+      final result = await repository.refreshNeighborhoods();
+
+      expect(result, const Left(failure));
+      verifyNever(() => local.applyNeighborhoodsSnapshot(any()));
+    });
+  });
 }

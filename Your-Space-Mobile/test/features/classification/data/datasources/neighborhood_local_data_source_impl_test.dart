@@ -214,4 +214,47 @@ void main() {
     expect(neighborhoods, isEmpty);
     expect(await database.select(database.outboxTable).get(), isEmpty);
   });
+
+  group('applyNeighborhoodsSnapshot', () {
+    test('upserts a server row that is not already dirty locally', () async {
+      await dataSource.applyNeighborhoodsSnapshot(const [Neighborhood(id: 1, cityId: 7, name: 'From Server')]);
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a clean positive-id row absent from the server list is soft-tombstoned', () async {
+      await dataSource.saveNeighborhood(const Neighborhood(id: 1, cityId: 7, name: 'Gone Server-Side'));
+
+      await dataSource.applyNeighborhoodsSnapshot(const []);
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isTrue);
+    });
+
+    test('a dirty row is not overwritten or tombstoned by a snapshot pull', () async {
+      await dataSource.queueNeighborhoodMutation(
+        neighborhood: const Neighborhood(id: 1, cityId: 7, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyNeighborhoodsSnapshot(const [Neighborhood(id: 1, cityId: 7, name: 'Stale Server Copy')]);
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDeleted, isFalse);
+    });
+
+    test('a previously-tombstoned row that reappears in the server list is restored', () async {
+      await dataSource.saveNeighborhood(const Neighborhood(id: 1, cityId: 7, name: 'Was Deleted'));
+      await dataSource.applyNeighborhoodsSnapshot(const []);
+
+      await dataSource.applyNeighborhoodsSnapshot(const [Neighborhood(id: 1, cityId: 7, name: 'Back Again')]);
+
+      final row = await (database.select(database.neighborhoodsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.name, 'Back Again');
+    });
+  });
 }
