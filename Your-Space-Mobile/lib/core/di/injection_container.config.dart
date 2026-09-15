@@ -38,7 +38,7 @@ import 'package:your_space_mobile/features/auth/data/datasources/auth_remote_dat
 import 'package:your_space_mobile/features/auth/data/repositories/auth_repository_impl.dart'
     as _i722;
 import 'package:your_space_mobile/features/auth/domain/repositories/base_auth_repository.dart'
-    as _i681;
+    as _i680;
 import 'package:your_space_mobile/features/auth/domain/use_cases/get_current_user_profile_use_case.dart'
     as _i84;
 import 'package:your_space_mobile/features/auth/presentation/cubit/change_password_cubit/change_password_cubit.dart'
@@ -95,6 +95,8 @@ import 'package:your_space_mobile/features/classification/data/sync/governorate_
     as _i1067;
 import 'package:your_space_mobile/features/classification/data/sync/governorate_outbox_replayer.dart'
     as _i774;
+import 'package:your_space_mobile/features/classification/data/sync/neighborhood_outbox_replayer.dart'
+    as _i279;
 import 'package:your_space_mobile/features/classification/data/sync/subgroup_collection_puller.dart'
     as _i643;
 import 'package:your_space_mobile/features/classification/data/sync/subgroup_outbox_replayer.dart'
@@ -104,7 +106,7 @@ import 'package:your_space_mobile/features/classification/domain/repositories/ba
 import 'package:your_space_mobile/features/classification/domain/repositories/base_governorate_repository.dart'
     as _i262;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_neighborhood_repository.dart'
-    as _i680;
+    as _i681;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart'
     as _i133;
 import 'package:your_space_mobile/features/classification/presentation/cubit/city_action_cubit/city_action_cubit.dart'
@@ -363,12 +365,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i641.AddOccasionCubit>(
       () => _i641.AddOccasionCubit(gh<_i571.PersonRepository>()),
     );
-    gh.lazySingleton<_i680.NeighborhoodRepository>(
-      () => _i412.NeighborhoodRepositoryImpl(
-        gh<_i423.BaseNeighborhoodDataSource>(instanceName: 'remote'),
-        gh<_i581.NeighborhoodLocalDataSourceImpl>(instanceName: 'local'),
-      ),
-    );
     gh.factory<_i793.SubGroupActionCubit>(
       () => _i793.SubGroupActionCubit(gh<_i133.SubGroupRepository>()),
     );
@@ -440,7 +436,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i493.CityListCubit>(
       () => _i493.CityListCubit(gh<_i881.CityRepository>()),
     );
-    gh.lazySingleton<_i681.AuthRepository>(
+    gh.lazySingleton<_i680.AuthRepository>(
       () => _i722.AuthRepositoryImpl(
         gh<_i1073.AuthRemoteDataSourceImpl>(),
         gh<_i134.SecureStorageHelper>(),
@@ -458,6 +454,13 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i975.CityCollectionPuller(gh<_i881.CityRepository>()),
       instanceName: 'city',
     );
+    gh.lazySingleton<_i681.NeighborhoodRepository>(
+      () => _i412.NeighborhoodRepositoryImpl(
+        gh<_i423.BaseNeighborhoodDataSource>(instanceName: 'remote'),
+        gh<_i581.NeighborhoodLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
+      ),
+    );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i1011.GroupOutboxReplayer(
         gh<_i229.BaseGroupDataSource>(instanceName: 'remote'),
@@ -466,10 +469,10 @@ extension GetItInjectableX on _i174.GetIt {
       instanceName: 'group',
     );
     gh.factory<_i623.NeighborhoodActionCubit>(
-      () => _i623.NeighborhoodActionCubit(gh<_i680.NeighborhoodRepository>()),
+      () => _i623.NeighborhoodActionCubit(gh<_i681.NeighborhoodRepository>()),
     );
     gh.factory<_i977.NeighborhoodListCubit>(
-      () => _i977.NeighborhoodListCubit(gh<_i680.NeighborhoodRepository>()),
+      () => _i977.NeighborhoodListCubit(gh<_i681.NeighborhoodRepository>()),
     );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i682.CityOutboxReplayer(
@@ -492,7 +495,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i133.SubGroupRepository>(),
         gh<_i262.GovernorateRepository>(),
         gh<_i881.CityRepository>(),
-        gh<_i680.NeighborhoodRepository>(),
+        gh<_i681.NeighborhoodRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
     );
@@ -500,6 +503,13 @@ extension GetItInjectableX on _i174.GetIt {
       () =>
           _i1067.GovernorateCollectionPuller(gh<_i262.GovernorateRepository>()),
       instanceName: 'governorate',
+    );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i279.NeighborhoodOutboxReplayer(
+        gh<_i423.BaseNeighborhoodDataSource>(instanceName: 'remote'),
+        gh<_i581.NeighborhoodLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'neighborhood',
     );
     gh.factory<_i965.GroupActionCubit>(
       () => _i965.GroupActionCubit(gh<_i994.GroupRepository>()),
@@ -521,29 +531,29 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i133.SubGroupRepository>(),
         gh<_i262.GovernorateRepository>(),
         gh<_i881.CityRepository>(),
-        gh<_i680.NeighborhoodRepository>(),
+        gh<_i681.NeighborhoodRepository>(),
       ),
     );
     gh.factory<_i1019.ChangePasswordCubit>(
-      () => _i1019.ChangePasswordCubit(gh<_i681.AuthRepository>()),
+      () => _i1019.ChangePasswordCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i723.ConfirmEmailCubit>(
-      () => _i723.ConfirmEmailCubit(gh<_i681.AuthRepository>()),
+      () => _i723.ConfirmEmailCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i516.DeleteAccountCubit>(
-      () => _i516.DeleteAccountCubit(gh<_i681.AuthRepository>()),
+      () => _i516.DeleteAccountCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i613.ForgotPasswordCubit>(
-      () => _i613.ForgotPasswordCubit(gh<_i681.AuthRepository>()),
+      () => _i613.ForgotPasswordCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i968.LoginCubit>(
-      () => _i968.LoginCubit(gh<_i681.AuthRepository>()),
+      () => _i968.LoginCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i44.RegisterCubit>(
-      () => _i44.RegisterCubit(gh<_i681.AuthRepository>()),
+      () => _i44.RegisterCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i115.ResetPasswordCubit>(
-      () => _i115.ResetPasswordCubit(gh<_i681.AuthRepository>()),
+      () => _i115.ResetPasswordCubit(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i755.EventFormCubit>(
       () => _i755.EventFormCubit(
@@ -562,7 +572,7 @@ extension GetItInjectableX on _i174.GetIt {
       instanceName: 'group',
     );
     gh.factory<_i84.GetCurrentUserProfileUseCase>(
-      () => _i84.GetCurrentUserProfileUseCase(gh<_i681.AuthRepository>()),
+      () => _i84.GetCurrentUserProfileUseCase(gh<_i680.AuthRepository>()),
     );
     gh.factory<_i889.EventGuestsListCubit>(
       () => _i889.EventGuestsListCubit(
@@ -583,7 +593,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i133.SubGroupRepository>(),
         gh<_i262.GovernorateRepository>(),
         gh<_i881.CityRepository>(),
-        gh<_i680.NeighborhoodRepository>(),
+        gh<_i681.NeighborhoodRepository>(),
         gh<_i1005.PersonImageRepository>(),
         gh<_i126.PersonRelationshipRepository>(),
         gh<_i215.DataRefreshBus>(),
@@ -592,7 +602,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i291.ProfileFormCubit>(
       () => _i291.ProfileFormCubit(
         gh<_i84.GetCurrentUserProfileUseCase>(),
-        gh<_i681.AuthRepository>(),
+        gh<_i680.AuthRepository>(),
         gh<_i215.DataRefreshBus>(),
       ),
     );

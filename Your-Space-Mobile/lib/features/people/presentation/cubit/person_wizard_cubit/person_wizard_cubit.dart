@@ -335,7 +335,12 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   Future<int?> addNeighborhoodInline(String name) async {
     final current = state;
     if (current is! PersonWizardReady || current.cityId == null) return null;
-    final result = await _neighborhoodRepository.createNeighborhood(cityId: current.cityId!, name: name);
+    // createNeighborhoodAndSync, not createNeighborhood: same reasoning as
+    // addCityInline above — this id gets embedded directly into the
+    // in-progress person's own `neighborhoodId`, a value Neighborhood's own
+    // reconciliation can't reach once it's sitting inside an already-built
+    // Person payload.
+    final result = await _neighborhoodRepository.createNeighborhoodAndSync(cityId: current.cityId!, name: name);
     return result.fold((failure) => null, (neighborhood) {
       _updateReady((r) => r.copyWith(
             availableNeighborhoods: [...r.availableNeighborhoods, neighborhood],

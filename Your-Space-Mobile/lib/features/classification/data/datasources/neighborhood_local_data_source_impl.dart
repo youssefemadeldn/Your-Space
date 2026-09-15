@@ -87,6 +87,109 @@ class NeighborhoodLocalDataSourceImpl {
   Future<void> deleteNeighborhoodLocal(int id) =>
       (_db.delete(_db.neighborhoodsTable)..where((t) => t.id.equals(id))).go();
 
+  /// Tier 2 optimistic write (design doc §5): writes [neighborhood] into
+  /// NeighborhoodsTable (marked dirty) and appends one OutboxTable row, in
+  /// the same drift transaction. Returns the new outbox row's id so the
+  /// repository's `createNeighborhoodAndSync` can ask `SyncService` to
+  /// replay this specific row immediately. Mirrors
+  /// `CityLocalDataSourceImpl.queueCityMutation`; unlike Governorate,
+  /// Neighborhood has both `'create'` and `'update'` — see
+  /// [queueDeletedNeighborhood] for the separate delete path.
+  Future<int> queueNeighborhoodMutation({
+    required Neighborhood neighborhood,
+    required String operation, // 'create' | 'update'
+    required String payloadJson,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.neighborhoodsTable).insertOnConflictUpdate(
+              _toCompanion(neighborhood, isDirty: true),
+            );
+        return _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'neighborhood',
+                entityId: neighborhood.id,
+                operation: operation,
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'update' syncs successfully: overwrites the
+  /// local row with the server-confirmed copy (clears `isDirty`) and
+  /// removes the now-done outbox row, in one transaction. Mirrors
+  /// `CityLocalDataSourceImpl.confirmSyncedCity`.
+  Future<void> confirmSyncedNeighborhood(Neighborhood neighborhood, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await _db.into(_db.neighborhoodsTable).insertOnConflictUpdate(_toCompanion(neighborhood));
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realNeighborhood].id
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///
+  /// Unlike `CityLocalDataSourceImpl.reconcileCreatedCity`, no step 4
+  /// (dependent-table FK rewrite) is needed here — Neighborhood is the leaf
+  /// of the location hierarchy, with no dependent entity of its own in Row 8
+  /// (same as SubGroup's own `reconcileCreatedSubGroup`). Mirrors
+  /// `SubGroupLocalDataSourceImpl.reconcileCreatedSubGroup`.
+  Future<void> reconcileCreatedNeighborhood({
+    required int tempId,
+    required Neighborhood realNeighborhood,
+    required int replayedOutboxRowId,
+  }) =>
+      _db.transaction(() async {
+        await _db.into(_db.neighborhoodsTable).insertOnConflictUpdate(_toCompanion(realNeighborhood));
+        await (_db.delete(_db.neighborhoodsTable)..where((t) => t.id.equals(tempId))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
+  /// Tier 2 optimistic delete (design doc §5) — mirrors
+  /// `CityLocalDataSourceImpl.queueDeletedCity` exactly. Two cases:
+  ///  - [id] negative (a never-synced temp row, created and deleted offline
+  ///    in the same session): the server has never heard of it, so just
+  ///    remove the local row **and** its still-pending `'create'` outbox
+  ///    row — no network round trip needed, ever.
+  ///  - [id] positive (a real, previously-synced row): optimistically
+  ///    tombstone it (`isDeleted: true`, `isDirty: true` — disappears from
+  ///    `watchNeighborhoods` immediately via its existing
+  ///    `isDeleted.equals(false)` filter) and append a `'delete'` outbox row
+  ///    for `SyncService` to replay in the background. [payloadJson] carries
+  ///    `cityId` — `NeighborhoodOutboxReplayer` needs it for
+  ///    `BaseNeighborhoodDataSource.deleteNeighborhood`'s nested route, and
+  ///    it isn't derivable from [id] alone.
+  Future<void> queueDeletedNeighborhood(int id, {required String payloadJson}) => _db.transaction(() async {
+        if (id < 0) {
+          await (_db.delete(_db.neighborhoodsTable)..where((t) => t.id.equals(id))).go();
+          await (_db.delete(_db.outboxTable)
+                ..where((t) => t.entityType.equals('neighborhood') & t.entityId.equals(id)))
+              .go();
+          return;
+        }
+        await (_db.update(_db.neighborhoodsTable)..where((t) => t.id.equals(id)))
+            .write(const NeighborhoodsTableCompanion(isDeleted: Value(true), isDirty: Value(true)));
+        await _db.into(_db.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'neighborhood',
+                entityId: id,
+                operation: 'delete',
+                payloadJson: payloadJson,
+              ),
+            );
+      });
+
+  /// Called after a queued 'delete' syncs successfully: hard-removes the
+  /// local row (the optimistic tombstone from [queueDeletedNeighborhood] is
+  /// no longer needed once the server confirms it's gone) and removes the
+  /// outbox row, in one transaction.
+  Future<void> confirmDeletedNeighborhood(int id, {required int replayedOutboxRowId}) =>
+      _db.transaction(() async {
+        await (_db.delete(_db.neighborhoodsTable)..where((t) => t.id.equals(id))).go();
+        await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+      });
+
   Neighborhood _toEntity(NeighborhoodsTableData row) => Neighborhood(
         id: row.id,
         cityId: row.cityId,
@@ -94,14 +197,18 @@ class NeighborhoodLocalDataSourceImpl {
         nameAr: row.nameAr,
       );
 
-  NeighborhoodsTableCompanion _toCompanion(Neighborhood neighborhood) => NeighborhoodsTableCompanion.insert(
+  NeighborhoodsTableCompanion _toCompanion(Neighborhood neighborhood, {bool isDirty = false}) =>
+      NeighborhoodsTableCompanion.insert(
         id: Value(neighborhood.id),
         name: neighborhood.name,
         nameAr: Value(neighborhood.nameAr),
         cityId: neighborhood.cityId,
         // `updatedAt` is populated once delta sync lands for Neighborhood —
         // nothing to set yet at Tier 1. Never soft-deleted here. `isDirty`
-        // defaults to false (Tier 2 outbox isn't wired for Neighborhood yet).
+        // defaults to false (a row that came from a confirmed remote round
+        // trip) — callers queuing a Tier 2 optimistic write pass
+        // `isDirty: true` explicitly.
         isDeleted: const Value(false),
+        isDirty: Value(isDirty),
       );
 }
