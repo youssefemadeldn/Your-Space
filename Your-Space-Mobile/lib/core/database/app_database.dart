@@ -5,6 +5,7 @@ import 'package:injectable/injectable.dart';
 import 'tables/cities_table.dart';
 import 'tables/governorates_table.dart';
 import 'tables/groups_table.dart';
+import 'tables/neighborhoods_table.dart';
 import 'tables/outbox_table.dart';
 import 'tables/persons_table.dart';
 import 'tables/subgroups_table.dart';
@@ -26,6 +27,7 @@ part 'app_database.g.dart';
     GovernoratesTable,
     CitiesTable,
     SubGroupsTable,
+    NeighborhoodsTable,
     OutboxTable,
     SyncStateTable,
   ],
@@ -38,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +76,12 @@ class AppDatabase extends _$AppDatabase {
           // yet).
           if (from < 6) {
             await m.createTable(subGroupsTable);
+          }
+          // v6 -> v7: NeighborhoodsTable, Classification's row 8.19
+          // (local-first rollout for Neighborhood — same reasoning as above,
+          // no shipped users yet).
+          if (from < 7) {
+            await m.createTable(neighborhoodsTable);
           }
         },
       );
