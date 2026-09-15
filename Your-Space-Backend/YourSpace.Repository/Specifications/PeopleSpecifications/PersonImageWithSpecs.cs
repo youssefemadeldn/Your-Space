@@ -23,6 +23,11 @@ public class PersonImageWithSpecs : BaseSpecification<PersonImage>
         return spec;
     }
 
+    // Every image row the user owns, unpaginated — feeds the flat "all mine" endpoint (row
+    // 9.15/9.16) for the mobile client's local-first bookkeeping cache.
+    public static PersonImageWithSpecs ForOwner(string ownerUserId)
+        => new(i => i.Person.OwnerUserId == ownerUserId);
+
     // Batch-resolves the primary image row for a whole page of persons in one query — used by
     // PersonService to populate PrimaryPhotoUrl on list/detail DTOs without an N+1 query per person.
     public static PersonImageWithSpecs PrimaryForPersons(List<int> personIds, string ownerUserId)
