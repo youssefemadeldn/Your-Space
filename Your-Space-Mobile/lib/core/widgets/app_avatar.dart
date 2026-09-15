@@ -1,7 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
+import '../router/app_routes.dart';
+import '../router/args/full_photo_viewer_args.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -10,6 +13,9 @@ import '../theme/app_text_styles.dart';
 /// expiry — a graceful fallback, not a broken-image icon). Reverses this widget's earlier
 /// "no real photos" decision now that Person/AppUser can carry a real profile photo — see
 /// Sprint 3 (Photos + Cloudflare R2).
+///
+/// A real photo is tappable to open [AppRoutes.fullPhotoViewer]; the initials fallback
+/// stays inert since there is no photo to view.
 class AppAvatar extends StatelessWidget {
   final String name;
   final double? size;
@@ -51,14 +57,23 @@ class AppAvatar extends StatelessWidget {
     final resolvedSize = size ?? 44.w;
 
     if (photoUrl != null && photoUrl!.isNotEmpty) {
-      return ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: photoUrl!,
-          width: resolvedSize,
-          height: resolvedSize,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => _initialsCircle(resolvedSize),
-          errorWidget: (context, url, error) => _initialsCircle(resolvedSize),
+      return GestureDetector(
+        onTap: () => context.pushNamed(
+          AppRoutes.fullPhotoViewer,
+          extra: FullPhotoViewerArgs(photoUrl: photoUrl!, heroTag: photoUrl!),
+        ),
+        child: Hero(
+          tag: photoUrl!,
+          child: ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: photoUrl!,
+              width: resolvedSize,
+              height: resolvedSize,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => _initialsCircle(resolvedSize),
+              errorWidget: (context, url, error) => _initialsCircle(resolvedSize),
+            ),
+          ),
         ),
       );
     }

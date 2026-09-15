@@ -82,6 +82,7 @@ class PersonOutboxReplayer implements OutboxReplayer {
         cityId: json['cityId'] as int?,
         neighborhoodId: json['neighborhoodId'] as int?,
         notes: json['notes'] as String?,
+        facebookUrl: json['facebookUrl'] as String?,
       );
 
   UpdatePersonRequest _updateRequestFrom(Map<String, dynamic> json) => UpdatePersonRequest(
@@ -96,5 +97,6 @@ class PersonOutboxReplayer implements OutboxReplayer {
         cityId: json['cityId'] as int?,
         neighborhoodId: json['neighborhoodId'] as int?,
         notes: json['notes'] as String?,
+        facebookUrl: json['facebookUrl'] as String?,
       );
 }

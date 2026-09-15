@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:your_space_mobile/core/helpers/date_formatter_helper.dart';
 import 'package:your_space_mobile/core/entities/invite_method.dart';
@@ -88,6 +89,20 @@ class PersonDetailsBody extends StatelessWidget {
             Text('people.details.notesTitle'.tr(), style: AppTextStyles.titleMedium),
             SizedBox(height: 6.h),
             Text(person.notes!, style: AppTextStyles.bodySmall),
+          ],
+          if (person.facebookUrl != null && person.facebookUrl!.isNotEmpty) ...[
+            SizedBox(height: 16.h),
+            InkWell(
+              onTap: () => launchUrl(Uri.parse(person.facebookUrl!), mode: LaunchMode.externalApplication),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.facebook, color: AppColors.primary),
+                  SizedBox(width: 6.w),
+                  Text('people.details.facebookLink'.tr(), style: AppTextStyles.bodyMedium),
+                ],
+              ),
+            ),
           ],
           SizedBox(height: 20.h),
           Row(

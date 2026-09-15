@@ -173,6 +173,7 @@ class PersonRepositoryImpl implements PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   }) async {
     final person = Person(
       id: _newTempPersonId(),
@@ -191,6 +192,7 @@ class PersonRepositoryImpl implements PersonRepository {
       neighborhoodId: neighborhoodId,
       neighborhoodName: neighborhoodName,
       notes: notes,
+      facebookUrl: facebookUrl,
     );
     final payloadJson = jsonEncode(CreatePersonRequest(
       name: name,
@@ -203,6 +205,7 @@ class PersonRepositoryImpl implements PersonRepository {
       cityId: cityId,
       neighborhoodId: neighborhoodId,
       notes: notes,
+      facebookUrl: facebookUrl,
     ).toJson());
     final rowId = await _local.queuePersonMutation(person: person, operation: 'create', payloadJson: payloadJson);
     return (person, rowId);
@@ -227,6 +230,7 @@ class PersonRepositoryImpl implements PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   }) async {
     final person = Person(
       id: id,
@@ -245,6 +249,7 @@ class PersonRepositoryImpl implements PersonRepository {
       neighborhoodId: neighborhoodId,
       neighborhoodName: neighborhoodName,
       notes: notes,
+      facebookUrl: facebookUrl,
     );
     final payloadJson = jsonEncode(UpdatePersonRequest(
       id: id,
@@ -258,6 +263,7 @@ class PersonRepositoryImpl implements PersonRepository {
       cityId: cityId,
       neighborhoodId: neighborhoodId,
       notes: notes,
+      facebookUrl: facebookUrl,
     ).toJson());
     final rowId = await _local.queuePersonMutation(person: person, operation: 'update', payloadJson: payloadJson);
     return (person, rowId);
@@ -280,6 +286,7 @@ class PersonRepositoryImpl implements PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   }) async {
     final (person, _) = await _queueCreate(
       name: name,
@@ -297,6 +304,7 @@ class PersonRepositoryImpl implements PersonRepository {
       neighborhoodId: neighborhoodId,
       neighborhoodName: neighborhoodName,
       notes: notes,
+      facebookUrl: facebookUrl,
     );
     return Right(person);
   }
@@ -319,6 +327,7 @@ class PersonRepositoryImpl implements PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   }) async {
     final (person, _) = await _queueUpdate(
       id: id,
@@ -337,6 +346,7 @@ class PersonRepositoryImpl implements PersonRepository {
       neighborhoodId: neighborhoodId,
       neighborhoodName: neighborhoodName,
       notes: notes,
+      facebookUrl: facebookUrl,
     );
     return Right(person);
   }
@@ -358,6 +368,7 @@ class PersonRepositoryImpl implements PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   }) async {
     final (person, rowId) = await _queueCreate(
       name: name,
@@ -375,6 +386,7 @@ class PersonRepositoryImpl implements PersonRepository {
       neighborhoodId: neighborhoodId,
       neighborhoodName: neighborhoodName,
       notes: notes,
+      facebookUrl: facebookUrl,
     );
     final result = await _syncService.replayRow(rowId);
     return result.fold(Left.new, (payload) => Right(payload as Person? ?? person));
@@ -398,6 +410,7 @@ class PersonRepositoryImpl implements PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   }) async {
     final (person, rowId) = await _queueUpdate(
       id: id,
@@ -416,6 +429,7 @@ class PersonRepositoryImpl implements PersonRepository {
       neighborhoodId: neighborhoodId,
       neighborhoodName: neighborhoodName,
       notes: notes,
+      facebookUrl: facebookUrl,
     );
     final result = await _syncService.replayRow(rowId);
     return result.fold(Left.new, (payload) => Right(payload as Person? ?? person));

@@ -12,6 +12,7 @@ class UpdatePersonRequest {
   final int? cityId;
   final int? neighborhoodId;
   final String? notes;
+  final String? facebookUrl;
 
   const UpdatePersonRequest({
     required this.id,
@@ -25,6 +26,7 @@ class UpdatePersonRequest {
     this.cityId,
     this.neighborhoodId,
     this.notes,
+    this.facebookUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -39,5 +41,6 @@ class UpdatePersonRequest {
         if (cityId != null) 'cityId': cityId,
         if (neighborhoodId != null) 'neighborhoodId': neighborhoodId,
         if (notes != null) 'notes': notes,
+        if (facebookUrl != null) 'facebookUrl': facebookUrl,
       };
 }

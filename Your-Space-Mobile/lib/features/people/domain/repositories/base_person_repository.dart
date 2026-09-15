@@ -83,6 +83,7 @@ abstract class PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   });
 
   Future<Either<Failure, Person>> updatePerson({
@@ -102,6 +103,7 @@ abstract class PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   });
 
   /// Same as [createPerson] but also asks `SyncService` to replay this
@@ -130,6 +132,7 @@ abstract class PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   });
 
   Future<Either<Failure, Person>> updatePersonAndSync({
@@ -149,6 +152,7 @@ abstract class PersonRepository {
     int? neighborhoodId,
     String? neighborhoodName,
     String? notes,
+    String? facebookUrl,
   });
 
   Future<Either<Failure, PersonOccasionHistoryEntry>> addOccasionHistory({

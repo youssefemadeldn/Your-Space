@@ -25,6 +25,7 @@ class PersonsTable extends Table {
   TextColumn get neighborhoodName => text().nullable()();
   TextColumn get primaryPhotoUrl => text().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get facebookUrl => text().nullable()();
   BoolColumn get hasReciprocityHistory =>
       boolean().withDefault(const Constant(false))();
   // Tier 3 watermark field — nullable until the backend exposes `UpdatedAt`

@@ -7,6 +7,7 @@ import 'package:your_space_mobile/core/entities/classification_entity_kind.dart'
 import 'package:your_space_mobile/core/storage/app_preferences_helper.dart';
 import 'package:your_space_mobile/core/storage/secure_storage_helper.dart';
 import 'package:your_space_mobile/core/widgets/app_bottom_nav.dart';
+import 'package:your_space_mobile/core/widgets/full_photo_viewer_screen.dart';
 import 'package:your_space_mobile/features/classification/presentation/cubit/city_action_cubit/city_action_cubit.dart';
 import 'package:your_space_mobile/features/classification/presentation/cubit/city_list_cubit/city_list_cubit.dart';
 import 'package:your_space_mobile/features/classification/presentation/cubit/neighborhood_action_cubit/neighborhood_action_cubit.dart';
@@ -67,6 +68,7 @@ import 'args/confirm_email_args.dart';
 import 'args/event_details_args.dart';
 import 'args/event_form_args.dart';
 import 'args/event_guests_args.dart';
+import 'args/full_photo_viewer_args.dart';
 import 'args/person_details_args.dart';
 import 'args/person_wizard_args.dart';
 import 'args/reciprocity_suggestions_args.dart';
@@ -149,6 +151,15 @@ class AppRouter {
           path: AppRoutes.onboarding,
           name: AppRoutes.onboarding,
           builder: (context, state) => const OnboardingScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.fullPhotoViewer,
+          name: AppRoutes.fullPhotoViewer,
+          builder: (context, state) {
+            final args = state.extra as FullPhotoViewerArgs?;
+            if (args == null) return _unknown(state);
+            return FullPhotoViewerScreen(args: args);
+          },
         ),
 
         // --- Bottom-nav shell: Home / Groups / People / Events / Settings share one

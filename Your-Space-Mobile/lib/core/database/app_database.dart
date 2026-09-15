@@ -48,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -112,6 +112,12 @@ class AppDatabase extends _$AppDatabase {
           // Final schema version for Row 9.
           if (from < 11) {
             await m.createTable(personImagesTable);
+          }
+          // v11 -> v12: PersonsTable.facebookUrl, optional Facebook profile
+          // link captured in the person wizard. Additive/nullable — no data
+          // loss, no table rebuild.
+          if (from < 12) {
+            await m.addColumn(personsTable, personsTable.facebookUrl);
           }
         },
       );

@@ -115,6 +115,9 @@
   <data name="Person.Notes.MaxLength" xml:space="preserve">
     <value>Notes must not exceed 2000 characters.</value>
   </data>
+  <data name="Person.FacebookUrl.InvalidFormat" xml:space="preserve">
+    <value>Facebook URL must be a valid http or https link.</value>
+  </data>
   <data name="Person.Gender.Required" xml:space="preserve">
     <value>A valid gender must be selected.</value>
   </data>

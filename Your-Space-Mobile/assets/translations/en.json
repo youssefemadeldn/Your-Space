@@ -183,7 +183,8 @@
       "emptyAction": "Add occasion",
       "occasionUnnamed": "Occasion",
       "notFound": "Person not found",
-      "notesTitle": "Notes"
+      "notesTitle": "Notes",
+      "facebookLink": "Facebook"
     },
     "occasion": {
       "addTitle": "Add occasion",
@@ -278,7 +279,9 @@
       "step4": {
         "name": "Notes",
         "notesLabel": "Notes",
-        "notesHint": "Anything worth remembering about this person"
+        "notesHint": "Anything worth remembering about this person",
+        "facebookUrlLabel": "Facebook URL",
+        "facebookUrlHint": "https://facebook.com/..."
       },
       "submit": {
         "savedMessage": "Person saved",

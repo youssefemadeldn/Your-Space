@@ -130,6 +130,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
           availableGovernorates: governorates,
           relationshipRows: relationshipRows,
           notes: person.notes ?? '',
+          facebookUrl: person.facebookUrl ?? '',
           originalPhotoIds: images.map((i) => i.id).toSet(),
           originalRelationshipIds: details.relationships.map((r) => r.id).toSet(),
         );
@@ -422,6 +423,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
   // ---- Step 4 — Notes ----
 
   void updateNotes(String value) => _updateReady((r) => r.copyWith(notes: value));
+  void updateFacebookUrl(String value) => _updateReady((r) => r.copyWith(facebookUrl: value));
 
   // ---- Submit ----
 
@@ -469,6 +471,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
                 neighborhoodId: current.neighborhoodId,
                 neighborhoodName: neighborhoodName,
                 notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+                facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
               )
             : await _personRepository.updatePerson(
                 id: current.personId!,
@@ -487,6 +490,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
                 neighborhoodId: current.neighborhoodId,
                 neighborhoodName: neighborhoodName,
                 notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+                facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
               ))
         : (needsSync
             ? await _personRepository.createPersonAndSync(
@@ -505,6 +509,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
                 neighborhoodId: current.neighborhoodId,
                 neighborhoodName: neighborhoodName,
                 notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+                facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
               )
             : await _personRepository.createPerson(
                 name: current.name.trim(),
@@ -522,6 +527,7 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
                 neighborhoodId: current.neighborhoodId,
                 neighborhoodName: neighborhoodName,
                 notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+                facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
               ));
 
     if (isClosed) return;

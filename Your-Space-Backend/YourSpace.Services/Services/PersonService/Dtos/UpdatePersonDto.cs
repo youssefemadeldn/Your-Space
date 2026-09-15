@@ -22,4 +22,5 @@ public class UpdatePersonDto
     public int? CityId { get; set; }
     public int? NeighborhoodId { get; set; }
     public string? Notes { get; set; }
+    public string? FacebookUrl { get; set; }
 }

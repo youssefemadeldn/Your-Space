@@ -11,6 +11,7 @@ class CreatePersonRequest {
   final int? cityId;
   final int? neighborhoodId;
   final String? notes;
+  final String? facebookUrl;
 
   const CreatePersonRequest({
     required this.name,
@@ -23,6 +24,7 @@ class CreatePersonRequest {
     this.cityId,
     this.neighborhoodId,
     this.notes,
+    this.facebookUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -36,5 +38,6 @@ class CreatePersonRequest {
         if (cityId != null) 'cityId': cityId,
         if (neighborhoodId != null) 'neighborhoodId': neighborhoodId,
         if (notes != null) 'notes': notes,
+        if (facebookUrl != null) 'facebookUrl': facebookUrl,
       };
 }

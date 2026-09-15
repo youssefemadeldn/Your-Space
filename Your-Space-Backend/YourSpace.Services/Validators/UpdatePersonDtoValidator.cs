@@ -29,6 +29,11 @@ public class UpdatePersonDtoValidator : AbstractValidator<UpdatePersonDto>
         RuleFor(x => x.Notes)
             .MaximumLength(2000).WithMessage(localizer["Person.Notes.MaxLength"]);
 
+        RuleFor(x => x.FacebookUrl)
+            .Must(url => Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            .WithMessage(localizer["Person.FacebookUrl.InvalidFormat"])
+            .When(x => !string.IsNullOrEmpty(x.FacebookUrl));
+
         RuleFor(x => x.Gender)
             .IsInEnum().WithMessage(localizer["Person.Gender.Required"])
             .When(x => x.Gender is not null);
