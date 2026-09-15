@@ -12,6 +12,10 @@ abstract class NeighborhoodRepository {
     required int pageSize,
   });
 
+  Stream<List<Neighborhood>> watchNeighborhoods({required int cityId, String? search, required int limit});
+
+  Future<int> countNeighborhoods({required int cityId, String? search});
+
   Future<Either<Failure, Neighborhood>> createNeighborhood({
     required int cityId,
     required String name,

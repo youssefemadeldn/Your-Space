@@ -9,9 +9,11 @@ import 'package:your_space_mobile/core/network/paginated_response.dart';
 import '../models/create_neighborhood_request.dart';
 import '../models/neighborhood_response.dart';
 import '../models/update_neighborhood_request.dart';
+import 'base_neighborhood_data_source.dart';
 
-@lazySingleton
-class NeighborhoodRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseNeighborhoodDataSource)
+class NeighborhoodRemoteDataSourceImpl implements BaseNeighborhoodDataSource {
   final ApiManager _api;
 
   NeighborhoodRemoteDataSourceImpl(this._api);
@@ -20,6 +22,7 @@ class NeighborhoodRemoteDataSourceImpl {
   // top-level path segment, not under City's own /governorates/{id}/cities.
   String _basePath(int cityId) => '/${ApiConstants.citiesSegment}/$cityId/${ApiConstants.neighborhoodsSegment}';
 
+  @override
   Future<Either<Failure, PaginatedResponse<NeighborhoodResponse>>> getNeighborhoods({
     required int cityId,
     String? search,
@@ -38,6 +41,25 @@ class NeighborhoodRemoteDataSourceImpl {
         ),
       );
 
+  @override
+  Future<Either<Failure, PaginatedResponse<NeighborhoodResponse>>> getAllMineNeighborhoods({
+    String? search,
+    required int pageIndex,
+    required int pageSize,
+  }) =>
+      _api.get<PaginatedResponse<NeighborhoodResponse>>(
+        path: ApiConstants.neighborhoods,
+        queryParameters: {'search': ?search, 'pageIndex': pageIndex, 'pageSize': pageSize},
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => PaginatedResponse.fromJson(
+            inner as Map<String, dynamic>,
+            (item) => NeighborhoodResponse.fromJson(item as Map<String, dynamic>),
+          ),
+        ),
+      );
+
+  @override
   Future<Either<Failure, NeighborhoodResponse>> createNeighborhood(
     int cityId,
     CreateNeighborhoodRequest request,
@@ -51,6 +73,7 @@ class NeighborhoodRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, NeighborhoodResponse>> updateNeighborhood(
     int cityId,
     int id,
@@ -65,6 +88,7 @@ class NeighborhoodRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, Unit>> deleteNeighborhood(int cityId, int id) => _api.delete<Unit>(
         path: '${_basePath(cityId)}/$id',
         fromJson: (_) => unit,

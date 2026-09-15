@@ -7,7 +7,6 @@ import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/constants/app_constants.dart';
 import 'package:your_space_mobile/core/entities/gender.dart';
-import 'package:your_space_mobile/core/entities/neighborhood.dart';
 import 'package:your_space_mobile/core/entities/person.dart';
 import 'package:your_space_mobile/core/entities/person_image.dart';
 import 'package:your_space_mobile/core/entities/relation_type.dart';
@@ -147,11 +146,11 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
         ready = ready.copyWith(availableCities: cities);
 
         if (person.cityId != null) {
-          final neighborhoodsResult =
-              await _neighborhoodRepository.getNeighborhoods(cityId: person.cityId!, pageIndex: 1, pageSize: 50);
-          ready = ready.copyWith(
-            availableNeighborhoods: neighborhoodsResult.fold((_) => const <Neighborhood>[], (p) => p.items),
-          );
+          // Neighborhood is local-first (row 8.20) — a local read can't fail
+          // the way a network call can.
+          final neighborhoods =
+              await _neighborhoodRepository.watchNeighborhoods(cityId: person.cityId!, limit: 50).first;
+          ready = ready.copyWith(availableNeighborhoods: neighborhoods);
         }
 
         emit(ready);
@@ -266,11 +265,9 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     // Person payload.
     final result = await _subGroupRepository.createSubGroupAndSync(groupId: current.groupId!, name: name);
     return result.fold((failure) => null, (subGroup) {
-      _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(
             availableSubGroups: [...r.availableSubGroups, subGroup],
             subGroupId: subGroup.id,
-            didInlineAddClassification: true,
           ));
       return subGroup.id;
     });
@@ -297,13 +294,11 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     // row).
     final result = await _governorateRepository.createGovernorateAndSync(name: name);
     return result.fold((failure) => null, (governorate) {
-      _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(
             availableGovernorates: [...r.availableGovernorates, governorate],
             governorateId: governorate.id,
             clearCity: true,
             clearNeighborhood: true,
-            didInlineAddClassification: true,
           ));
       return governorate.id;
     });
@@ -311,8 +306,10 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
 
   Future<void> selectCity(int cityId) async {
     _updateReady((r) => r.copyWith(cityId: cityId, clearNeighborhood: true));
-    final result = await _neighborhoodRepository.getNeighborhoods(cityId: cityId, pageIndex: 1, pageSize: 50);
-    _updateReady((r) => r.copyWith(availableNeighborhoods: result.fold((_) => const [], (p) => p.items)));
+    // Neighborhood is local-first (row 8.20) — a local read can't fail the
+    // way a network call can.
+    final neighborhoods = await _neighborhoodRepository.watchNeighborhoods(cityId: cityId, limit: 50).first;
+    _updateReady((r) => r.copyWith(availableNeighborhoods: neighborhoods));
   }
 
   Future<int?> addCityInline(String name) async {
@@ -324,12 +321,10 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     // sitting inside an already-built Person payload.
     final result = await _cityRepository.createCityAndSync(governorateId: current.governorateId!, name: name);
     return result.fold((failure) => null, (city) {
-      _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(
             availableCities: [...r.availableCities, city],
             cityId: city.id,
             clearNeighborhood: true,
-            didInlineAddClassification: true,
           ));
       return city.id;
     });
@@ -342,11 +337,9 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
     if (current is! PersonWizardReady || current.cityId == null) return null;
     final result = await _neighborhoodRepository.createNeighborhood(cityId: current.cityId!, name: name);
     return result.fold((failure) => null, (neighborhood) {
-      _dataRefreshBus.notify(DataScope.classification);
       _updateReady((r) => r.copyWith(
             availableNeighborhoods: [...r.availableNeighborhoods, neighborhood],
             neighborhoodId: neighborhood.id,
-            didInlineAddClassification: true,
           ));
       return neighborhood.id;
     });
@@ -541,9 +534,6 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
       // unlocks (today this branch would have blocked on the network and
       // errored outright when offline).
       _dataRefreshBus.notify(DataScope.people);
-      if (current.didInlineAddClassification) {
-        _dataRefreshBus.notify(DataScope.classification);
-      }
       emit(PersonWizardSubmitSuccess(
         personId: personId,
         personName: current.name.trim(),
@@ -559,9 +549,6 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
 
     if (isClosed) return;
     _dataRefreshBus.notify(DataScope.people);
-    if (current.didInlineAddClassification) {
-      _dataRefreshBus.notify(DataScope.classification);
-    }
 
     emit(PersonWizardSubmitSuccess(
       personId: personId,

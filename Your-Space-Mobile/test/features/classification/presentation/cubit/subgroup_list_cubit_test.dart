@@ -6,7 +6,6 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
 import 'package:your_space_mobile/core/entities/subgroup.dart';
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart';
 import 'package:your_space_mobile/features/classification/presentation/cubit/subgroup_list_cubit/subgroup_list_cubit.dart';
@@ -16,7 +15,6 @@ class MockSubGroupRepository extends Mock implements SubGroupRepository {}
 
 void main() {
   late MockSubGroupRepository repository;
-  late DataRefreshBus dataRefreshBus;
   late SubGroupListCubit cubit;
 
   const subGroup1 = SubGroup(id: 1, groupId: 7, name: 'Immediate Family');
@@ -48,14 +46,12 @@ void main() {
 
   setUp(() {
     repository = MockSubGroupRepository();
-    dataRefreshBus = DataRefreshBus();
-    cubit = SubGroupListCubit(repository, dataRefreshBus);
+    cubit = SubGroupListCubit(repository);
     stubCounts();
   });
 
   tearDown(() {
     cubit.close();
-    dataRefreshBus.dispose();
   });
 
   test('emits [Loading, Success] with the first window on load', () async {
@@ -190,17 +186,6 @@ void main() {
     await sub.cancel();
 
     expect(states, isNot(contains(isA<SubGroupListLoading>())));
-    expect(cubit.state, isA<SubGroupListSuccess>().having((s) => s.subGroups, 'subGroups', [subGroup1, subGroup2]));
-  });
-
-  test('a classification DataRefreshBus notification triggers a refresh', () async {
-    stubSubGroups(limit: 20, subGroups: const [subGroup1], total: 1);
-    await cubit.load(7);
-
-    stubSubGroups(limit: 20, subGroups: const [subGroup1, subGroup2], total: 2);
-    dataRefreshBus.notify(DataScope.classification);
-    await pumpEventQueue();
-
     expect(cubit.state, isA<SubGroupListSuccess>().having((s) => s.subGroups, 'subGroups', [subGroup1, subGroup2]));
   });
 }

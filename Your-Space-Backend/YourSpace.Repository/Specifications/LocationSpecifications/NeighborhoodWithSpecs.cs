@@ -54,4 +54,25 @@ public class NeighborhoodWithSpecs : BaseSpecification<Neighborhood>
             && n.CityId == cityId
             && n.DeletedAt == null
             && (string.IsNullOrWhiteSpace(search) || n.Name.Contains(search));
+
+    // Count for the flat "all mine" list — city-agnostic (doc/local-first-sync-design.md §11 row
+    // 8.20: mobile's Tier 1 bulk sync needs every neighborhood the owner has, not one city at a
+    // time).
+    public NeighborhoodWithSpecs(string ownerUserId, string? search)
+        : base(BuildFlatPredicate(ownerUserId, search))
+    {
+    }
+
+    // Paginated list for the flat "all mine" endpoint.
+    public NeighborhoodWithSpecs(string ownerUserId, string? search, PaginationSpecification paging)
+        : base(BuildFlatPredicate(ownerUserId, search))
+    {
+        ApplyOrderBy(n => n.Name);
+        ApplyPaging(paging.PageSize * (paging.PageIndex - 1), paging.PageSize);
+    }
+
+    private static Expression<Func<Neighborhood, bool>> BuildFlatPredicate(string ownerUserId, string? search)
+        => n => n.OwnerUserId == ownerUserId
+            && n.DeletedAt == null
+            && (string.IsNullOrWhiteSpace(search) || n.Name.Contains(search));
 }

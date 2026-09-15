@@ -25,6 +25,13 @@ public class NeighborhoodsController(INeighborhoodService neighborhoodService) :
         return new ResultActionResult<PaginatedResultDto<NeighborhoodProfileDto>>(result);
     }
 
+    [HttpGet("~/api/v{version:apiVersion}/neighborhoods")]
+    public async Task<IActionResult> GetAllMine([FromQuery] string? search, [FromQuery] PaginationSpecification pagination)
+    {
+        var result = await neighborhoodService.GetAllMineAsync(GetUserId(), search, pagination);
+        return new ResultActionResult<PaginatedResultDto<NeighborhoodProfileDto>>(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int cityId, int id)
     {

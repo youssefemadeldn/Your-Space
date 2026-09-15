@@ -7,11 +7,7 @@ import 'package:injectable/injectable.dart';
 /// invite progress) without forcing `HomeStatsCubit` — which only shows an
 /// events *count*, never guest data — to refresh on every guest status flip.
 ///
-/// `classification` covers Subgroup/Governorate/City/Neighborhood
-/// create/update/delete — lumped into one shared scope rather than 4
-/// granular ones since every consumer (People/Group filter option lists)
-/// treats all four identically, as filter/dropdown option sources.
-enum DataScope { people, groups, events, eventGuests, profile, classification }
+enum DataScope { people, groups, events, eventGuests, profile }
 
 /// Cross-tab/cross-route invalidation bus. `StatefulShellRoute.indexedStack`
 /// keeps Home/Groups/People/Events/Settings branch cubits alive forever once

@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/entities/subgroup.dart';
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_subgroup_repository.dart';
@@ -15,10 +14,11 @@ const _pageSize = 20;
 
 /// SubGroup is local-first (CLAUDE.md Architecture rule 7, row 8.14): the
 /// list is read from a reactive drift `Stream` via `watchSubGroups()` —
-/// mirrors `CityListCubit`'s `_subscribeToCities` pattern.
-/// `DataScope.classification` is still subscribed to here (Neighborhood
-/// hasn't migrated yet) — its inline "add new" notifications still need to
-/// trigger a `refresh()` here until row 8.20 retires the scope entirely.
+/// mirrors `CityListCubit`'s `_subscribeToCities` pattern. No
+/// `DataRefreshBus` dependency — `DataScope.classification` was retired at
+/// row 8.20, once Neighborhood (the last Classification entity) also became
+/// local-first and no inline "add new" notification needed a cross-entity
+/// poke to trigger `refresh()` anymore.
 ///
 /// `personCount` is server-computed (design doc §8) — not cached locally,
 /// so it's fetched once per `load()`/`refresh()` via the existing nested
@@ -27,17 +27,11 @@ const _pageSize = 20;
 @injectable
 class SubGroupListCubit extends Cubit<SubGroupListState> {
   final SubGroupRepository _subGroupRepository;
-  final DataRefreshBus _dataRefreshBus;
   Timer? _searchDebounce;
   StreamSubscription<List<SubGroup>>? _subGroupsSubscription;
-  late final StreamSubscription<DataScope> _refreshSubscription;
   Map<int, int> _personCounts = const {};
 
-  SubGroupListCubit(this._subGroupRepository, this._dataRefreshBus) : super(const SubGroupListInitial()) {
-    _refreshSubscription = _dataRefreshBus.stream.listen((scope) {
-      if (scope == DataScope.classification) refresh();
-    });
-  }
+  SubGroupListCubit(this._subGroupRepository) : super(const SubGroupListInitial());
 
   Future<void> load(int groupId) async {
     emit(const SubGroupListLoading());
@@ -80,8 +74,7 @@ class SubGroupListCubit extends Cubit<SubGroupListState> {
 
   /// Re-fetches the counts and re-subscribes — the drift `Stream` already
   /// re-emits on upsert/tombstone, so this is mainly here to refresh
-  /// `personCount` (server-computed, design doc §8) and to satisfy the
-  /// `DataScope.classification` notification path above.
+  /// `personCount` (server-computed, design doc §8).
   Future<void> refresh() async {
     final current = state;
     if (current is! SubGroupListSuccess) return;
@@ -153,7 +146,6 @@ class SubGroupListCubit extends Cubit<SubGroupListState> {
   Future<void> close() {
     _searchDebounce?.cancel();
     _subGroupsSubscription?.cancel();
-    _refreshSubscription.cancel();
     return super.close();
   }
 }

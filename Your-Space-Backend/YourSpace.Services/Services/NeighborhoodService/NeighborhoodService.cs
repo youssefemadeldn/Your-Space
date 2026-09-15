@@ -67,6 +67,23 @@ public class NeighborhoodService(
             new PaginatedResultDto<NeighborhoodProfileDto>(items, pagination.PageIndex, pagination.PageSize, totalItems, totalPages));
     }
 
+    public async Task<ServiceResult<PaginatedResultDto<NeighborhoodProfileDto>>> GetAllMineAsync(
+        string ownerUserId, string? search, PaginationSpecification pagination)
+    {
+        logger.LogInformation("Fetching all neighborhoods for user {UserId} (flat, city-agnostic)", ownerUserId);
+
+        var repo = unitOfWork.Repository<Neighborhood, int>();
+        var totalItems = await repo.CountWithSpecAsync(new NeighborhoodWithSpecs(ownerUserId, search));
+        var neighborhoods = await repo.ListAllWithSpecAsync(new NeighborhoodWithSpecs(ownerUserId, search, pagination));
+
+        // No PersonCount enrichment here — feeds Tier 1 bulk sync.
+        var items = neighborhoods.Select(mapper.Map<NeighborhoodProfileDto>).ToList();
+
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pagination.PageSize);
+        return ServiceResult<PaginatedResultDto<NeighborhoodProfileDto>>.Ok(
+            new PaginatedResultDto<NeighborhoodProfileDto>(items, pagination.PageIndex, pagination.PageSize, totalItems, totalPages));
+    }
+
     public async Task<ServiceResult<NeighborhoodDetailsDto>> CreateAsync(string ownerUserId, int cityId, CreateNeighborhoodDto dto)
     {
         var cityRepo = unitOfWork.Repository<City, int>();

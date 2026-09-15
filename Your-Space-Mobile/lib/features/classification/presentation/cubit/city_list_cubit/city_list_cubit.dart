@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:your_space_mobile/core/entities/city.dart';
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/core/network/failure_messages.dart' as core;
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
@@ -15,11 +14,11 @@ const _pageSize = 20;
 
 /// City is local-first (CLAUDE.md Architecture rule 7, row 8.8): the list is
 /// read from a reactive drift `Stream` via `watchCities()` — mirrors
-/// `GroupsListCubit`'s `_subscribeToGroups` pattern. `DataScope.classification`
-/// is still subscribed to here (unlike Groups' now-empty `DataScope.groups`
-/// case) — SubGroup/Neighborhood haven't migrated yet, so their inline "add
-/// new" notifications still need to trigger a `refresh()` here until row
-/// 8.20 retires the scope entirely.
+/// `GroupsListCubit`'s `_subscribeToGroups` pattern. No `DataRefreshBus`
+/// dependency — `DataScope.classification` was retired at row 8.20, once
+/// Neighborhood (the last Classification entity) also became local-first and
+/// no inline "add new" notification needed a cross-entity poke to trigger
+/// `refresh()` anymore.
 ///
 /// `neighborhoodCount` is server-computed (design doc §8) — not cached
 /// locally, so it's fetched once per `load()`/`refresh()` via the existing
@@ -28,17 +27,11 @@ const _pageSize = 20;
 @injectable
 class CityListCubit extends Cubit<CityListState> {
   final CityRepository _cityRepository;
-  final DataRefreshBus _dataRefreshBus;
   Timer? _searchDebounce;
   StreamSubscription<List<City>>? _citiesSubscription;
-  late final StreamSubscription<DataScope> _refreshSubscription;
   Map<int, int> _neighborhoodCounts = const {};
 
-  CityListCubit(this._cityRepository, this._dataRefreshBus) : super(const CityListInitial()) {
-    _refreshSubscription = _dataRefreshBus.stream.listen((scope) {
-      if (scope == DataScope.classification) refresh();
-    });
-  }
+  CityListCubit(this._cityRepository) : super(const CityListInitial());
 
   Future<void> load(int governorateId) async {
     emit(const CityListLoading());
@@ -81,8 +74,7 @@ class CityListCubit extends Cubit<CityListState> {
 
   /// Re-fetches the counts and re-subscribes — the drift `Stream` already
   /// re-emits on upsert/tombstone, so this is mainly here to refresh
-  /// `neighborhoodCount` (server-computed, design doc §8) and to satisfy the
-  /// `DataScope.classification` notification path above.
+  /// `neighborhoodCount` (server-computed, design doc §8).
   Future<void> refresh() async {
     final current = state;
     if (current is! CityListSuccess) return;
@@ -155,7 +147,6 @@ class CityListCubit extends Cubit<CityListState> {
   Future<void> close() {
     _searchDebounce?.cancel();
     _citiesSubscription?.cancel();
-    _refreshSubscription.cancel();
     return super.close();
   }
 }
