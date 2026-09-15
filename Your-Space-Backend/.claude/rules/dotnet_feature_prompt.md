@@ -298,9 +298,9 @@ See CLAUDE.md "Localization" and `templates/layers/T1-entity.md`, `T4-dto.md`, `
 
 ---
 
-### Rule 9 — Every new entity ships with dev-only mock seed data
+### Rule 9 — Every new entity ships with mock seed data, seeded in every environment
 
-A new entity/table gets a matching `Seed<Entity>Async` method in `MockDataSeeder` in the same change that adds it — not deferred. The seed data covers a normal case and at least one deliberate edge case, and only ever runs behind `IsDevelopment()` (CLAUDE.md Architecture rule 9).
+A new entity/table gets a matching `Seed<Entity>Async` method in `MockDataSeeder` in the same change that adds it — not deferred. The seed data covers a normal case and at least one deliberate edge case, and runs unconditionally, in `Development` and `Production` alike (CLAUDE.md Architecture rule 9).
 
 **Correct:**
 ```csharp
@@ -321,7 +321,8 @@ public static async Task SeedProductsAsync(YourSpaceDbContext context)
     await context.SaveChangesAsync();
 }
 
-// Called only from Program.cs's IsDevelopment() block, via MockDataSeeder.SeedAsync(...)
+// Called from Program.cs's always-on seeding block, via MockDataSeeder.SeedAsync(...) —
+// runs in every environment, not gated behind IsDevelopment()
 ```
 
 **Wrong — never do this:**
@@ -329,11 +330,17 @@ public static async Task SeedProductsAsync(YourSpaceDbContext context)
 // ❌ New entity ships with zero seed data — nobody has sample rows to look at until someone remembers later
 public class Product { /* ... */ }   // no matching SeedProductsAsync anywhere
 
-// ❌ Seeding called outside the IsDevelopment() guard — fake rows would ship into Production
-await MockDataSeeder.SeedAsync(context);
+// ❌ Seed method isn't idempotent — every environment restart (Development and Production alike)
+// re-inserts the same rows instead of skipping when data already exists
+public static async Task SeedProductsAsync(YourSpaceDbContext context)
+{
+    var products = faker.Generate(20);
+    await context.Products.AddRangeAsync(products);   // no AnyAsync() check first
+    await context.SaveChangesAsync();
+}
 ```
 
-See CLAUDE.md "Development Data Seeding."
+See CLAUDE.md "Mock Seed Data."
 
 ---
 
@@ -481,7 +488,7 @@ Before marking a feature complete, verify every item:
 - [ ] Configuration class declares keys, indexes (including composite indexes for real query patterns), and relationship delete behavior explicitly
 - [ ] Every new query shape added to a `Specification` (a new constructor overload or static factory) has its filtered/sorted columns checked against the entity's existing indexes in `Configurations/<Entity>Configurations.cs` — a new multi-column filter combination not yet covered gets a composite index added in the same change, not deferred
 - [ ] Every user-facing text field has an `<Field>Ar` counterpart, and the AutoMapper profile resolves it to one DTO field by `CultureInfo.CurrentUICulture` (Rule 8)
-- [ ] `MockDataSeeder` has a matching `Seed<Entity>Async` method (normal case + at least one edge case), called only from the `IsDevelopment()` block (Rule 9)
+- [ ] `MockDataSeeder` has a matching `Seed<Entity>Async` method (normal case + at least one edge case), called from the always-on seeding block and independently idempotent (Rule 9)
 
 **Repository layer**
 - [ ] No domain-specific method added to `IGenericRepository<,>` (Rule 3)
@@ -543,5 +550,5 @@ The following patterns were found in real production audits and must not appear 
 | `ServiceResult`/validator messages hardcoded as English string literals while `Accept-Language`/`RequestLocalization` is wired in the pipeline | Looks localized because the middleware is there, but no message actually changes with culture — a real gap observed in a reference project's audit | Every message string comes from `IStringLocalizer<SharedResource>`, keyed and translated in both `.resx` files at creation time (Rule 8) |
 | A new entity's user-facing text field added without an `Ar` counterpart, "to add later when needed" | Retrofitting means a migration plus backfilling every existing row's `Ar` value — cheap now, expensive later | Add `<Field>Ar` alongside `<Field>` in the same migration that introduces the field (Rule 8) |
 | A new table ships with no seed data — QA/demo has nothing to look at until someone remembers to add sample rows later | The table sits empty through review and early testing; edge cases (empty fields, boundary values, soft-deleted rows) never get exercised until real data accumulates in production | Add `Seed<Entity>Async` to `MockDataSeeder` in the same change that adds the entity (Rule 9) |
-| Mock/demo seed data seeded unconditionally instead of behind `IsDevelopment()` | Fake `"Test Product 1"`-style rows ship into `Production` the moment the guard is missing | Gate `MockDataSeeder` calls strictly inside `app.Environment.IsDevelopment()`, same block as `Database.Migrate()` (Rule 9) |
+| A `Seed<Entity>Async` method skips the `AnyAsync()` existence check before inserting | Every restart — in `Development` or `Production` — re-inserts the same rows, since `MockDataSeeder` now runs unconditionally on every boot | Every seed method checks for existing rows first and returns early if any exist (Rule 9) |
 | A `ServiceResult` failure returned with only a localized `Message`, no `ErrorCode` | Client has no locale-independent, reword-safe value to branch on — forces fragile string-matching against translated text that changes with `Accept-Language` or a copy edit | Pass the same resource key already used for the localized `Message` as `ErrorCode` (Rule 10) |

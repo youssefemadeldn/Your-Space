@@ -145,8 +145,8 @@ Any service operation that writes to more than one table/aggregate where a parti
 ### 8. The solution is localization-ready (English/Arabic) by default
 Every entity with user-facing text, every DTO that carries it, and every message a service or validator produces is built with English/Arabic support the moment it's created — regardless of whether the feature that introduces it explicitly asks for translation. This is a foundational posture, not a per-feature opt-in: see "Localization" below for the concrete pattern.
 
-### 9. Every entity ships with dev-only mock seed data, covering more than the happy and bad cases
-The moment a new entity/table exists, it gets a matching seed method producing representative sample rows — a normal case, at least one edge case (empty/max-length text, zero/boundary numeric values, a soft-deleted or expired row, etc.), and enough volume to exercise pagination. Seeding runs strictly behind `IsDevelopment()` — never in `Production` or any deployed environment. This is not retrofitted after the fact: it ships in the same change that adds the entity. See "Development Data Seeding" below.
+### 9. Every entity ships with mock seed data, seeded in every environment, covering more than the happy and bad cases
+The moment a new entity/table exists, it gets a matching seed method producing representative sample rows — a normal case, at least one edge case (empty/max-length text, zero/boundary numeric values, a soft-deleted or expired row, etc.), and enough volume to exercise pagination. Seeding runs unconditionally, in `Development` and `Production` alike — the same always-on treatment as `IdentitySeeder`/`ReferenceDataSeeder`. This is not retrofitted after the fact: it ships in the same change that adds the entity. See "Mock Seed Data" below.
 
 ### 10. Every failure response carries a stable ErrorCode, not just a localized Message
 `ServiceResult`/`ServiceResult<T>`'s failure factory methods (`Fail`, `NotFound`, `Unauthorized`, `Forbidden`, `Conflict`) require an `ErrorCode` alongside `Message` — a stable, non-localized string, the same resource key already passed to `IStringLocalizer<SharedResource>` for the message (Rule 8), e.g. `"Product.NotFound"`. A client branches on `ErrorCode`, never on `Message` — `Message` changes with `Accept-Language` and can be reworded without notice. This does not duplicate `ExceptionMiddleware`'s dev/prod detail split (Rule 2) — `ErrorCode` is a stable, client-facing value set once per guard clause, not diagnostic detail decided per environment. See "Response envelope" below.
@@ -344,11 +344,11 @@ return ServiceResult<CityDetailsDto>.Ok(mapper.Map<CityDetailsDto>(city));
 
 ---
 
-## Development Data Seeding
+## Mock Seed Data
 
-`MockDataSeeder` (`<Solution>.WebAPI/Helpers/MockDataSeeder.cs`) is a separate, purely dev-convenience seeder — distinct from `IdentitySeeder`, which bootstraps real, production-needed data (roles, the first `SuperAdmin`) and therefore runs in every environment. `MockDataSeeder` never does.
+`MockDataSeeder` (`<Solution>.WebAPI/Helpers/MockDataSeeder.cs`) seeds mock/demo rows — distinct from `IdentitySeeder`, which bootstraps real, production-needed data (roles, the first `SuperAdmin`). Both now run in every environment; the distinction between them is *what* they seed, not *when* they run.
 
-- **Development-only, no exceptions:** invoked only from inside `app.Environment.IsDevelopment()` in `Program.cs`, alongside `Database.Migrate()`. Never gate it on a config flag or environment variable instead of the real `IsDevelopment()` check — a misconfigured flag is exactly how fake rows end up in `Production`.
+- **Runs unconditionally, in every environment:** invoked from `Program.cs`'s always-on seeding block, alongside `IdentitySeeder` and `ReferenceDataSeeder` — not gated behind `app.Environment.IsDevelopment()`.
 - **Covers more than the happy case:** each entity's seed method produces a normal row, at least one deliberate edge case (an empty optional field, a max-length string, a zero/boundary numeric value, a soft-deleted or expired row), and enough rows to exercise pagination — not just two or three identical-shaped placeholders.
 - **Idempotent:** each seed method checks for existing rows first (`if (await context.Set<Entity>().AnyAsync()) return;`) so repeated `dotnet run` cycles during a dev session don't keep multiplying data.
 - **Grows with every new table:** the same change that adds an entity/configuration/migration adds that entity's seed method to `MockDataSeeder` — not deferred, not "sample data later." A table with zero seed data is an incomplete feature, the same way a DTO with no validator is (Architecture rule 5).
