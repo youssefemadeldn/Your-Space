@@ -114,9 +114,8 @@ void main() {
       neighborhoodRepository,
     );
 
-    when(() => eventGuestRepository.getEventGuests(1, pageIndex: 1, pageSize: 50)).thenAnswer(
-      (_) async => const Right(PaginatedResult(items: [existingGuest], pageIndex: 1, totalPages: 1, totalItems: 1)),
-    );
+    when(() => eventGuestRepository.watchEventGuests(eventId: 1, limit: any(named: 'limit')))
+        .thenAnswer((_) => Stream.value(const [existingGuest]));
     when(() => eventGuestRepository.getProgress(1)).thenAnswer((_) async => const Right(progress));
     when(() => governorateRepository.watchGovernorates(limit: 50))
         .thenAnswer((_) => Stream.value(const []));

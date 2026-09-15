@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -133,6 +134,56 @@ void main() {
     expect(events.map((e) => e.id), [5]);
     expect(await database.select(database.outboxTable).get(), isEmpty);
   });
+
+  test(
+    'row 9.9: rewrites a dependent EventGuestsTable row and a still-queued eventGuest outbox payload '
+    'referencing the temp event id',
+    () async {
+      const tempId = -777;
+      final eventRowId = await dataSource.queueEventMutation(
+        event: const Event(id: tempId, name: 'Offline Event'),
+        operation: 'create',
+        payloadJson: '{"name":"Offline Event"}',
+      );
+      await database.into(database.eventGuestsTable).insert(
+            EventGuestsTableCompanion.insert(
+              id: const Value(-1),
+              eventId: tempId,
+              personId: 10,
+              personName: 'Sara Adel',
+              groupId: 1,
+              groupName: 'Family',
+              status: 'NotInvited',
+              isDirty: const Value(true),
+            ),
+          );
+      await database.into(database.outboxTable).insert(
+            OutboxTableCompanion.insert(
+              entityType: 'eventGuest',
+              entityId: -1,
+              operation: 'create',
+              payloadJson: '{"eventId":$tempId,"personId":10}',
+            ),
+          );
+
+      const realEvent = Event(id: 999, name: 'Offline Event');
+      await dataSource.reconcileCreatedEvent(
+        tempId: tempId,
+        realEvent: realEvent,
+        replayedOutboxRowId: eventRowId,
+      );
+
+      final guestRow =
+          await (database.select(database.eventGuestsTable)..where((t) => t.id.equals(-1))).getSingle();
+      expect(guestRow.eventId, 999);
+
+      final guestOutboxRow = (await (database.select(database.outboxTable)
+                ..where((t) => t.entityType.equals('eventGuest')))
+              .get())
+          .single;
+      expect(guestOutboxRow.payloadJson, contains('"eventId":999'));
+    },
+  );
 
   group('applyEventsSnapshot', () {
     test('upserts a server row that is not already dirty locally', () async {

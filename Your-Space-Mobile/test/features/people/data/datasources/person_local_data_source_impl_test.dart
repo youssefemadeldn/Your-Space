@@ -370,5 +370,63 @@ void main() {
       expect(patchedPayload['id'], 999);
       expect(patchedPayload['name'], 'Offline Person Edited');
     });
+
+    test(
+      'row 9.9: rewrites a dependent EventGuestsTable row and a still-queued eventGuest outbox payload '
+      'referencing the temp person id',
+      () async {
+        const tempId = -888;
+        final personRowId = await dataSource.queuePersonMutation(
+          person: _person(id: tempId, name: 'Offline Person'),
+          operation: 'create',
+          payloadJson: '{"name":"Offline Person"}',
+        );
+        await database.into(database.eventGuestsTable).insert(
+              EventGuestsTableCompanion.insert(
+                id: const Value(-1),
+                eventId: 7,
+                personId: tempId,
+                personName: 'Offline Person',
+                groupId: 1,
+                groupName: 'Group 1',
+                status: 'NotInvited',
+                isDirty: const Value(true),
+              ),
+            );
+        await database.into(database.outboxTable).insert(
+              OutboxTableCompanion.insert(
+                entityType: 'eventGuest',
+                entityId: -1,
+                operation: 'create',
+                payloadJson: '{"eventId":7,"personId":$tempId}',
+              ),
+            );
+
+        const realPerson = Person(
+          id: 999,
+          name: 'Offline Person',
+          gender: Gender.male,
+          groupId: 1,
+          groupName: 'Group 1',
+          governorateId: 1,
+          governorateName: 'Governorate 1',
+        );
+        await dataSource.reconcileCreatedPerson(
+          tempId: tempId,
+          realPerson: realPerson,
+          replayedOutboxRowId: personRowId,
+        );
+
+        final guestRow =
+            await (database.select(database.eventGuestsTable)..where((t) => t.id.equals(-1))).getSingle();
+        expect(guestRow.personId, 999);
+
+        final guestOutboxRow = (await (database.select(database.outboxTable)
+                  ..where((t) => t.entityType.equals('eventGuest')))
+                .get())
+            .single;
+        expect(guestOutboxRow.payloadJson, contains('"personId":999'));
+      },
+    );
   });
 }

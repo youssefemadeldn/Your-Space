@@ -47,6 +47,9 @@ class ApiConstants {
   // Flat "all mine" endpoint (row 8.8) — separate from citiesSegment, which is always used
   // nested under a governorate ('$governorates/$governorateId/$citiesSegment').
   static const String cities = '/cities';
+  // Flat "all mine" endpoint (row 9.8), event-agnostic — separate from the nested guest routes
+  // built at the EventGuest datasource call site ('$events/$eventId/guests').
+  static const String eventGuests = '/event-guests';
   static const String neighborhoodsSegment = 'neighborhoods';
   // Flat "all mine" endpoint (row 8.20) — separate from neighborhoodsSegment, which is always
   // used nested under a city ('$citiesSegment/$cityId/$neighborhoodsSegment').

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
 
@@ -99,11 +101,20 @@ class EventLocalDataSourceImpl {
       });
 
   /// Tier 2 temp-id reconciliation (design doc §5) after a queued 'create'
-  /// syncs. One transaction: insert the confirmed server row under
-  /// [realEvent].id, delete the temp-id row, delete the just-replayed
-  /// outbox row. No dependent-rewrite step here — that's added when
-  /// EventGuest's own Tier 2 step (row 9.9) makes Event a real sync parent
-  /// for the first time (see that step's own doc comment on this method).
+  /// syncs. One transaction:
+  ///  1. insert the confirmed server row under [realEvent].id
+  ///  2. delete the temp-id row
+  ///  3. delete the just-replayed outbox row
+  ///  4. rewrite any dependent `EventGuestsTable.eventId` row (and any
+  ///     still-queued `entityType='eventGuest'` outbox payload) that
+  ///     references [tempId] — Event's first time as a real sync parent
+  ///     (row 9.9). Mirrors `CityLocalDataSourceImpl.reconcileCreatedCity`'s
+  ///     own 4th step (decode/patch/re-encode, never string-replace — avoids
+  ///     corrupting a `personName`/`groupName` field that could
+  ///     coincidentally contain the tempId's digits). `EventGuestsTable`
+  ///     lives in `core/database` like every synced table, so reaching into
+  ///     it directly here is a Feature → Core access, not a Feature →
+  ///     Feature one — no import from the events-guest feature layer needed.
   Future<void> reconcileCreatedEvent({
     required int tempId,
     required Event realEvent,
@@ -113,6 +124,20 @@ class EventLocalDataSourceImpl {
         await _db.into(_db.eventsTable).insertOnConflictUpdate(_toCompanion(realEvent));
         await (_db.delete(_db.eventsTable)..where((t) => t.id.equals(tempId))).go();
         await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
+
+        await (_db.update(_db.eventGuestsTable)..where((t) => t.eventId.equals(tempId)))
+            .write(EventGuestsTableCompanion(eventId: Value(realEvent.id)));
+
+        final pendingGuestRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('eventGuest') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingGuestRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['eventId'] != tempId) continue;
+          payload['eventId'] = realEvent.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
       });
 
   /// Tier 3 "full refetch as delta" (design doc §6) — interim mode until the

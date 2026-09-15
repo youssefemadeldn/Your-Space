@@ -13,15 +13,29 @@ import '../models/event_guest_progress_summary_response.dart';
 import '../models/event_guest_response.dart';
 import '../models/mark_guest_invited_request.dart';
 import '../models/reciprocity_person_response.dart';
+import 'base_event_guest_data_source.dart';
 
-@lazySingleton
-class EventGuestRemoteDataSourceImpl {
+@Named('remote')
+@LazySingleton(as: BaseEventGuestDataSource)
+class EventGuestRemoteDataSourceImpl implements BaseEventGuestDataSource {
   final ApiManager _api;
 
   EventGuestRemoteDataSourceImpl(this._api);
 
   String _guestsPath(int eventId) => '${ApiConstants.events}/$eventId/guests';
 
+  @override
+  Future<Either<Failure, List<EventGuestResponse>>> getAllMineEventGuests() => _api.get<List<EventGuestResponse>>(
+        path: ApiConstants.eventGuests,
+        fromJson: (json) => unwrapServiceResult(
+          json,
+          (inner) => (inner as List<dynamic>)
+              .map((item) => EventGuestResponse.fromJson(item as Map<String, dynamic>))
+              .toList(),
+        ),
+      );
+
+  @override
   Future<Either<Failure, PaginatedResponse<EventGuestResponse>>> getEventGuests(
     int eventId, {
     int? groupId,
@@ -46,6 +60,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, EventGuestProgressSummaryResponse>> getProgress(int eventId) =>
       _api.get<EventGuestProgressSummaryResponse>(
         path: '${_guestsPath(eventId)}/progress',
@@ -55,6 +70,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, PaginatedResponse<ReciprocityPersonResponse>>> getReciprocitySuggestions(
     int eventId, {
     int? groupId,
@@ -77,6 +93,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, BulkAddGuestsResultResponse>> addPersonsToEvent(
     int eventId,
     AddPersonsToEventRequest request,
@@ -90,6 +107,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, BulkAddGuestsResultResponse>> addGroupToEvent(int eventId, int groupId) =>
       _api.post<BulkAddGuestsResultResponse>(
         path: '${_guestsPath(eventId)}/by-group/$groupId',
@@ -99,6 +117,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, BulkAddGuestsResultResponse>> addSubGroupToEvent(int eventId, int subGroupId) =>
       _api.post<BulkAddGuestsResultResponse>(
         path: '${_guestsPath(eventId)}/by-subgroup/$subGroupId',
@@ -108,6 +127,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, BulkAddGuestsResultResponse>> addGovernorateToEvent(int eventId, int governorateId) =>
       _api.post<BulkAddGuestsResultResponse>(
         path: '${_guestsPath(eventId)}/by-governorate/$governorateId',
@@ -117,6 +137,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, BulkAddGuestsResultResponse>> addCityToEvent(int eventId, int cityId) =>
       _api.post<BulkAddGuestsResultResponse>(
         path: '${_guestsPath(eventId)}/by-city/$cityId',
@@ -126,6 +147,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, BulkAddGuestsResultResponse>> addNeighborhoodToEvent(int eventId, int neighborhoodId) =>
       _api.post<BulkAddGuestsResultResponse>(
         path: '${_guestsPath(eventId)}/by-neighborhood/$neighborhoodId',
@@ -135,6 +157,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, EventGuestResponse>> markInvited(
     int eventId,
     int guestId,
@@ -149,6 +172,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, EventGuestResponse>> markSkipped(int eventId, int guestId) =>
       _api.post<EventGuestResponse>(
         path: '${_guestsPath(eventId)}/$guestId/skip',
@@ -158,6 +182,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, EventGuestResponse>> revertGuest(int eventId, int guestId) =>
       _api.post<EventGuestResponse>(
         path: '${_guestsPath(eventId)}/$guestId/revert',
@@ -167,6 +192,7 @@ class EventGuestRemoteDataSourceImpl {
         ),
       );
 
+  @override
   Future<Either<Failure, Unit>> removeGuest(int eventId, int guestId) => _api.delete<Unit>(
         path: '${_guestsPath(eventId)}/$guestId',
         fromJson: (_) => unit,

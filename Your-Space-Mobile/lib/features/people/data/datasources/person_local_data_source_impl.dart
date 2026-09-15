@@ -202,13 +202,22 @@ class PersonLocalDataSourceImpl {
   ///  1. insert the confirmed server row under [realPerson.id]
   ///  2. delete the temp-id row
   ///  3. delete the just-replayed outbox row
-  ///  4. self-referential patch (cross-entity FK rewrite into other tables
-  ///     is explicitly deferred to Events, design doc §5): any OTHER
-  ///     still-pending outbox row for entityType 'person' whose `entityId`
-  ///     is still [tempId] gets both its `entityId` column and the `id` key
-  ///     embedded in its own `payloadJson` rewritten to the real id. This is
-  ///     the offline-create-then-offline-edit case: two outbox rows both
-  ///     keyed to the same temp id before either has synced.
+  ///  4. self-referential patch: any OTHER still-pending outbox row for
+  ///     entityType 'person' whose `entityId` is still [tempId] gets both
+  ///     its `entityId` column and the `id` key embedded in its own
+  ///     `payloadJson` rewritten to the real id. This is the
+  ///     offline-create-then-offline-edit case: two outbox rows both keyed
+  ///     to the same temp id before either has synced.
+  ///  5. Person's first cross-entity dependent-rewrite step (row 9.9) — the
+  ///     doc comment above this method used to defer this "to Events, design
+  ///     doc §5"; EventGuest is that first real dependent. Rewrites
+  ///     `EventGuestsTable.personId` for any row referencing [tempId], plus
+  ///     any still-queued `entityType='eventGuest'` outbox payload's
+  ///     `personId` key. `EventGuestsTable` lives in `core/database` like
+  ///     every synced table, so this is a Feature → Core access, not a
+  ///     Feature → Feature one. Mirrors `EventLocalDataSourceImpl.
+  ///     reconcileCreatedEvent`'s own 4th step (decode/patch/re-encode,
+  ///     never string-replace).
   Future<void> reconcileCreatedPerson({
     required int tempId,
     required Person realPerson,
@@ -231,6 +240,20 @@ class PersonLocalDataSourceImpl {
               payloadJson: Value(jsonEncode(payload)),
             ),
           );
+        }
+
+        await (_db.update(_db.eventGuestsTable)..where((t) => t.personId.equals(tempId)))
+            .write(EventGuestsTableCompanion(personId: Value(realPerson.id)));
+
+        final pendingGuestRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('eventGuest') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingGuestRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['personId'] != tempId) continue;
+          payload['personId'] = realPerson.id;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
         }
       });
 
