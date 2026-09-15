@@ -122,22 +122,21 @@ if (app.Environment.IsDevelopment()
 // already had IdentitySeeder run once masks the ordering bug, since the roles are already there.
 // ReferenceDataSeeder (global governorates) is likewise idempotent and runs in every environment;
 // it must also precede MockDataSeeder, whose SeedCities/SeedPersons resolve "Cairo"/"Giza" by name.
+// MockDataSeeder itself now runs unconditionally too, same as the two seeders above — see
+// CLAUDE.md "Mock Seed Data."
 await using (var seedScope = app.Services.CreateAsyncScope())
 {
     await IdentitySeeder.SeedAsync(seedScope.ServiceProvider, app.Configuration, app.Logger);
     await ReferenceDataSeeder.SeedAsync(seedScope.ServiceProvider, app.Logger);
+
+    var dbContext = seedScope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
+    var userManager = seedScope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var syncVersionProvider = seedScope.ServiceProvider.GetRequiredService<ISyncVersionProvider>();
+    await MockDataSeeder.SeedAsync(dbContext, userManager, syncVersionProvider);
 }
 
 if (app.Environment.IsDevelopment())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<YourSpaceDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var syncVersionProvider = scope.ServiceProvider.GetRequiredService<ISyncVersionProvider>();
-        await MockDataSeeder.SeedAsync(dbContext, userManager, syncVersionProvider);
-    }
-
     app.UseOpenApi();
     app.UseSwaggerUi();
     app.UseHttpLogging();
