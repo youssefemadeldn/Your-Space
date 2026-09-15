@@ -3,6 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:injectable/injectable.dart';
 
 import 'tables/cities_table.dart';
+import 'tables/event_guests_table.dart';
 import 'tables/events_table.dart';
 import 'tables/governorates_table.dart';
 import 'tables/groups_table.dart';
@@ -30,6 +31,7 @@ part 'app_database.g.dart';
     SubGroupsTable,
     NeighborhoodsTable,
     EventsTable,
+    EventGuestsTable,
     OutboxTable,
     SyncStateTable,
   ],
@@ -42,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -89,6 +91,11 @@ class AppDatabase extends _$AppDatabase {
           // same reasoning as above, no shipped users yet).
           if (from < 8) {
             await m.createTable(eventsTable);
+          }
+          // v8 -> v9: EventGuestsTable, Row 9.7 (local-first rollout for
+          // EventGuest — same reasoning as above, no shipped users yet).
+          if (from < 9) {
+            await m.createTable(eventGuestsTable);
           }
         },
       );

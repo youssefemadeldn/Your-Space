@@ -3927,6 +3927,717 @@ class EventsTableCompanion extends UpdateCompanion<EventsTableData> {
   }
 }
 
+class $EventGuestsTableTable extends EventGuestsTable
+    with TableInfo<$EventGuestsTableTable, EventGuestsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EventGuestsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<int> eventId = GeneratedColumn<int>(
+    'event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<int> personId = GeneratedColumn<int>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personNameMeta = const VerificationMeta(
+    'personName',
+  );
+  @override
+  late final GeneratedColumn<String> personName = GeneratedColumn<String>(
+    'person_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personPhoneNumberMeta = const VerificationMeta(
+    'personPhoneNumber',
+  );
+  @override
+  late final GeneratedColumn<String> personPhoneNumber =
+      GeneratedColumn<String>(
+        'person_phone_number',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupNameMeta = const VerificationMeta(
+    'groupName',
+  );
+  @override
+  late final GeneratedColumn<String> groupName = GeneratedColumn<String>(
+    'group_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _inviteMethodMeta = const VerificationMeta(
+    'inviteMethod',
+  );
+  @override
+  late final GeneratedColumn<String> inviteMethod = GeneratedColumn<String>(
+    'invite_method',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _invitedAtMeta = const VerificationMeta(
+    'invitedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> invitedAt = GeneratedColumn<DateTime>(
+    'invited_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDirtyMeta = const VerificationMeta(
+    'isDirty',
+  );
+  @override
+  late final GeneratedColumn<bool> isDirty = GeneratedColumn<bool>(
+    'is_dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    eventId,
+    personId,
+    personName,
+    personPhoneNumber,
+    groupId,
+    groupName,
+    status,
+    inviteMethod,
+    invitedAt,
+    isDeleted,
+    isDirty,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'event_guests_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EventGuestsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('person_name')) {
+      context.handle(
+        _personNameMeta,
+        personName.isAcceptableOrUnknown(data['person_name']!, _personNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personNameMeta);
+    }
+    if (data.containsKey('person_phone_number')) {
+      context.handle(
+        _personPhoneNumberMeta,
+        personPhoneNumber.isAcceptableOrUnknown(
+          data['person_phone_number']!,
+          _personPhoneNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('group_name')) {
+      context.handle(
+        _groupNameMeta,
+        groupName.isAcceptableOrUnknown(data['group_name']!, _groupNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupNameMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('invite_method')) {
+      context.handle(
+        _inviteMethodMeta,
+        inviteMethod.isAcceptableOrUnknown(
+          data['invite_method']!,
+          _inviteMethodMeta,
+        ),
+      );
+    }
+    if (data.containsKey('invited_at')) {
+      context.handle(
+        _invitedAtMeta,
+        invitedAt.isAcceptableOrUnknown(data['invited_at']!, _invitedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('is_dirty')) {
+      context.handle(
+        _isDirtyMeta,
+        isDirty.isAcceptableOrUnknown(data['is_dirty']!, _isDirtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EventGuestsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EventGuestsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}event_id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_id'],
+      )!,
+      personName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}person_name'],
+      )!,
+      personPhoneNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}person_phone_number'],
+      ),
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      )!,
+      groupName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_name'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      inviteMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}invite_method'],
+      ),
+      invitedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}invited_at'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      isDirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dirty'],
+      )!,
+    );
+  }
+
+  @override
+  $EventGuestsTableTable createAlias(String alias) {
+    return $EventGuestsTableTable(attachedDatabase, alias);
+  }
+}
+
+class EventGuestsTableData extends DataClass
+    implements Insertable<EventGuestsTableData> {
+  final int id;
+  final int eventId;
+  final int personId;
+  final String personName;
+  final String? personPhoneNumber;
+  final int groupId;
+  final String groupName;
+  final String status;
+  final String? inviteMethod;
+  final DateTime? invitedAt;
+  final bool isDeleted;
+  final bool isDirty;
+  const EventGuestsTableData({
+    required this.id,
+    required this.eventId,
+    required this.personId,
+    required this.personName,
+    this.personPhoneNumber,
+    required this.groupId,
+    required this.groupName,
+    required this.status,
+    this.inviteMethod,
+    this.invitedAt,
+    required this.isDeleted,
+    required this.isDirty,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['event_id'] = Variable<int>(eventId);
+    map['person_id'] = Variable<int>(personId);
+    map['person_name'] = Variable<String>(personName);
+    if (!nullToAbsent || personPhoneNumber != null) {
+      map['person_phone_number'] = Variable<String>(personPhoneNumber);
+    }
+    map['group_id'] = Variable<int>(groupId);
+    map['group_name'] = Variable<String>(groupName);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || inviteMethod != null) {
+      map['invite_method'] = Variable<String>(inviteMethod);
+    }
+    if (!nullToAbsent || invitedAt != null) {
+      map['invited_at'] = Variable<DateTime>(invitedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_dirty'] = Variable<bool>(isDirty);
+    return map;
+  }
+
+  EventGuestsTableCompanion toCompanion(bool nullToAbsent) {
+    return EventGuestsTableCompanion(
+      id: Value(id),
+      eventId: Value(eventId),
+      personId: Value(personId),
+      personName: Value(personName),
+      personPhoneNumber: personPhoneNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personPhoneNumber),
+      groupId: Value(groupId),
+      groupName: Value(groupName),
+      status: Value(status),
+      inviteMethod: inviteMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inviteMethod),
+      invitedAt: invitedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(invitedAt),
+      isDeleted: Value(isDeleted),
+      isDirty: Value(isDirty),
+    );
+  }
+
+  factory EventGuestsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EventGuestsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      eventId: serializer.fromJson<int>(json['eventId']),
+      personId: serializer.fromJson<int>(json['personId']),
+      personName: serializer.fromJson<String>(json['personName']),
+      personPhoneNumber: serializer.fromJson<String?>(
+        json['personPhoneNumber'],
+      ),
+      groupId: serializer.fromJson<int>(json['groupId']),
+      groupName: serializer.fromJson<String>(json['groupName']),
+      status: serializer.fromJson<String>(json['status']),
+      inviteMethod: serializer.fromJson<String?>(json['inviteMethod']),
+      invitedAt: serializer.fromJson<DateTime?>(json['invitedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isDirty: serializer.fromJson<bool>(json['isDirty']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'eventId': serializer.toJson<int>(eventId),
+      'personId': serializer.toJson<int>(personId),
+      'personName': serializer.toJson<String>(personName),
+      'personPhoneNumber': serializer.toJson<String?>(personPhoneNumber),
+      'groupId': serializer.toJson<int>(groupId),
+      'groupName': serializer.toJson<String>(groupName),
+      'status': serializer.toJson<String>(status),
+      'inviteMethod': serializer.toJson<String?>(inviteMethod),
+      'invitedAt': serializer.toJson<DateTime?>(invitedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isDirty': serializer.toJson<bool>(isDirty),
+    };
+  }
+
+  EventGuestsTableData copyWith({
+    int? id,
+    int? eventId,
+    int? personId,
+    String? personName,
+    Value<String?> personPhoneNumber = const Value.absent(),
+    int? groupId,
+    String? groupName,
+    String? status,
+    Value<String?> inviteMethod = const Value.absent(),
+    Value<DateTime?> invitedAt = const Value.absent(),
+    bool? isDeleted,
+    bool? isDirty,
+  }) => EventGuestsTableData(
+    id: id ?? this.id,
+    eventId: eventId ?? this.eventId,
+    personId: personId ?? this.personId,
+    personName: personName ?? this.personName,
+    personPhoneNumber: personPhoneNumber.present
+        ? personPhoneNumber.value
+        : this.personPhoneNumber,
+    groupId: groupId ?? this.groupId,
+    groupName: groupName ?? this.groupName,
+    status: status ?? this.status,
+    inviteMethod: inviteMethod.present ? inviteMethod.value : this.inviteMethod,
+    invitedAt: invitedAt.present ? invitedAt.value : this.invitedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isDirty: isDirty ?? this.isDirty,
+  );
+  EventGuestsTableData copyWithCompanion(EventGuestsTableCompanion data) {
+    return EventGuestsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      personName: data.personName.present
+          ? data.personName.value
+          : this.personName,
+      personPhoneNumber: data.personPhoneNumber.present
+          ? data.personPhoneNumber.value
+          : this.personPhoneNumber,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      groupName: data.groupName.present ? data.groupName.value : this.groupName,
+      status: data.status.present ? data.status.value : this.status,
+      inviteMethod: data.inviteMethod.present
+          ? data.inviteMethod.value
+          : this.inviteMethod,
+      invitedAt: data.invitedAt.present ? data.invitedAt.value : this.invitedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isDirty: data.isDirty.present ? data.isDirty.value : this.isDirty,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EventGuestsTableData(')
+          ..write('id: $id, ')
+          ..write('eventId: $eventId, ')
+          ..write('personId: $personId, ')
+          ..write('personName: $personName, ')
+          ..write('personPhoneNumber: $personPhoneNumber, ')
+          ..write('groupId: $groupId, ')
+          ..write('groupName: $groupName, ')
+          ..write('status: $status, ')
+          ..write('inviteMethod: $inviteMethod, ')
+          ..write('invitedAt: $invitedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    eventId,
+    personId,
+    personName,
+    personPhoneNumber,
+    groupId,
+    groupName,
+    status,
+    inviteMethod,
+    invitedAt,
+    isDeleted,
+    isDirty,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EventGuestsTableData &&
+          other.id == this.id &&
+          other.eventId == this.eventId &&
+          other.personId == this.personId &&
+          other.personName == this.personName &&
+          other.personPhoneNumber == this.personPhoneNumber &&
+          other.groupId == this.groupId &&
+          other.groupName == this.groupName &&
+          other.status == this.status &&
+          other.inviteMethod == this.inviteMethod &&
+          other.invitedAt == this.invitedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.isDirty == this.isDirty);
+}
+
+class EventGuestsTableCompanion extends UpdateCompanion<EventGuestsTableData> {
+  final Value<int> id;
+  final Value<int> eventId;
+  final Value<int> personId;
+  final Value<String> personName;
+  final Value<String?> personPhoneNumber;
+  final Value<int> groupId;
+  final Value<String> groupName;
+  final Value<String> status;
+  final Value<String?> inviteMethod;
+  final Value<DateTime?> invitedAt;
+  final Value<bool> isDeleted;
+  final Value<bool> isDirty;
+  const EventGuestsTableCompanion({
+    this.id = const Value.absent(),
+    this.eventId = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.personName = const Value.absent(),
+    this.personPhoneNumber = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.groupName = const Value.absent(),
+    this.status = const Value.absent(),
+    this.inviteMethod = const Value.absent(),
+    this.invitedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  });
+  EventGuestsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required int eventId,
+    required int personId,
+    required String personName,
+    this.personPhoneNumber = const Value.absent(),
+    required int groupId,
+    required String groupName,
+    required String status,
+    this.inviteMethod = const Value.absent(),
+    this.invitedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  }) : eventId = Value(eventId),
+       personId = Value(personId),
+       personName = Value(personName),
+       groupId = Value(groupId),
+       groupName = Value(groupName),
+       status = Value(status);
+  static Insertable<EventGuestsTableData> custom({
+    Expression<int>? id,
+    Expression<int>? eventId,
+    Expression<int>? personId,
+    Expression<String>? personName,
+    Expression<String>? personPhoneNumber,
+    Expression<int>? groupId,
+    Expression<String>? groupName,
+    Expression<String>? status,
+    Expression<String>? inviteMethod,
+    Expression<DateTime>? invitedAt,
+    Expression<bool>? isDeleted,
+    Expression<bool>? isDirty,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (eventId != null) 'event_id': eventId,
+      if (personId != null) 'person_id': personId,
+      if (personName != null) 'person_name': personName,
+      if (personPhoneNumber != null) 'person_phone_number': personPhoneNumber,
+      if (groupId != null) 'group_id': groupId,
+      if (groupName != null) 'group_name': groupName,
+      if (status != null) 'status': status,
+      if (inviteMethod != null) 'invite_method': inviteMethod,
+      if (invitedAt != null) 'invited_at': invitedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isDirty != null) 'is_dirty': isDirty,
+    });
+  }
+
+  EventGuestsTableCompanion copyWith({
+    Value<int>? id,
+    Value<int>? eventId,
+    Value<int>? personId,
+    Value<String>? personName,
+    Value<String?>? personPhoneNumber,
+    Value<int>? groupId,
+    Value<String>? groupName,
+    Value<String>? status,
+    Value<String?>? inviteMethod,
+    Value<DateTime?>? invitedAt,
+    Value<bool>? isDeleted,
+    Value<bool>? isDirty,
+  }) {
+    return EventGuestsTableCompanion(
+      id: id ?? this.id,
+      eventId: eventId ?? this.eventId,
+      personId: personId ?? this.personId,
+      personName: personName ?? this.personName,
+      personPhoneNumber: personPhoneNumber ?? this.personPhoneNumber,
+      groupId: groupId ?? this.groupId,
+      groupName: groupName ?? this.groupName,
+      status: status ?? this.status,
+      inviteMethod: inviteMethod ?? this.inviteMethod,
+      invitedAt: invitedAt ?? this.invitedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isDirty: isDirty ?? this.isDirty,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<int>(eventId.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<int>(personId.value);
+    }
+    if (personName.present) {
+      map['person_name'] = Variable<String>(personName.value);
+    }
+    if (personPhoneNumber.present) {
+      map['person_phone_number'] = Variable<String>(personPhoneNumber.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
+    }
+    if (groupName.present) {
+      map['group_name'] = Variable<String>(groupName.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (inviteMethod.present) {
+      map['invite_method'] = Variable<String>(inviteMethod.value);
+    }
+    if (invitedAt.present) {
+      map['invited_at'] = Variable<DateTime>(invitedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (isDirty.present) {
+      map['is_dirty'] = Variable<bool>(isDirty.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EventGuestsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('eventId: $eventId, ')
+          ..write('personId: $personId, ')
+          ..write('personName: $personName, ')
+          ..write('personPhoneNumber: $personPhoneNumber, ')
+          ..write('groupId: $groupId, ')
+          ..write('groupName: $groupName, ')
+          ..write('status: $status, ')
+          ..write('inviteMethod: $inviteMethod, ')
+          ..write('invitedAt: $invitedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTableTable extends OutboxTable
     with TableInfo<$OutboxTableTable, OutboxTableData> {
   @override
@@ -4785,6 +5496,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NeighborhoodsTableTable neighborhoodsTable =
       $NeighborhoodsTableTable(this);
   late final $EventsTableTable eventsTable = $EventsTableTable(this);
+  late final $EventGuestsTableTable eventGuestsTable = $EventGuestsTableTable(
+    this,
+  );
   late final $OutboxTableTable outboxTable = $OutboxTableTable(this);
   late final $SyncStateTableTable syncStateTable = $SyncStateTableTable(this);
   @override
@@ -4799,6 +5513,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     subGroupsTable,
     neighborhoodsTable,
     eventsTable,
+    eventGuestsTable,
     outboxTable,
     syncStateTable,
   ];
@@ -6836,6 +7551,360 @@ typedef $$EventsTableTableProcessedTableManager =
       EventsTableData,
       PrefetchHooks Function()
     >;
+typedef $$EventGuestsTableTableCreateCompanionBuilder =
+    EventGuestsTableCompanion Function({
+      Value<int> id,
+      required int eventId,
+      required int personId,
+      required String personName,
+      Value<String?> personPhoneNumber,
+      required int groupId,
+      required String groupName,
+      required String status,
+      Value<String?> inviteMethod,
+      Value<DateTime?> invitedAt,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+typedef $$EventGuestsTableTableUpdateCompanionBuilder =
+    EventGuestsTableCompanion Function({
+      Value<int> id,
+      Value<int> eventId,
+      Value<int> personId,
+      Value<String> personName,
+      Value<String?> personPhoneNumber,
+      Value<int> groupId,
+      Value<String> groupName,
+      Value<String> status,
+      Value<String?> inviteMethod,
+      Value<DateTime?> invitedAt,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+
+class $$EventGuestsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $EventGuestsTableTable> {
+  $$EventGuestsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personName => $composableBuilder(
+    column: $table.personName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personPhoneNumber => $composableBuilder(
+    column: $table.personPhoneNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupName => $composableBuilder(
+    column: $table.groupName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inviteMethod => $composableBuilder(
+    column: $table.inviteMethod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get invitedAt => $composableBuilder(
+    column: $table.invitedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EventGuestsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $EventGuestsTableTable> {
+  $$EventGuestsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personName => $composableBuilder(
+    column: $table.personName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personPhoneNumber => $composableBuilder(
+    column: $table.personPhoneNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupName => $composableBuilder(
+    column: $table.groupName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get inviteMethod => $composableBuilder(
+    column: $table.inviteMethod,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get invitedAt => $composableBuilder(
+    column: $table.invitedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EventGuestsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EventGuestsTableTable> {
+  $$EventGuestsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get eventId =>
+      $composableBuilder(column: $table.eventId, builder: (column) => column);
+
+  GeneratedColumn<int> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<String> get personName => $composableBuilder(
+    column: $table.personName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get personPhoneNumber => $composableBuilder(
+    column: $table.personPhoneNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupName =>
+      $composableBuilder(column: $table.groupName, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get inviteMethod => $composableBuilder(
+    column: $table.inviteMethod,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get invitedAt =>
+      $composableBuilder(column: $table.invitedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDirty =>
+      $composableBuilder(column: $table.isDirty, builder: (column) => column);
+}
+
+class $$EventGuestsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EventGuestsTableTable,
+          EventGuestsTableData,
+          $$EventGuestsTableTableFilterComposer,
+          $$EventGuestsTableTableOrderingComposer,
+          $$EventGuestsTableTableAnnotationComposer,
+          $$EventGuestsTableTableCreateCompanionBuilder,
+          $$EventGuestsTableTableUpdateCompanionBuilder,
+          (
+            EventGuestsTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $EventGuestsTableTable,
+              EventGuestsTableData
+            >,
+          ),
+          EventGuestsTableData,
+          PrefetchHooks Function()
+        > {
+  $$EventGuestsTableTableTableManager(
+    _$AppDatabase db,
+    $EventGuestsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EventGuestsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EventGuestsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EventGuestsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> eventId = const Value.absent(),
+                Value<int> personId = const Value.absent(),
+                Value<String> personName = const Value.absent(),
+                Value<String?> personPhoneNumber = const Value.absent(),
+                Value<int> groupId = const Value.absent(),
+                Value<String> groupName = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> inviteMethod = const Value.absent(),
+                Value<DateTime?> invitedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => EventGuestsTableCompanion(
+                id: id,
+                eventId: eventId,
+                personId: personId,
+                personName: personName,
+                personPhoneNumber: personPhoneNumber,
+                groupId: groupId,
+                groupName: groupName,
+                status: status,
+                inviteMethod: inviteMethod,
+                invitedAt: invitedAt,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int eventId,
+                required int personId,
+                required String personName,
+                Value<String?> personPhoneNumber = const Value.absent(),
+                required int groupId,
+                required String groupName,
+                required String status,
+                Value<String?> inviteMethod = const Value.absent(),
+                Value<DateTime?> invitedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => EventGuestsTableCompanion.insert(
+                id: id,
+                eventId: eventId,
+                personId: personId,
+                personName: personName,
+                personPhoneNumber: personPhoneNumber,
+                groupId: groupId,
+                groupName: groupName,
+                status: status,
+                inviteMethod: inviteMethod,
+                invitedAt: invitedAt,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$EventGuestsTableTable, EventGuestsTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $EventGuestsTableTable,
+                    EventGuestsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EventGuestsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EventGuestsTableTable,
+      EventGuestsTableData,
+      $$EventGuestsTableTableFilterComposer,
+      $$EventGuestsTableTableOrderingComposer,
+      $$EventGuestsTableTableAnnotationComposer,
+      $$EventGuestsTableTableCreateCompanionBuilder,
+      $$EventGuestsTableTableUpdateCompanionBuilder,
+      (
+        EventGuestsTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $EventGuestsTableTable,
+          EventGuestsTableData
+        >,
+      ),
+      EventGuestsTableData,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxTableTableCreateCompanionBuilder =
     OutboxTableCompanion Function({
       Value<int> id,
@@ -7322,6 +8391,8 @@ class $AppDatabaseManager {
       $$NeighborhoodsTableTableTableManager(_db, _db.neighborhoodsTable);
   $$EventsTableTableTableManager get eventsTable =>
       $$EventsTableTableTableManager(_db, _db.eventsTable);
+  $$EventGuestsTableTableTableManager get eventGuestsTable =>
+      $$EventGuestsTableTableTableManager(_db, _db.eventGuestsTable);
   $$OutboxTableTableTableManager get outboxTable =>
       $$OutboxTableTableTableManager(_db, _db.outboxTable);
   $$SyncStateTableTableTableManager get syncStateTable =>
