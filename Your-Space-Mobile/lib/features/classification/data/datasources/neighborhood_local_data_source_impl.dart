@@ -220,11 +220,61 @@ class NeighborhoodLocalDataSourceImpl {
             .write(const NeighborhoodsTableCompanion(isDeleted: Value(true)));
       });
 
+  /// Tier 3 real delta application (design doc §6, row 8.24): [upserts] and
+  /// [tombstoneIds] are exactly what the server says changed on this page —
+  /// no absence inference, unlike [applyNeighborhoodsSnapshot]. Same
+  /// dirty-row conflict policy applies to both upserts and tombstones: a row
+  /// with a pending outbox entry is left untouched either way. Mirrors
+  /// `CityLocalDataSourceImpl.applyCityChanges`.
+  Future<void> applyNeighborhoodChanges({
+    required List<Neighborhood> upserts,
+    required List<int> tombstoneIds,
+  }) =>
+      _db.transaction(() async {
+        final dirtyIds =
+            (await (_db.select(_db.neighborhoodsTable)..where((t) => t.isDirty.equals(true))).get())
+                .map((r) => r.id)
+                .toSet();
+
+        final toUpsert = upserts.where((n) => !dirtyIds.contains(n.id)).toList();
+        if (toUpsert.isNotEmpty) {
+          await _db.batch(
+            (batch) =>
+                batch.insertAllOnConflictUpdate(_db.neighborhoodsTable, toUpsert.map(_toCompanion).toList()),
+          );
+        }
+
+        if (tombstoneIds.isNotEmpty) {
+          await (_db.update(_db.neighborhoodsTable)
+                ..where((t) => t.id.isIn(tombstoneIds) & t.isDirty.equals(false)))
+              .write(const NeighborhoodsTableCompanion(isDeleted: Value(true)));
+        }
+      });
+
+  /// The stored Tier 3 watermark for Neighborhoods (design doc §6, row
+  /// 8.24). `0` (the backend's own "since the beginning" default) when
+  /// never synced or when the stored value is somehow unparseable.
+  Future<int> getNeighborhoodsSyncCursor() async {
+    final row = await (_db.select(_db.syncStateTable)..where((t) => t.collection.equals(_syncCollection)))
+        .getSingleOrNull();
+    return int.tryParse(row?.cursor ?? '') ?? 0;
+  }
+
+  /// Persists the new watermark after a successful delta page. Only touches
+  /// the `cursor` column — `lastSyncedAt` is written separately by
+  /// `SyncService` once the whole pull cycle succeeds.
+  Future<void> saveNeighborhoodsSyncCursor(int cursor) => _db.into(_db.syncStateTable).insertOnConflictUpdate(
+        SyncStateTableCompanion.insert(collection: _syncCollection, cursor: Value(cursor.toString())),
+      );
+
+  static const _syncCollection = 'neighborhoods';
+
   Neighborhood _toEntity(NeighborhoodsTableData row) => Neighborhood(
         id: row.id,
         cityId: row.cityId,
         name: row.name,
         nameAr: row.nameAr,
+        updatedAt: row.updatedAt,
       );
 
   NeighborhoodsTableCompanion _toCompanion(Neighborhood neighborhood, {bool isDirty = false}) =>
@@ -233,11 +283,13 @@ class NeighborhoodLocalDataSourceImpl {
         name: neighborhood.name,
         nameAr: Value(neighborhood.nameAr),
         cityId: neighborhood.cityId,
-        // `updatedAt` is populated once delta sync lands for Neighborhood —
-        // nothing to set yet at Tier 1. Never soft-deleted here. `isDirty`
-        // defaults to false (a row that came from a confirmed remote round
-        // trip) — callers queuing a Tier 2 optimistic write pass
-        // `isDirty: true` explicitly.
+        // `updatedAt` comes from the server (design doc §6, row 8.23/8.24);
+        // still nullable because a locally-created draft (Tier 2 optimistic
+        // create, not yet synced) has none. Never soft-deleted here.
+        // `isDirty` defaults to false (a row that came from a confirmed
+        // remote round trip) — callers queuing a Tier 2 optimistic write
+        // pass `isDirty: true` explicitly.
+        updatedAt: Value(neighborhood.updatedAt),
         isDeleted: const Value(false),
         isDirty: Value(isDirty),
       );

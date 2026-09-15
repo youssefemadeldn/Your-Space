@@ -9,6 +9,7 @@ class NeighborhoodResponse {
   final String name;
   final String? nameAr;
   final int personCount;
+  final DateTime? updatedAt;
 
   const NeighborhoodResponse({
     required this.id,
@@ -16,6 +17,7 @@ class NeighborhoodResponse {
     required this.name,
     this.nameAr,
     this.personCount = 0,
+    this.updatedAt,
   });
 
   factory NeighborhoodResponse.fromJson(Map<String, dynamic> json) => NeighborhoodResponse(
@@ -24,8 +26,15 @@ class NeighborhoodResponse {
         name: json['name'] as String,
         nameAr: json['nameAr'] as String?,
         personCount: json['personCount'] as int? ?? 0,
+        updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
 
-  Neighborhood toEntity() =>
-      Neighborhood(id: id, cityId: cityId, name: name, nameAr: nameAr, personCount: personCount);
+  Neighborhood toEntity() => Neighborhood(
+        id: id,
+        cityId: cityId,
+        name: name,
+        nameAr: nameAr,
+        personCount: personCount,
+        updatedAt: updatedAt,
+      );
 }

@@ -11,6 +11,7 @@ import 'package:your_space_mobile/core/sync/sync_service.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/base_neighborhood_data_source.dart';
 import 'package:your_space_mobile/features/classification/data/datasources/neighborhood_local_data_source_impl.dart';
 import 'package:your_space_mobile/features/classification/data/models/create_neighborhood_request.dart';
+import 'package:your_space_mobile/features/classification/data/models/neighborhood_changes_response.dart';
 import 'package:your_space_mobile/features/classification/data/models/neighborhood_response.dart';
 import 'package:your_space_mobile/features/classification/data/models/update_neighborhood_request.dart';
 import 'package:your_space_mobile/features/classification/data/repositories/neighborhood_repository_impl.dart';
@@ -46,6 +47,10 @@ void main() {
       ),
     ).thenAnswer((_) async => 99);
     when(() => local.queueDeletedNeighborhood(any(), payloadJson: any(named: 'payloadJson'))).thenAnswer((_) async {});
+    when(
+      () => local.applyNeighborhoodChanges(upserts: any(named: 'upserts'), tombstoneIds: any(named: 'tombstoneIds')),
+    ).thenAnswer((_) async {});
+    when(() => local.saveNeighborhoodsSyncCursor(any())).thenAnswer((_) async {});
   });
 
   test('getNeighborhoods maps a paginated response to a PaginatedResult of entities', () async {
@@ -193,44 +198,114 @@ void main() {
   });
 
   group('refreshNeighborhoods', () {
-    test('loops every remote page and applies the concatenated, mapped entities as a snapshot', () async {
-      when(() => local.applyNeighborhoodsSnapshot(any())).thenAnswer((_) async {});
-      when(() => remote.getAllMineNeighborhoods(search: any(named: 'search'), pageIndex: 1, pageSize: 200))
-          .thenAnswer(
-        (_) async => const Right(PaginatedResponse(
-          items: [NeighborhoodResponse(id: 1, cityId: 7, name: 'Zamalek')],
-          pageIndex: 1,
-          totalPages: 2,
-          totalItems: 2,
-        )),
-      );
-      when(() => remote.getAllMineNeighborhoods(search: any(named: 'search'), pageIndex: 2, pageSize: 200))
-          .thenAnswer(
-        (_) async => const Right(PaginatedResponse(
-          items: [NeighborhoodResponse(id: 2, cityId: 7, name: 'Sarayat')],
-          pageIndex: 2,
-          totalPages: 2,
-          totalItems: 2,
-        )),
+    test('single page, no more data: applies the page and persists its cursor', () async {
+      when(() => local.getNeighborhoodsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getNeighborhoodChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          NeighborhoodChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [5], cursor: 137, hasMore: false),
+        ),
       );
 
       final result = await repository.refreshNeighborhoods();
 
       expect(result, const Right(unit));
-      final captured =
-          verify(() => local.applyNeighborhoodsSnapshot(captureAny())).captured.single as List<Neighborhood>;
-      expect(captured.map((n) => n.id), [1, 2]);
+      final captured = verify(
+        () => local.applyNeighborhoodChanges(
+          upserts: captureAny(named: 'upserts'),
+          tombstoneIds: captureAny(named: 'tombstoneIds'),
+        ),
+      ).captured;
+      expect((captured[0] as List<Neighborhood>).map((n) => n.id), [1]);
+      expect(captured[1], [5]);
+      verify(() => local.saveNeighborhoodsSyncCursor(137)).called(1);
     });
 
-    test('stops and returns Left immediately on a failing page, without saving anything', () async {
-      const failure = NetworkFailure();
-      when(() => remote.getAllMineNeighborhoods(search: any(named: 'search'), pageIndex: 1, pageSize: 200))
-          .thenAnswer((_) async => const Left(failure));
+    test('multi-page loop threads the returned cursor forward as the next since', () async {
+      when(() => local.getNeighborhoodsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getNeighborhoodChanges(since: 0, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          NeighborhoodChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [], cursor: 50, hasMore: true),
+        ),
+      );
+      when(() => remote.getNeighborhoodChanges(since: 50, pageSize: 200)).thenAnswer(
+        (_) async => Right(
+          NeighborhoodChangesResponse(upserts: [_toResponse(2)], tombstoneIds: const [], cursor: 90, hasMore: false),
+        ),
+      );
 
       final result = await repository.refreshNeighborhoods();
 
-      expect(result, const Left(failure));
-      verifyNever(() => local.applyNeighborhoodsSnapshot(any()));
+      expect(result, const Right(unit));
+      verify(() => remote.getNeighborhoodChanges(since: 0, pageSize: 200)).called(1);
+      verify(() => remote.getNeighborhoodChanges(since: 50, pageSize: 200)).called(1);
+      verify(
+        () => local.applyNeighborhoodChanges(
+          upserts: any(named: 'upserts'),
+          tombstoneIds: any(named: 'tombstoneIds'),
+        ),
+      ).called(2);
+      verify(() => local.saveNeighborhoodsSyncCursor(50)).called(1);
+      verify(() => local.saveNeighborhoodsSyncCursor(90)).called(1);
+    });
+
+    test('resumes from a previously stored cursor', () async {
+      when(() => local.getNeighborhoodsSyncCursor()).thenAnswer((_) async => 300);
+      when(() => remote.getNeighborhoodChanges(since: 300, pageSize: 200)).thenAnswer(
+        (_) async =>
+            const Right(NeighborhoodChangesResponse(upserts: [], tombstoneIds: [], cursor: 300, hasMore: false)),
+      );
+
+      final result = await repository.refreshNeighborhoods();
+
+      expect(result, const Right(unit));
+      verify(() => remote.getNeighborhoodChanges(since: 300, pageSize: 200)).called(1);
+    });
+
+    test(
+      'stops and returns Left immediately on a failing page, preserving prior pages\' persisted cursor',
+      () async {
+        when(() => local.getNeighborhoodsSyncCursor()).thenAnswer((_) async => 0);
+        when(() => remote.getNeighborhoodChanges(since: 0, pageSize: 200)).thenAnswer(
+          (_) async => Right(
+            NeighborhoodChangesResponse(upserts: [_toResponse(1)], tombstoneIds: const [], cursor: 50, hasMore: true),
+          ),
+        );
+        const failure = NetworkFailure();
+        when(() => remote.getNeighborhoodChanges(since: 50, pageSize: 200))
+            .thenAnswer((_) async => const Left(failure));
+
+        final result = await repository.refreshNeighborhoods();
+
+        expect(result, const Left(failure));
+        verify(() => local.saveNeighborhoodsSyncCursor(50)).called(1);
+        verify(
+          () => local.applyNeighborhoodChanges(
+            upserts: any(named: 'upserts'),
+            tombstoneIds: any(named: 'tombstoneIds'),
+          ),
+        ).called(1);
+        verify(() => remote.getNeighborhoodChanges(since: 0, pageSize: 200)).called(1);
+        verify(() => remote.getNeighborhoodChanges(since: 50, pageSize: 200)).called(1);
+        verifyNever(() => remote.getNeighborhoodChanges(since: 90, pageSize: 200));
+      },
+    );
+
+    test('stops after the defensive page cap when the server always says hasMore', () async {
+      when(() => local.getNeighborhoodsSyncCursor()).thenAnswer((_) async => 0);
+      when(() => remote.getNeighborhoodChanges(since: any(named: 'since'), pageSize: 200))
+          .thenAnswer((invocation) async {
+        final since = invocation.namedArguments[#since] as int;
+        return Right(
+          NeighborhoodChangesResponse(upserts: const [], tombstoneIds: const [], cursor: since + 1, hasMore: true),
+        );
+      });
+
+      final result = await repository.refreshNeighborhoods();
+
+      expect(result, const Right(unit));
+      verify(() => local.saveNeighborhoodsSyncCursor(any())).called(50);
     });
   });
 }
+
+NeighborhoodResponse _toResponse(int id) => NeighborhoodResponse(id: id, cityId: 7, name: 'Neighborhood $id');
