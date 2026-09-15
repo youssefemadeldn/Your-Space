@@ -190,6 +190,36 @@ class NeighborhoodLocalDataSourceImpl {
         await (_db.delete(_db.outboxTable)..where((t) => t.id.equals(replayedOutboxRowId))).go();
       });
 
+  /// Tier 3 "full refetch as delta" (design doc §6, row 8.22). [serverNeighborhoods]
+  /// is the complete, just-fetched owned collection. Diffs it against local
+  /// drift by id in one transaction:
+  ///  - a row with `isDirty == true` is left untouched — it has a pending
+  ///    outbox entry, so the local edit is presumed newer
+  ///  - every other server row is upserted (clean: not dirty, not deleted)
+  ///  - every local row with id > 0, isDirty == false, whose id is absent
+  ///    from [serverNeighborhoods] is soft-tombstoned (`isDeleted = true`) —
+  ///    a temp (negative) id is never a tombstone candidate; it was never on
+  ///    the server to begin with
+  /// Mirrors `CityLocalDataSourceImpl.applyCitiesSnapshot` exactly.
+  Future<void> applyNeighborhoodsSnapshot(List<Neighborhood> serverNeighborhoods) => _db.transaction(() async {
+        final dirtyIds = (await (_db.select(_db.neighborhoodsTable)..where((t) => t.isDirty.equals(true)))
+                .get())
+            .map((r) => r.id)
+            .toSet();
+        final toUpsert = serverNeighborhoods.where((n) => !dirtyIds.contains(n.id)).toList();
+        await _db.batch(
+          (batch) =>
+              batch.insertAllOnConflictUpdate(_db.neighborhoodsTable, toUpsert.map(_toCompanion).toList()),
+        );
+
+        final serverIds = serverNeighborhoods.map((n) => n.id).toSet();
+        await (_db.update(_db.neighborhoodsTable)
+              ..where(
+                (t) => t.id.isBiggerThanValue(0) & t.isDirty.equals(false) & t.id.isNotIn(serverIds),
+              ))
+            .write(const NeighborhoodsTableCompanion(isDeleted: Value(true)));
+      });
+
   Neighborhood _toEntity(NeighborhoodsTableData row) => Neighborhood(
         id: row.id,
         cityId: row.cityId,
