@@ -33,6 +33,17 @@ public class EventWithSpecs : BaseSpecification<Event>
         ApplyPaging(paging.PageSize * (paging.PageIndex - 1), paging.PageSize);
     }
 
+    // Delta-sync "changes since" query (doc/local-first-sync-design.md §6) — deliberately no
+    // DeletedAt filter: tombstones (soft-deleted rows) must be included so the caller can tell
+    // the client to remove them. Ordered by SyncVersion, not CreatedAt/UpdatedAt, so the cursor
+    // stays unambiguous even for two rows written in the same millisecond.
+    public EventWithSpecs(string ownerUserId, long since, int pageSize)
+        : base(e => e.OwnerUserId == ownerUserId && e.SyncVersion > since)
+    {
+        ApplyOrderBy(e => e.SyncVersion);
+        ApplyPaging(0, pageSize);
+    }
+
     private static Expression<Func<Event, bool>> BuildPredicate(string ownerUserId, string? search)
         => e => e.OwnerUserId == ownerUserId
             && e.DeletedAt == null

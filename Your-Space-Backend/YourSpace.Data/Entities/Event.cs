@@ -24,5 +24,10 @@ public class Event
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // Monotonic delta-sync cursor (doc/local-first-sync-design.md §6) — bumped explicitly by
+    // ISyncVersionProvider/EventService on every create/update/soft-delete, never left to its
+    // column default after the first write.
+    public long SyncVersion { get; set; }
+
     public AppUser Owner { get; set; } = null!;
 }

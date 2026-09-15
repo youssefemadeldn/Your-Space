@@ -5,6 +5,7 @@ using YourSpace.Data.Entities;
 using YourSpace.Data.Enums;
 using YourSpace.Repository.Interfaces;
 using YourSpace.Repository.Specifications;
+using YourSpace.Repository.Sync;
 using YourSpace.WebAPI.Tests.Common.MockFactories;
 using EventServiceImpl = YourSpace.Services.Services.EventService.EventService;
 
@@ -26,6 +27,7 @@ public class EventService_GetDetailsAsyncTests
         _unitOfWork.Object,
         MapperFactory.Create(),
         LocalizerMockFactory.Create().Object,
+        Mock.Of<ISyncVersionProvider>(),
         Mock.Of<ILogger<EventServiceImpl>>());
 
     [Fact]

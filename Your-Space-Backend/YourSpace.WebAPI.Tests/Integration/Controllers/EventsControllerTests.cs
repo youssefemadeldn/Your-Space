@@ -57,6 +57,61 @@ public class EventsControllerTests(TestWebApplicationFactory factory) : IClassFi
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task Changes_reflects_create_update_and_soft_delete_via_an_increasing_syncversion_cursor()
+    {
+        var client = await factory.CreateAuthenticatedClientAsync("events.changes@example.com");
+
+        var created = await DeserializeAsync<EventDetailsDto>(
+            await client.PostAsJsonAsync("/api/v1/Events", new CreateEventDto { Name = "Village Gathering" }));
+        var eventId = created.Data!.Id;
+        var createdVersion = created.Data.SyncVersion;
+
+        var beforeCreate = await DeserializeAsync<EventChangesDto>(
+            await client.GetAsync($"/api/v1/Events/changes?since={createdVersion - 1}"));
+        beforeCreate.Data!.Upserts.Should().Contain(e => e.Id == eventId);
+        beforeCreate.Data.TombstoneIds.Should().NotContain(eventId);
+
+        var atCreatedVersion = await DeserializeAsync<EventChangesDto>(
+            await client.GetAsync($"/api/v1/Events/changes?since={createdVersion}"));
+        atCreatedVersion.Data!.Upserts.Should().NotContain(e => e.Id == eventId, "already seen up to this cursor");
+
+        var updated = await DeserializeAsync<EventDetailsDto>(
+            await client.PutAsJsonAsync("/api/v1/Events", new UpdateEventDto { Id = eventId, Name = "Village Gathering (Updated)" }));
+        updated.Data!.SyncVersion.Should().BeGreaterThan(createdVersion, "an update must bump the cursor, not just create");
+
+        var afterUpdate = await DeserializeAsync<EventChangesDto>(
+            await client.GetAsync($"/api/v1/Events/changes?since={createdVersion}"));
+        afterUpdate.Data!.Upserts.Should().Contain(e => e.Id == eventId && e.Name == "Village Gathering (Updated)");
+
+        await client.DeleteAsync($"/api/v1/Events/{eventId}");
+
+        var afterDelete = await DeserializeAsync<EventChangesDto>(
+            await client.GetAsync($"/api/v1/Events/changes?since={updated.Data.SyncVersion}"));
+        afterDelete.Data!.TombstoneIds.Should().Contain(eventId);
+        afterDelete.Data.Upserts.Should().NotContain(e => e.Id == eventId);
+    }
+
+    [Fact]
+    public async Task Changes_rejects_a_negative_since_cursor()
+    {
+        var client = await factory.CreateAuthenticatedClientAsync("events.changes-invalid@example.com");
+
+        var response = await client.GetAsync("/api/v1/Events/changes?since=-1");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Changes_rejects_unauthenticated_requests()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/Events/changes");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private static async Task<ServiceResult<T>> DeserializeAsync<T>(HttpResponseMessage response)
     {
         var result = await response.Content.ReadFromJsonAsync<ServiceResult<T>>(JsonOptions);

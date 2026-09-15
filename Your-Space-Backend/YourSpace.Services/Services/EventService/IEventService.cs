@@ -11,4 +11,7 @@ public interface IEventService
     Task<ServiceResult<EventDetailsDto>> CreateAsync(string ownerUserId, CreateEventDto dto);
     Task<ServiceResult<EventDetailsDto>> UpdateAsync(string ownerUserId, UpdateEventDto dto);
     Task<ServiceResult> DeleteAsync(string ownerUserId, int id);
+
+    // Delta-sync pull (doc/local-first-sync-design.md §6, row 9.5).
+    Task<ServiceResult<EventChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize);
 }
