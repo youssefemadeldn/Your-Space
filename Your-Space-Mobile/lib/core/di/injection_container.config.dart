@@ -189,8 +189,12 @@ import 'package:your_space_mobile/features/home/presentation/cubit/home_stats_cu
     as _i136;
 import 'package:your_space_mobile/features/people/data/datasources/base_person_data_source.dart'
     as _i498;
+import 'package:your_space_mobile/features/people/data/datasources/base_person_image_data_source.dart'
+    as _i1004;
 import 'package:your_space_mobile/features/people/data/datasources/base_person_relationship_data_source.dart'
     as _i1008;
+import 'package:your_space_mobile/features/people/data/datasources/person_image_local_data_source_impl.dart'
+    as _i836;
 import 'package:your_space_mobile/features/people/data/datasources/person_image_remote_data_source_impl.dart'
     as _i931;
 import 'package:your_space_mobile/features/people/data/datasources/person_local_data_source_impl.dart'
@@ -209,6 +213,10 @@ import 'package:your_space_mobile/features/people/data/repositories/person_repos
     as _i504;
 import 'package:your_space_mobile/features/people/data/sync/person_collection_puller.dart'
     as _i946;
+import 'package:your_space_mobile/features/people/data/sync/person_image_collection_puller.dart'
+    as _i415;
+import 'package:your_space_mobile/features/people/data/sync/person_image_outbox_replayer.dart'
+    as _i815;
 import 'package:your_space_mobile/features/people/data/sync/person_outbox_replayer.dart'
     as _i622;
 import 'package:your_space_mobile/features/people/data/sync/person_relationship_collection_puller.dart'
@@ -302,6 +310,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i640.GroupLocalDataSourceImpl(gh<_i935.AppDatabase>()),
       instanceName: 'local',
     );
+    gh.lazySingleton<_i836.PersonImageLocalDataSourceImpl>(
+      () => _i836.PersonImageLocalDataSourceImpl(gh<_i935.AppDatabase>()),
+      instanceName: 'local',
+    );
     gh.lazySingleton<_i439.PersonLocalDataSourceImpl>(
       () => _i439.PersonLocalDataSourceImpl(gh<_i935.AppDatabase>()),
       instanceName: 'local',
@@ -335,9 +347,27 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i361.Dio>(() => registerModule.dio(gh<_i927.DioFactory>()));
     gh.lazySingleton<_i531.ApiManager>(() => _i531.ApiManager(gh<_i361.Dio>()));
+    gh.lazySingleton<_i1004.BasePersonImageDataSource>(
+      () => _i931.PersonImageRemoteDataSourceImpl(gh<_i531.ApiManager>()),
+      instanceName: 'remote',
+    );
     gh.lazySingleton<_i148.BaseSubGroupDataSource>(
       () => _i566.SubGroupRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
+    );
+    gh.lazySingleton<_i1005.PersonImageRepository>(
+      () => _i744.PersonImageRepositoryImpl(
+        gh<_i1004.BasePersonImageDataSource>(instanceName: 'remote'),
+        gh<_i836.PersonImageLocalDataSourceImpl>(instanceName: 'local'),
+        gh<_i477.SyncService>(),
+      ),
+    );
+    gh.lazySingleton<_i222.OutboxReplayer>(
+      () => _i815.PersonImageOutboxReplayer(
+        gh<_i1004.BasePersonImageDataSource>(instanceName: 'remote'),
+        gh<_i836.PersonImageLocalDataSourceImpl>(instanceName: 'local'),
+      ),
+      instanceName: 'personImage',
     );
     gh.lazySingleton<_i222.OutboxReplayer>(
       () => _i1023.SubGroupOutboxReplayer(
@@ -365,11 +395,13 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i500.CityRemoteDataSourceImpl(gh<_i531.ApiManager>()),
       instanceName: 'remote',
     );
+    gh.lazySingleton<_i635.CollectionPuller>(
+      () =>
+          _i415.PersonImageCollectionPuller(gh<_i1005.PersonImageRepository>()),
+      instanceName: 'personImage',
+    );
     gh.lazySingleton<_i1073.AuthRemoteDataSourceImpl>(
       () => _i1073.AuthRemoteDataSourceImpl(gh<_i531.ApiManager>()),
-    );
-    gh.lazySingleton<_i931.PersonImageRemoteDataSourceImpl>(
-      () => _i931.PersonImageRemoteDataSourceImpl(gh<_i531.ApiManager>()),
     );
     gh.lazySingleton<_i423.BaseNeighborhoodDataSource>(
       () => _i46.NeighborhoodRemoteDataSourceImpl(gh<_i531.ApiManager>()),
@@ -473,11 +505,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i722.AuthRepositoryImpl(
         gh<_i1073.AuthRemoteDataSourceImpl>(),
         gh<_i134.SecureStorageHelper>(),
-      ),
-    );
-    gh.lazySingleton<_i1005.PersonImageRepository>(
-      () => _i744.PersonImageRepositoryImpl(
-        gh<_i931.PersonImageRemoteDataSourceImpl>(),
       ),
     );
     gh.lazySingleton<_i635.CollectionPuller>(

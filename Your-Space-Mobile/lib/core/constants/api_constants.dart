@@ -59,4 +59,7 @@ class ApiConstants {
   // Flat "all mine" endpoint (row 9.11) — separate from personRelationshipsSegment, which is
   // always used nested under a person ('$persons/$personId/$personRelationshipsSegment').
   static const String personRelationships = '/person-relationships';
+  // Flat "all mine" endpoint (row 9.15) — separate from personImagesSegment, which is always
+  // used nested under a person ('$persons/$personId/$personImagesSegment').
+  static const String personImages = '/person-images';
 }

@@ -226,6 +226,11 @@ class PersonLocalDataSourceImpl {
   ///     payload's `personId`/`relatedPersonId` keys — that payload is the
   ///     one queued by `PersonRelationshipRepositoryImpl.createRelationship`,
   ///     shared by both halves of the pair (row 9.13).
+  ///  7. row 9.18 — Person's third and final dependent-rewrite step:
+  ///     rewrites any still-queued `entityType='personImage'` outbox
+  ///     payload's `personId` key. No `PersonImagesTable` row rewrite (unlike
+  ///     every other dependent) — a queued 'create' (upload) never inserts
+  ///     an optimistic local row in the first place.
   Future<void> reconcileCreatedPerson({
     required int tempId,
     required Person realPerson,
@@ -284,6 +289,23 @@ class PersonLocalDataSourceImpl {
             changed = true;
           }
           if (!changed) continue;
+          await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
+              .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
+        }
+
+        // row 9.18 — Person's third dependent-rewrite step. No
+        // PersonImagesTable row rewrite here (unlike every other dependent):
+        // a queued 'create' (upload) never inserts an optimistic local row
+        // in the first place (see `PersonImageLocalDataSourceImpl`'s own doc
+        // comment) — only the outbox payload's `personId` key can reference
+        // the temp id.
+        final pendingImageRows = await (_db.select(_db.outboxTable)
+              ..where((t) => t.entityType.equals('personImage') & t.operation.equals('create')))
+            .get();
+        for (final row in pendingImageRows) {
+          final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
+          if (payload['personId'] != tempId) continue;
+          payload['personId'] = realPerson.id;
           await (_db.update(_db.outboxTable)..where((t) => t.id.equals(row.id)))
               .write(OutboxTableCompanion(payloadJson: Value(jsonEncode(payload))));
         }
