@@ -176,4 +176,80 @@ void main() {
       expect(row.name, 'Back Again');
     });
   });
+
+  group('applyEventChanges', () {
+    test('upserts a clean row given in upserts', () async {
+      await dataSource.applyEventChanges(
+        upserts: const [Event(id: 1, name: 'From Server')],
+        tombstoneIds: const [],
+      );
+
+      final row = await (database.select(database.eventsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'From Server');
+    });
+
+    test('a dirty row is not overwritten by an upsert for the same id', () async {
+      await dataSource.queueEventMutation(
+        event: const Event(id: 1, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyEventChanges(
+        upserts: const [Event(id: 1, name: 'From Server')],
+        tombstoneIds: const [],
+      );
+
+      final row = await (database.select(database.eventsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.name, 'Local Edit');
+      expect(row.isDirty, isTrue);
+    });
+
+    test('tombstones exactly the ids given in tombstoneIds — no absence inference', () async {
+      await dataSource.saveEvents(const [
+        Event(id: 1, name: 'Untouched'),
+        Event(id: 2, name: 'Removed'),
+      ]);
+
+      await dataSource.applyEventChanges(upserts: const [], tombstoneIds: const [2]);
+
+      final untouched = await (database.select(database.eventsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(untouched.isDeleted, isFalse);
+      final removed = await (database.select(database.eventsTable)..where((t) => t.id.equals(2))).getSingle();
+      expect(removed.isDeleted, isTrue);
+    });
+
+    test('a dirty row is not tombstoned even if its id is given in tombstoneIds', () async {
+      await dataSource.queueEventMutation(
+        event: const Event(id: 1, name: 'Local Edit'),
+        operation: 'update',
+        payloadJson: '{}',
+      );
+
+      await dataSource.applyEventChanges(upserts: const [], tombstoneIds: const [1]);
+
+      final row = await (database.select(database.eventsTable)..where((t) => t.id.equals(1))).getSingle();
+      expect(row.isDeleted, isFalse);
+      expect(row.isDirty, isTrue);
+    });
+  });
+
+  group('getEventsSyncCursor / saveEventsSyncCursor', () {
+    test('reads 0 when never synced', () async {
+      expect(await dataSource.getEventsSyncCursor(), 0);
+    });
+
+    test('round-trips a saved cursor', () async {
+      await dataSource.saveEventsSyncCursor(137);
+
+      expect(await dataSource.getEventsSyncCursor(), 137);
+    });
+
+    test('a later save overwrites the earlier value', () async {
+      await dataSource.saveEventsSyncCursor(50);
+      await dataSource.saveEventsSyncCursor(90);
+
+      expect(await dataSource.getEventsSyncCursor(), 90);
+    });
+  });
 }

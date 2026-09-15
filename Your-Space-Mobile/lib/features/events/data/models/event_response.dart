@@ -12,6 +12,11 @@ class EventResponse {
   final String? notes;
   final int totalGuestCount;
 
+  // Tier 3 delta-sync fields (row 9.5/9.6) — absent from neither DTO shape
+  // once the backend switch lands; nullable here only to tolerate an
+  // unexpectedly missing value rather than throw.
+  final DateTime? updatedAt;
+
   const EventResponse({
     required this.id,
     required this.name,
@@ -19,6 +24,7 @@ class EventResponse {
     this.eventDate,
     this.notes,
     required this.totalGuestCount,
+    this.updatedAt,
   });
 
   factory EventResponse.fromJson(Map<String, dynamic> json) => EventResponse(
@@ -28,6 +34,7 @@ class EventResponse {
         eventDate: json['eventDate'] == null ? null : DateTime.parse(json['eventDate'] as String),
         notes: json['notes'] as String?,
         totalGuestCount: json['totalGuestCount'] as int,
+        updatedAt: json['updatedAt'] == null ? null : DateTime.parse(json['updatedAt'] as String),
       );
 
   Event toEntity() => Event(
@@ -37,5 +44,6 @@ class EventResponse {
         eventDate: eventDate,
         notes: notes,
         totalGuestCount: totalGuestCount,
+        updatedAt: updatedAt,
       );
 }

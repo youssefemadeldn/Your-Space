@@ -139,6 +139,52 @@ class EventLocalDataSourceImpl {
             .write(const EventsTableCompanion(isDeleted: Value(true)));
       });
 
+  /// Tier 3 real delta application (design doc §6, row 9.6): [upserts] and
+  /// [tombstoneIds] are exactly what the server says changed on this page —
+  /// no absence inference, unlike [applyEventsSnapshot]. A row with a
+  /// pending outbox entry is left untouched either way. Mirrors
+  /// `CityLocalDataSourceImpl.applyCityChanges`.
+  Future<void> applyEventChanges({
+    required List<Event> upserts,
+    required List<int> tombstoneIds,
+  }) =>
+      _db.transaction(() async {
+        final dirtyIds = (await (_db.select(_db.eventsTable)..where((t) => t.isDirty.equals(true))).get())
+            .map((r) => r.id)
+            .toSet();
+
+        final toUpsert = upserts.where((e) => !dirtyIds.contains(e.id)).toList();
+        if (toUpsert.isNotEmpty) {
+          await _db.batch(
+            (batch) => batch.insertAllOnConflictUpdate(_db.eventsTable, toUpsert.map(_toCompanion).toList()),
+          );
+        }
+
+        if (tombstoneIds.isNotEmpty) {
+          await (_db.update(_db.eventsTable)
+                ..where((t) => t.id.isIn(tombstoneIds) & t.isDirty.equals(false)))
+              .write(const EventsTableCompanion(isDeleted: Value(true)));
+        }
+      });
+
+  /// The stored Tier 3 watermark for Events (design doc §6, row 9.6). `0`
+  /// (the backend's own "since the beginning" default) when never synced or
+  /// when the stored value is somehow unparseable.
+  Future<int> getEventsSyncCursor() async {
+    final row = await (_db.select(_db.syncStateTable)..where((t) => t.collection.equals(_syncCollection)))
+        .getSingleOrNull();
+    return int.tryParse(row?.cursor ?? '') ?? 0;
+  }
+
+  /// Persists the new watermark after a successful delta page. Only touches
+  /// the `cursor` column — `lastSyncedAt` is written separately by
+  /// `SyncService` once the whole pull cycle succeeds.
+  Future<void> saveEventsSyncCursor(int cursor) => _db.into(_db.syncStateTable).insertOnConflictUpdate(
+        SyncStateTableCompanion.insert(collection: _syncCollection, cursor: Value(cursor.toString())),
+      );
+
+  static const _syncCollection = 'events';
+
   Event _toEntity(EventsTableData row) => Event(
         id: row.id,
         name: row.name,
@@ -146,6 +192,7 @@ class EventLocalDataSourceImpl {
         eventDate: row.eventDate,
         notes: row.notes,
         totalGuestCount: row.totalGuestCount,
+        updatedAt: row.updatedAt,
       );
 
   EventsTableCompanion _toCompanion(Event event, {bool isDirty = false}) => EventsTableCompanion.insert(
@@ -155,6 +202,10 @@ class EventLocalDataSourceImpl {
         eventDate: Value(event.eventDate),
         notes: Value(event.notes),
         totalGuestCount: Value(event.totalGuestCount),
+        // `updatedAt` comes from the server (row 9.5/9.6); still nullable
+        // because a locally-created draft (Tier 2 optimistic create, not yet
+        // synced) has none.
+        updatedAt: Value(event.updatedAt),
         isDeleted: const Value(false),
         isDirty: Value(isDirty),
       );

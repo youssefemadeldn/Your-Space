@@ -48,19 +48,23 @@ class EventRepositoryImpl implements EventRepository {
   @override
   Future<Either<Failure, Unit>> refreshEvents() async {
     const pageSize = 200;
-    // Defensive cap against a pathological `hasNextPage` loop.
+    // Defensive cap against a pathological `hasMore` loop.
     const maxPages = 50;
-    final all = <Event>[];
-    for (var pageIndex = 1; pageIndex <= maxPages; pageIndex++) {
-      final result = await _remote.getEvents(pageIndex: pageIndex, pageSize: pageSize);
+    var cursor = await _local.getEventsSyncCursor();
+    for (var page = 0; page < maxPages; page++) {
+      final result = await _remote.getEventChanges(since: cursor, pageSize: pageSize);
       if (result.isLeft()) {
         return result.fold(Left.new, (_) => throw StateError('unreachable'));
       }
-      final page = result.getOrElse(() => throw StateError('unreachable'));
-      all.addAll(page.items.map((r) => r.toEntity()));
-      if (page.pageIndex >= page.totalPages) break;
+      final changes = result.getOrElse(() => throw StateError('unreachable'));
+      await _local.applyEventChanges(
+        upserts: changes.upserts.map((r) => r.toEntity()).toList(),
+        tombstoneIds: changes.tombstoneIds,
+      );
+      await _local.saveEventsSyncCursor(changes.cursor);
+      cursor = changes.cursor;
+      if (!changes.hasMore) break;
     }
-    await _local.applyEventsSnapshot(all);
     return const Right(unit);
   }
 
