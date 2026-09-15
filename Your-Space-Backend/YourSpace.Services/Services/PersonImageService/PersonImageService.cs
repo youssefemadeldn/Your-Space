@@ -218,6 +218,7 @@ public class PersonImageService(
     {
         Id = image.Id,
         Url = url,
+        ObjectKey = image.ObjectKey,
         IsPrimary = image.IsPrimary,
         CreatedAt = image.CreatedAt
     };
