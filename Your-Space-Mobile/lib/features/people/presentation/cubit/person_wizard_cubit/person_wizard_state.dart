@@ -67,7 +67,6 @@ final class PersonWizardReady extends PersonWizardState {
   // Diff baselines (Edit mode only — empty in Add mode)
   final Set<int> originalPhotoIds;
   final Set<int> originalRelationshipIds;
-  final bool didInlineAddClassification;
 
   bool get isEditing => personId != null;
 
@@ -96,7 +95,6 @@ final class PersonWizardReady extends PersonWizardState {
     this.submitError,
     this.originalPhotoIds = const {},
     this.originalRelationshipIds = const {},
-    this.didInlineAddClassification = false,
   });
 
   PersonWizardReady copyWith({
@@ -125,7 +123,6 @@ final class PersonWizardReady extends PersonWizardState {
     bool? isSubmitting,
     String? submitError,
     bool clearSubmitError = false,
-    bool? didInlineAddClassification,
   }) =>
       PersonWizardReady(
         personId: personId,
@@ -153,7 +150,6 @@ final class PersonWizardReady extends PersonWizardState {
         submitError: clearSubmitError ? null : (submitError ?? this.submitError),
         originalPhotoIds: originalPhotoIds,
         originalRelationshipIds: originalRelationshipIds,
-        didInlineAddClassification: didInlineAddClassification ?? this.didInlineAddClassification,
       );
 
   @override

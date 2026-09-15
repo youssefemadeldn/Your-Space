@@ -6,7 +6,6 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:your_space_mobile/core/entities/city.dart';
 import 'package:your_space_mobile/core/entities/paginated_result.dart';
-import 'package:your_space_mobile/core/events/data_refresh_bus.dart';
 import 'package:your_space_mobile/core/network/failure.dart';
 import 'package:your_space_mobile/features/classification/domain/repositories/base_city_repository.dart';
 import 'package:your_space_mobile/features/classification/presentation/cubit/city_list_cubit/city_list_cubit.dart';
@@ -16,7 +15,6 @@ class MockCityRepository extends Mock implements CityRepository {}
 
 void main() {
   late MockCityRepository repository;
-  late DataRefreshBus dataRefreshBus;
   late CityListCubit cubit;
 
   const city1 = City(id: 1, governorateId: 7, name: 'Maadi');
@@ -48,14 +46,12 @@ void main() {
 
   setUp(() {
     repository = MockCityRepository();
-    dataRefreshBus = DataRefreshBus();
-    cubit = CityListCubit(repository, dataRefreshBus);
+    cubit = CityListCubit(repository);
     stubCounts();
   });
 
   tearDown(() {
     cubit.close();
-    dataRefreshBus.dispose();
   });
 
   test('emits [Loading, Success] with the first window on load', () async {
@@ -190,17 +186,6 @@ void main() {
     await sub.cancel();
 
     expect(states, isNot(contains(isA<CityListLoading>())));
-    expect(cubit.state, isA<CityListSuccess>().having((s) => s.cities, 'cities', [city1, city2]));
-  });
-
-  test('a classification DataRefreshBus notification triggers a refresh', () async {
-    stubCities(limit: 20, cities: const [city1], total: 1);
-    await cubit.load(7);
-
-    stubCities(limit: 20, cities: const [city1, city2], total: 2);
-    dataRefreshBus.notify(DataScope.classification);
-    await pumpEventQueue();
-
     expect(cubit.state, isA<CityListSuccess>().having((s) => s.cities, 'cities', [city1, city2]));
   });
 }

@@ -48,6 +48,9 @@ class ApiConstants {
   // nested under a governorate ('$governorates/$governorateId/$citiesSegment').
   static const String cities = '/cities';
   static const String neighborhoodsSegment = 'neighborhoods';
+  // Flat "all mine" endpoint (row 8.20) — separate from neighborhoodsSegment, which is always
+  // used nested under a city ('$citiesSegment/$cityId/$neighborhoodsSegment').
+  static const String neighborhoods = '/neighborhoods';
   static const String personImagesSegment = 'images';
   static const String personRelationshipsSegment = 'relationships';
 }

@@ -61,11 +61,6 @@ class PeopleListCubit extends Cubit<PeopleListState> {
       switch (scope) {
         case DataScope.groups:
           refreshGroups();
-        case DataScope.classification:
-          // A Subgroup/Governorate/City/Neighborhood was created (e.g. via the
-          // wizard's inline "+ Add new") elsewhere — refresh whatever filter
-          // option lists this cubit is currently holding.
-          refreshClassificationFilters();
         case DataScope.people:
           // No longer needed: PersonRepositoryImpl upserts into drift on every
           // successful create/update, so every open `watchPersons` stream
@@ -187,9 +182,9 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     if (current is! PeopleListSuccess) return;
     var neighborhoods = const <Neighborhood>[];
     if (cityId != null) {
-      final result =
-          await _neighborhoodRepository.getNeighborhoods(cityId: cityId, pageIndex: 1, pageSize: _refPageSize);
-      neighborhoods = result.fold((_) => const <Neighborhood>[], (p) => p.items);
+      // Neighborhood is local-first (row 8.20) — a local read can't fail the
+      // way a network call can.
+      neighborhoods = await _neighborhoodRepository.watchNeighborhoods(cityId: cityId, limit: _refPageSize).first;
     }
     await _subscribeToPersons(
       groupId: current.selectedGroupId,
@@ -273,53 +268,6 @@ class PeopleListCubit extends Cubit<PeopleListState> {
     if (current is! PeopleListSuccess) return;
     final result = await _groupRepository.getGroups(pageIndex: 1, pageSize: _refPageSize);
     result.fold((_) {}, (page) => emit(current.copyWith(groups: page.items)));
-  }
-
-  /// Re-fetches the option lists for whichever classification filters are
-  /// currently in play (governorates always; subgroups/cities/neighborhoods
-  /// only when their parent is selected) — triggered by [DataRefreshBus] on a
-  /// `classification` scope notification. Never touches the current people
-  /// page or the active selections themselves.
-  Future<void> refreshClassificationFilters() async {
-    final current = state;
-    if (current is! PeopleListSuccess) return;
-
-    // Governorate is local-first (row 8.2) — a local read can't fail the way
-    // a network call can.
-    final governorates = await _governorateRepository.watchGovernorates(limit: _refPageSize).first;
-
-    var subGroups = current.subGroups;
-    if (current.selectedGroupId != null) {
-      // SubGroup is local-first (row 8.14) — a local read can't fail the way
-      // a network call can.
-      subGroups = await _subGroupRepository.watchSubGroups(groupId: current.selectedGroupId!, limit: _refPageSize).first;
-    }
-
-    var cities = current.cities;
-    if (current.selectedGovernorateId != null) {
-      // City is local-first (row 8.8) — a local read can't fail the way a
-      // network call can.
-      cities = await _cityRepository
-          .watchCities(governorateId: current.selectedGovernorateId!, limit: _refPageSize)
-          .first;
-    }
-
-    var neighborhoods = current.neighborhoods;
-    if (current.selectedCityId != null) {
-      final result = await _neighborhoodRepository.getNeighborhoods(
-        cityId: current.selectedCityId!,
-        pageIndex: 1,
-        pageSize: _refPageSize,
-      );
-      neighborhoods = result.fold((_) => current.neighborhoods, (p) => p.items);
-    }
-
-    emit(current.copyWith(
-      governorates: governorates,
-      subGroups: subGroups,
-      cities: cities,
-      neighborhoods: neighborhoods,
-    ));
   }
 
   /// Cancels any existing local subscription and resubscribes to

@@ -116,11 +116,9 @@ class AddGuestsListCubit extends Cubit<AddGuestsListState> {
   Future<void> loadNeighborhoodsForCity(int cityId) async {
     final current = state;
     if (current is! AddGuestsListSuccess) return;
-    final result =
-        await _neighborhoodRepository.getNeighborhoods(cityId: cityId, pageIndex: 1, pageSize: _refPageSize);
-    result.fold(
-      (_) {},
-      (page) => emit(current.copyWith(neighborhoodOptions: page.items)),
-    );
+    // Neighborhood is local-first (row 8.20) — a local read can't fail the
+    // way a network call can.
+    final neighborhoods = await _neighborhoodRepository.watchNeighborhoods(cityId: cityId, limit: _refPageSize).first;
+    emit(current.copyWith(neighborhoodOptions: neighborhoods));
   }
 }

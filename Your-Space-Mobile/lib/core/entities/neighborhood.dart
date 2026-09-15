@@ -17,6 +17,17 @@ class Neighborhood extends Equatable {
     this.personCount = 0,
   });
 
+  /// Used by `NeighborhoodListCubit` to merge the one-shot server-computed
+  /// `personCount` (design doc §8) onto a locally-cached row before
+  /// display — the local drift cache never stores this field itself.
+  Neighborhood copyWith({int? personCount}) => Neighborhood(
+        id: id,
+        cityId: cityId,
+        name: name,
+        nameAr: nameAr,
+        personCount: personCount ?? this.personCount,
+      );
+
   @override
   List<Object?> get props => [id, cityId, name, nameAr, personCount];
 }
