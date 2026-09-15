@@ -4638,6 +4638,534 @@ class EventGuestsTableCompanion extends UpdateCompanion<EventGuestsTableData> {
   }
 }
 
+class $PersonRelationshipsTableTable extends PersonRelationshipsTable
+    with
+        TableInfo<
+          $PersonRelationshipsTableTable,
+          PersonRelationshipsTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PersonRelationshipsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<int> personId = GeneratedColumn<int>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relatedPersonIdMeta = const VerificationMeta(
+    'relatedPersonId',
+  );
+  @override
+  late final GeneratedColumn<int> relatedPersonId = GeneratedColumn<int>(
+    'related_person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relatedPersonNameMeta = const VerificationMeta(
+    'relatedPersonName',
+  );
+  @override
+  late final GeneratedColumn<String> relatedPersonName =
+      GeneratedColumn<String>(
+        'related_person_name',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _relationTypeMeta = const VerificationMeta(
+    'relationType',
+  );
+  @override
+  late final GeneratedColumn<String> relationType = GeneratedColumn<String>(
+    'relation_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _inverseIdMeta = const VerificationMeta(
+    'inverseId',
+  );
+  @override
+  late final GeneratedColumn<int> inverseId = GeneratedColumn<int>(
+    'inverse_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDirtyMeta = const VerificationMeta(
+    'isDirty',
+  );
+  @override
+  late final GeneratedColumn<bool> isDirty = GeneratedColumn<bool>(
+    'is_dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    personId,
+    relatedPersonId,
+    relatedPersonName,
+    relationType,
+    inverseId,
+    isDeleted,
+    isDirty,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'person_relationships_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PersonRelationshipsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('related_person_id')) {
+      context.handle(
+        _relatedPersonIdMeta,
+        relatedPersonId.isAcceptableOrUnknown(
+          data['related_person_id']!,
+          _relatedPersonIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relatedPersonIdMeta);
+    }
+    if (data.containsKey('related_person_name')) {
+      context.handle(
+        _relatedPersonNameMeta,
+        relatedPersonName.isAcceptableOrUnknown(
+          data['related_person_name']!,
+          _relatedPersonNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relatedPersonNameMeta);
+    }
+    if (data.containsKey('relation_type')) {
+      context.handle(
+        _relationTypeMeta,
+        relationType.isAcceptableOrUnknown(
+          data['relation_type']!,
+          _relationTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relationTypeMeta);
+    }
+    if (data.containsKey('inverse_id')) {
+      context.handle(
+        _inverseIdMeta,
+        inverseId.isAcceptableOrUnknown(data['inverse_id']!, _inverseIdMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('is_dirty')) {
+      context.handle(
+        _isDirtyMeta,
+        isDirty.isAcceptableOrUnknown(data['is_dirty']!, _isDirtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PersonRelationshipsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PersonRelationshipsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_id'],
+      )!,
+      relatedPersonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}related_person_id'],
+      )!,
+      relatedPersonName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}related_person_name'],
+      )!,
+      relationType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relation_type'],
+      )!,
+      inverseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}inverse_id'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      isDirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dirty'],
+      )!,
+    );
+  }
+
+  @override
+  $PersonRelationshipsTableTable createAlias(String alias) {
+    return $PersonRelationshipsTableTable(attachedDatabase, alias);
+  }
+}
+
+class PersonRelationshipsTableData extends DataClass
+    implements Insertable<PersonRelationshipsTableData> {
+  final int id;
+  final int personId;
+  final int relatedPersonId;
+  final String relatedPersonName;
+  final String relationType;
+  final int? inverseId;
+  final bool isDeleted;
+  final bool isDirty;
+  const PersonRelationshipsTableData({
+    required this.id,
+    required this.personId,
+    required this.relatedPersonId,
+    required this.relatedPersonName,
+    required this.relationType,
+    this.inverseId,
+    required this.isDeleted,
+    required this.isDirty,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['person_id'] = Variable<int>(personId);
+    map['related_person_id'] = Variable<int>(relatedPersonId);
+    map['related_person_name'] = Variable<String>(relatedPersonName);
+    map['relation_type'] = Variable<String>(relationType);
+    if (!nullToAbsent || inverseId != null) {
+      map['inverse_id'] = Variable<int>(inverseId);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_dirty'] = Variable<bool>(isDirty);
+    return map;
+  }
+
+  PersonRelationshipsTableCompanion toCompanion(bool nullToAbsent) {
+    return PersonRelationshipsTableCompanion(
+      id: Value(id),
+      personId: Value(personId),
+      relatedPersonId: Value(relatedPersonId),
+      relatedPersonName: Value(relatedPersonName),
+      relationType: Value(relationType),
+      inverseId: inverseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inverseId),
+      isDeleted: Value(isDeleted),
+      isDirty: Value(isDirty),
+    );
+  }
+
+  factory PersonRelationshipsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PersonRelationshipsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      personId: serializer.fromJson<int>(json['personId']),
+      relatedPersonId: serializer.fromJson<int>(json['relatedPersonId']),
+      relatedPersonName: serializer.fromJson<String>(json['relatedPersonName']),
+      relationType: serializer.fromJson<String>(json['relationType']),
+      inverseId: serializer.fromJson<int?>(json['inverseId']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isDirty: serializer.fromJson<bool>(json['isDirty']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'personId': serializer.toJson<int>(personId),
+      'relatedPersonId': serializer.toJson<int>(relatedPersonId),
+      'relatedPersonName': serializer.toJson<String>(relatedPersonName),
+      'relationType': serializer.toJson<String>(relationType),
+      'inverseId': serializer.toJson<int?>(inverseId),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isDirty': serializer.toJson<bool>(isDirty),
+    };
+  }
+
+  PersonRelationshipsTableData copyWith({
+    int? id,
+    int? personId,
+    int? relatedPersonId,
+    String? relatedPersonName,
+    String? relationType,
+    Value<int?> inverseId = const Value.absent(),
+    bool? isDeleted,
+    bool? isDirty,
+  }) => PersonRelationshipsTableData(
+    id: id ?? this.id,
+    personId: personId ?? this.personId,
+    relatedPersonId: relatedPersonId ?? this.relatedPersonId,
+    relatedPersonName: relatedPersonName ?? this.relatedPersonName,
+    relationType: relationType ?? this.relationType,
+    inverseId: inverseId.present ? inverseId.value : this.inverseId,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isDirty: isDirty ?? this.isDirty,
+  );
+  PersonRelationshipsTableData copyWithCompanion(
+    PersonRelationshipsTableCompanion data,
+  ) {
+    return PersonRelationshipsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      relatedPersonId: data.relatedPersonId.present
+          ? data.relatedPersonId.value
+          : this.relatedPersonId,
+      relatedPersonName: data.relatedPersonName.present
+          ? data.relatedPersonName.value
+          : this.relatedPersonName,
+      relationType: data.relationType.present
+          ? data.relationType.value
+          : this.relationType,
+      inverseId: data.inverseId.present ? data.inverseId.value : this.inverseId,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isDirty: data.isDirty.present ? data.isDirty.value : this.isDirty,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonRelationshipsTableData(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('relatedPersonId: $relatedPersonId, ')
+          ..write('relatedPersonName: $relatedPersonName, ')
+          ..write('relationType: $relationType, ')
+          ..write('inverseId: $inverseId, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    personId,
+    relatedPersonId,
+    relatedPersonName,
+    relationType,
+    inverseId,
+    isDeleted,
+    isDirty,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PersonRelationshipsTableData &&
+          other.id == this.id &&
+          other.personId == this.personId &&
+          other.relatedPersonId == this.relatedPersonId &&
+          other.relatedPersonName == this.relatedPersonName &&
+          other.relationType == this.relationType &&
+          other.inverseId == this.inverseId &&
+          other.isDeleted == this.isDeleted &&
+          other.isDirty == this.isDirty);
+}
+
+class PersonRelationshipsTableCompanion
+    extends UpdateCompanion<PersonRelationshipsTableData> {
+  final Value<int> id;
+  final Value<int> personId;
+  final Value<int> relatedPersonId;
+  final Value<String> relatedPersonName;
+  final Value<String> relationType;
+  final Value<int?> inverseId;
+  final Value<bool> isDeleted;
+  final Value<bool> isDirty;
+  const PersonRelationshipsTableCompanion({
+    this.id = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.relatedPersonId = const Value.absent(),
+    this.relatedPersonName = const Value.absent(),
+    this.relationType = const Value.absent(),
+    this.inverseId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  });
+  PersonRelationshipsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required int personId,
+    required int relatedPersonId,
+    required String relatedPersonName,
+    required String relationType,
+    this.inverseId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.isDirty = const Value.absent(),
+  }) : personId = Value(personId),
+       relatedPersonId = Value(relatedPersonId),
+       relatedPersonName = Value(relatedPersonName),
+       relationType = Value(relationType);
+  static Insertable<PersonRelationshipsTableData> custom({
+    Expression<int>? id,
+    Expression<int>? personId,
+    Expression<int>? relatedPersonId,
+    Expression<String>? relatedPersonName,
+    Expression<String>? relationType,
+    Expression<int>? inverseId,
+    Expression<bool>? isDeleted,
+    Expression<bool>? isDirty,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (personId != null) 'person_id': personId,
+      if (relatedPersonId != null) 'related_person_id': relatedPersonId,
+      if (relatedPersonName != null) 'related_person_name': relatedPersonName,
+      if (relationType != null) 'relation_type': relationType,
+      if (inverseId != null) 'inverse_id': inverseId,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isDirty != null) 'is_dirty': isDirty,
+    });
+  }
+
+  PersonRelationshipsTableCompanion copyWith({
+    Value<int>? id,
+    Value<int>? personId,
+    Value<int>? relatedPersonId,
+    Value<String>? relatedPersonName,
+    Value<String>? relationType,
+    Value<int?>? inverseId,
+    Value<bool>? isDeleted,
+    Value<bool>? isDirty,
+  }) {
+    return PersonRelationshipsTableCompanion(
+      id: id ?? this.id,
+      personId: personId ?? this.personId,
+      relatedPersonId: relatedPersonId ?? this.relatedPersonId,
+      relatedPersonName: relatedPersonName ?? this.relatedPersonName,
+      relationType: relationType ?? this.relationType,
+      inverseId: inverseId ?? this.inverseId,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isDirty: isDirty ?? this.isDirty,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<int>(personId.value);
+    }
+    if (relatedPersonId.present) {
+      map['related_person_id'] = Variable<int>(relatedPersonId.value);
+    }
+    if (relatedPersonName.present) {
+      map['related_person_name'] = Variable<String>(relatedPersonName.value);
+    }
+    if (relationType.present) {
+      map['relation_type'] = Variable<String>(relationType.value);
+    }
+    if (inverseId.present) {
+      map['inverse_id'] = Variable<int>(inverseId.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (isDirty.present) {
+      map['is_dirty'] = Variable<bool>(isDirty.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonRelationshipsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('relatedPersonId: $relatedPersonId, ')
+          ..write('relatedPersonName: $relatedPersonName, ')
+          ..write('relationType: $relationType, ')
+          ..write('inverseId: $inverseId, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isDirty: $isDirty')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTableTable extends OutboxTable
     with TableInfo<$OutboxTableTable, OutboxTableData> {
   @override
@@ -5499,6 +6027,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $EventGuestsTableTable eventGuestsTable = $EventGuestsTableTable(
     this,
   );
+  late final $PersonRelationshipsTableTable personRelationshipsTable =
+      $PersonRelationshipsTableTable(this);
   late final $OutboxTableTable outboxTable = $OutboxTableTable(this);
   late final $SyncStateTableTable syncStateTable = $SyncStateTableTable(this);
   @override
@@ -5514,6 +6044,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     neighborhoodsTable,
     eventsTable,
     eventGuestsTable,
+    personRelationshipsTable,
     outboxTable,
     syncStateTable,
   ];
@@ -7905,6 +8436,294 @@ typedef $$EventGuestsTableTableProcessedTableManager =
       EventGuestsTableData,
       PrefetchHooks Function()
     >;
+typedef $$PersonRelationshipsTableTableCreateCompanionBuilder =
+    PersonRelationshipsTableCompanion Function({
+      Value<int> id,
+      required int personId,
+      required int relatedPersonId,
+      required String relatedPersonName,
+      required String relationType,
+      Value<int?> inverseId,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+typedef $$PersonRelationshipsTableTableUpdateCompanionBuilder =
+    PersonRelationshipsTableCompanion Function({
+      Value<int> id,
+      Value<int> personId,
+      Value<int> relatedPersonId,
+      Value<String> relatedPersonName,
+      Value<String> relationType,
+      Value<int?> inverseId,
+      Value<bool> isDeleted,
+      Value<bool> isDirty,
+    });
+
+class $$PersonRelationshipsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PersonRelationshipsTableTable> {
+  $$PersonRelationshipsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get relatedPersonId => $composableBuilder(
+    column: $table.relatedPersonId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relatedPersonName => $composableBuilder(
+    column: $table.relatedPersonName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relationType => $composableBuilder(
+    column: $table.relationType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get inverseId => $composableBuilder(
+    column: $table.inverseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PersonRelationshipsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PersonRelationshipsTableTable> {
+  $$PersonRelationshipsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relatedPersonId => $composableBuilder(
+    column: $table.relatedPersonId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relatedPersonName => $composableBuilder(
+    column: $table.relatedPersonName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relationType => $composableBuilder(
+    column: $table.relationType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get inverseId => $composableBuilder(
+    column: $table.inverseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDirty => $composableBuilder(
+    column: $table.isDirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PersonRelationshipsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PersonRelationshipsTableTable> {
+  $$PersonRelationshipsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<int> get relatedPersonId => $composableBuilder(
+    column: $table.relatedPersonId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get relatedPersonName => $composableBuilder(
+    column: $table.relatedPersonName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get relationType => $composableBuilder(
+    column: $table.relationType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get inverseId =>
+      $composableBuilder(column: $table.inverseId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDirty =>
+      $composableBuilder(column: $table.isDirty, builder: (column) => column);
+}
+
+class $$PersonRelationshipsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PersonRelationshipsTableTable,
+          PersonRelationshipsTableData,
+          $$PersonRelationshipsTableTableFilterComposer,
+          $$PersonRelationshipsTableTableOrderingComposer,
+          $$PersonRelationshipsTableTableAnnotationComposer,
+          $$PersonRelationshipsTableTableCreateCompanionBuilder,
+          $$PersonRelationshipsTableTableUpdateCompanionBuilder,
+          (
+            PersonRelationshipsTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $PersonRelationshipsTableTable,
+              PersonRelationshipsTableData
+            >,
+          ),
+          PersonRelationshipsTableData,
+          PrefetchHooks Function()
+        > {
+  $$PersonRelationshipsTableTableTableManager(
+    _$AppDatabase db,
+    $PersonRelationshipsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PersonRelationshipsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$PersonRelationshipsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PersonRelationshipsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> personId = const Value.absent(),
+                Value<int> relatedPersonId = const Value.absent(),
+                Value<String> relatedPersonName = const Value.absent(),
+                Value<String> relationType = const Value.absent(),
+                Value<int?> inverseId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => PersonRelationshipsTableCompanion(
+                id: id,
+                personId: personId,
+                relatedPersonId: relatedPersonId,
+                relatedPersonName: relatedPersonName,
+                relationType: relationType,
+                inverseId: inverseId,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int personId,
+                required int relatedPersonId,
+                required String relatedPersonName,
+                required String relationType,
+                Value<int?> inverseId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<bool> isDirty = const Value.absent(),
+              }) => PersonRelationshipsTableCompanion.insert(
+                id: id,
+                personId: personId,
+                relatedPersonId: relatedPersonId,
+                relatedPersonName: relatedPersonName,
+                relationType: relationType,
+                inverseId: inverseId,
+                isDeleted: isDeleted,
+                isDirty: isDirty,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $PersonRelationshipsTableTable,
+                    PersonRelationshipsTableData
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PersonRelationshipsTableTable,
+                    PersonRelationshipsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PersonRelationshipsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PersonRelationshipsTableTable,
+      PersonRelationshipsTableData,
+      $$PersonRelationshipsTableTableFilterComposer,
+      $$PersonRelationshipsTableTableOrderingComposer,
+      $$PersonRelationshipsTableTableAnnotationComposer,
+      $$PersonRelationshipsTableTableCreateCompanionBuilder,
+      $$PersonRelationshipsTableTableUpdateCompanionBuilder,
+      (
+        PersonRelationshipsTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $PersonRelationshipsTableTable,
+          PersonRelationshipsTableData
+        >,
+      ),
+      PersonRelationshipsTableData,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxTableTableCreateCompanionBuilder =
     OutboxTableCompanion Function({
       Value<int> id,
@@ -8393,6 +9212,11 @@ class $AppDatabaseManager {
       $$EventsTableTableTableManager(_db, _db.eventsTable);
   $$EventGuestsTableTableTableManager get eventGuestsTable =>
       $$EventGuestsTableTableTableManager(_db, _db.eventGuestsTable);
+  $$PersonRelationshipsTableTableTableManager get personRelationshipsTable =>
+      $$PersonRelationshipsTableTableTableManager(
+        _db,
+        _db.personRelationshipsTable,
+      );
   $$OutboxTableTableTableManager get outboxTable =>
       $$OutboxTableTableTableManager(_db, _db.outboxTable);
   $$SyncStateTableTableTableManager get syncStateTable =>

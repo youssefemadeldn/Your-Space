@@ -9,6 +9,7 @@ import 'tables/governorates_table.dart';
 import 'tables/groups_table.dart';
 import 'tables/neighborhoods_table.dart';
 import 'tables/outbox_table.dart';
+import 'tables/person_relationships_table.dart';
 import 'tables/persons_table.dart';
 import 'tables/subgroups_table.dart';
 import 'tables/sync_state_table.dart';
@@ -32,6 +33,7 @@ part 'app_database.g.dart';
     NeighborhoodsTable,
     EventsTable,
     EventGuestsTable,
+    PersonRelationshipsTable,
     OutboxTable,
     SyncStateTable,
   ],
@@ -44,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -96,6 +98,12 @@ class AppDatabase extends _$AppDatabase {
           // EventGuest — same reasoning as above, no shipped users yet).
           if (from < 9) {
             await m.createTable(eventGuestsTable);
+          }
+          // v9 -> v10: PersonRelationshipsTable, Row 9.11 (local-first
+          // rollout for PersonRelationship — same reasoning as above, no
+          // shipped users yet).
+          if (from < 10) {
+            await m.createTable(personRelationshipsTable);
           }
         },
       );
