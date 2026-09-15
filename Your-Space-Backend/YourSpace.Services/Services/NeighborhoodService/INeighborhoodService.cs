@@ -16,4 +16,6 @@ public interface INeighborhoodService
     Task<ServiceResult<NeighborhoodDetailsDto>> CreateAsync(string ownerUserId, int cityId, CreateNeighborhoodDto dto);
     Task<ServiceResult<NeighborhoodDetailsDto>> UpdateAsync(string ownerUserId, int cityId, int id, UpdateNeighborhoodDto dto);
     Task<ServiceResult> DeleteAsync(string ownerUserId, int cityId, int id);
+
+    Task<ServiceResult<NeighborhoodChangesDto>> GetChangesAsync(string ownerUserId, long since, int pageSize);
 }

@@ -34,7 +34,7 @@ public static class MockDataSeeder
         await SeedSubGroupsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedGovernoratesAsync(context, activeUserId, syncVersionProvider);
         await SeedCitiesAsync(context, activeUserId, syncVersionProvider);
-        await SeedNeighborhoodsAsync(context, activeUserId);
+        await SeedNeighborhoodsAsync(context, activeUserId, syncVersionProvider);
         await SeedPersonsAsync(context, activeUserId, lockedUserId, syncVersionProvider);
         await SeedPersonImagesAsync(context, activeUserId);
         await SeedEventsAsync(context, activeUserId, lockedUserId);
@@ -330,7 +330,7 @@ public static class MockDataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedNeighborhoodsAsync(YourSpaceDbContext context, string activeUserId)
+    private static async Task SeedNeighborhoodsAsync(YourSpaceDbContext context, string activeUserId, ISyncVersionProvider syncVersionProvider)
     {
         if (await context.Neighborhoods.AnyAsync())
         {
@@ -339,17 +339,30 @@ public static class MockDataSeeder
 
         var nasrCity = await context.Cities.SingleAsync(c => c.OwnerUserId == activeUserId && c.Name == "Nasr City");
 
-        await context.Neighborhoods.AddRangeAsync(
-            new Neighborhood { OwnerUserId = activeUserId, CityId = nasrCity.Id, Name = "Zone 1", NameAr = "الحي الأول" }, // normal case
-            new Neighborhood { OwnerUserId = activeUserId, CityId = nasrCity.Id, Name = "Zone 3", NameAr = "الحي الثالث" }, // normal case
-            new Neighborhood // edge case — soft-deleted
+        var neighborhoods = new List<Neighborhood>
+        {
+            new() { OwnerUserId = activeUserId, CityId = nasrCity.Id, Name = "Zone 1", NameAr = "الحي الأول" }, // normal case
+            new() { OwnerUserId = activeUserId, CityId = nasrCity.Id, Name = "Zone 3", NameAr = "الحي الثالث" }, // normal case
+            new() // edge case — soft-deleted
             {
                 OwnerUserId = activeUserId,
                 CityId = nasrCity.Id,
                 Name = "Old Zone (Archived)",
                 DeletedAt = DateTime.UtcNow.AddDays(-15)
-            });
+            }
+        };
 
+        // Seeding inserts directly via the DbContext, bypassing NeighborhoodService — so
+        // SyncVersion (which NeighborhoodService assigns on every real write,
+        // doc/local-first-sync-design.md §6) must be assigned here too, or every seeded row
+        // would be stuck at the column default and collide with each other under a
+        // `WHERE SyncVersion > @since` delta-sync query.
+        foreach (var neighborhood in neighborhoods)
+        {
+            neighborhood.SyncVersion = await syncVersionProvider.NextValueAsync("Neighborhoods_SyncVersion_seq");
+        }
+
+        await context.Neighborhoods.AddRangeAsync(neighborhoods);
         await context.SaveChangesAsync();
     }
 
