@@ -62,12 +62,6 @@ class PeopleListCubit extends Cubit<PeopleListState> {
         case DataScope.groups:
           refreshGroups();
         case DataScope.people:
-          // No longer needed: PersonRepositoryImpl upserts into drift on every
-          // successful create/update, so every open `watchPersons` stream
-          // (including other branch-cubit instances kept alive by
-          // StatefulShellRoute.indexedStack) already sees the change directly
-          // (design doc §7).
-          break;
         case DataScope.events:
         case DataScope.eventGuests:
         case DataScope.profile:
