@@ -22,9 +22,17 @@ class AddOccasionSheet extends StatefulWidget {
   final int personId;
   final String personName;
 
-  const AddOccasionSheet({super.key, required this.personId, required this.personName});
+  const AddOccasionSheet({
+    super.key,
+    required this.personId,
+    required this.personName,
+  });
 
-  static Future<void> open(BuildContext context, {required int personId, required String personName}) {
+  static Future<void> open(
+    BuildContext context, {
+    required int personId,
+    required String personName,
+  }) {
     final actionCubit = context.read<AddOccasionCubit>();
     return BottomSheetHelper.showAppBottomSheet(
       context,
@@ -73,106 +81,129 @@ class _AddOccasionSheetState extends State<AddOccasionSheet> {
 
   void _submit() {
     context.read<AddOccasionCubit>().submit(
-          personId: widget.personId,
-          invitedMe: _invitedMe,
-          inviteMethod: _invitedMe ? _inviteMethod : null,
-          occasionName: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
-          occasionDate: _date,
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        );
+      personId: widget.personId,
+      invitedMe: _invitedMe,
+      inviteMethod: _invitedMe ? _inviteMethod : null,
+      occasionName: _nameController.text.trim().isEmpty
+          ? null
+          : _nameController.text.trim(),
+      occasionDate: _date,
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 20.h),
-      child: BlocConsumer<AddOccasionCubit, AddOccasionState>(
-        listener: (context, state) {
-          if (state is AddOccasionSuccess) {
-            Navigator.of(context).pop();
-          } else if (state is AddOccasionError) {
-            getIt<SnackBarHelper>().showError(state.message);
-          }
-        },
-        builder: (context, state) {
-          final submitting = state is AddOccasionSubmitting;
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'people.occasion.addTitle'.tr(),
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 16.h),
-                AppSwitch(
-                  checked: _invitedMe,
-                  label: 'people.occasion.invitedSwitch'.tr(namedArgs: {'name': widget.personName}),
-                  onChanged: submitting ? null : (value) => setState(() => _invitedMe = value),
-                ),
-                SizedBox(height: 14.h),
-                if (_invitedMe)
-                  InviteMethodChipGroup(
-                    selected: _inviteMethod,
-                    onChanged: submitting ? (_) {} : (method) => setState(() => _inviteMethod = method),
-                  )
-                else
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 20.h),
+        child: BlocConsumer<AddOccasionCubit, AddOccasionState>(
+          listener: (context, state) {
+            if (state is AddOccasionSuccess) {
+              Navigator.of(context).pop();
+            } else if (state is AddOccasionError) {
+              getIt<SnackBarHelper>().showError(state.message);
+            }
+          },
+          builder: (context, state) {
+            final submitting = state is AddOccasionSubmitting;
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Text(
-                    'people.occasion.methodHint'.tr(),
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    'people.occasion.addTitle'.tr(),
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
                   ),
-                SizedBox(height: 14.h),
-                AppInput(
-                  label: 'people.occasion.nameLabel'.tr(),
-                  controller: _nameController,
-                  enabled: !submitting,
-                ),
-                SizedBox(height: 14.h),
-                InkWell(
-                  onTap: submitting ? null : _pickDate,
-                  child: IgnorePointer(
-                    child: AppInput(
-                      label: 'people.occasion.dateLabel'.tr(),
-                      hintText: 'people.occasion.dateFutureHint'.tr(),
-                      suffixIcon: Icon(Icons.calendar_today_rounded, size: 18.w),
-                      controller: _dateController,
-                      enabled: !submitting,
+                  SizedBox(height: 16.h),
+                  AppSwitch(
+                    checked: _invitedMe,
+                    label: 'people.occasion.invitedSwitch'.tr(
+                      namedArgs: {'name': widget.personName},
                     ),
+                    onChanged: submitting
+                        ? null
+                        : (value) => setState(() => _invitedMe = value),
                   ),
-                ),
-                SizedBox(height: 14.h),
-                AppInput(
-                  label: 'people.occasion.notesLabel'.tr(),
-                  controller: _notesController,
-                  multiline: true,
-                  enabled: !submitting,
-                ),
-                SizedBox(height: 20.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        label: 'common.cancel'.tr(),
-                        variant: AppButtonVariant.secondary,
-                        onPressed: submitting ? null : () => Navigator.of(context).pop(),
+                  SizedBox(height: 14.h),
+                  if (_invitedMe)
+                    InviteMethodChipGroup(
+                      selected: _inviteMethod,
+                      onChanged: submitting
+                          ? (_) {}
+                          : (method) => setState(() => _inviteMethod = method),
+                    )
+                  else
+                    Text(
+                      'people.occasion.methodHint'.tr(),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: AppButton(
-                        label: 'common.save'.tr(),
-                        loading: submitting,
-                        onPressed: _submit,
+                  SizedBox(height: 14.h),
+                  AppInput(
+                    label: 'people.occasion.nameLabel'.tr(),
+                    controller: _nameController,
+                    enabled: !submitting,
+                  ),
+                  SizedBox(height: 14.h),
+                  InkWell(
+                    onTap: submitting ? null : _pickDate,
+                    child: IgnorePointer(
+                      child: AppInput(
+                        label: 'people.occasion.dateLabel'.tr(),
+                        hintText: 'people.occasion.dateFutureHint'.tr(),
+                        suffixIcon: Icon(
+                          Icons.calendar_today_rounded,
+                          size: 18.w,
+                        ),
+                        controller: _dateController,
+                        enabled: !submitting,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+                  ),
+                  SizedBox(height: 14.h),
+                  AppInput(
+                    label: 'people.occasion.notesLabel'.tr(),
+                    controller: _notesController,
+                    multiline: true,
+                    enabled: !submitting,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                  ),
+                  SizedBox(height: 20.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'common.cancel'.tr(),
+                          variant: AppButtonVariant.secondary,
+                          onPressed: submitting
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: AppButton(
+                          label: 'common.save'.tr(),
+                          loading: submitting,
+                          onPressed: _submit,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -90,50 +90,54 @@ class _PersonWizardScreenState extends State<PersonWizardScreen> {
       ),
       body: SafeArea(
         bottom: false,
-        child: BlocConsumer<PersonWizardCubit, PersonWizardState>(
-          listener: (context, state) {
-            if (state is PersonWizardSubmitSuccess) {
-              getIt<SnackBarHelper>().showSuccess('people.wizard.submit.savedMessage'.tr());
-              if (state.partialFailureKeys != null) {
-                getIt<SnackBarHelper>().showWarning(state.partialFailureKeys!.map((k) => k.tr()).join('\n'));
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: BlocConsumer<PersonWizardCubit, PersonWizardState>(
+            listener: (context, state) {
+              if (state is PersonWizardSubmitSuccess) {
+                getIt<SnackBarHelper>().showSuccess('people.wizard.submit.savedMessage'.tr());
+                if (state.partialFailureKeys != null) {
+                  getIt<SnackBarHelper>().showWarning(state.partialFailureKeys!.map((k) => k.tr()).join('\n'));
+                }
+                context.pushReplacementNamed(
+                  AppRoutes.personDetails,
+                  extra: PersonDetailsArgs(personId: state.personId, personName: state.personName),
+                );
+              } else if (state is PersonWizardReady && state.submitError != null) {
+                getIt<SnackBarHelper>().showError(state.submitError!);
               }
-              context.pushReplacementNamed(
-                AppRoutes.personDetails,
-                extra: PersonDetailsArgs(personId: state.personId, personName: state.personName),
-              );
-            } else if (state is PersonWizardReady && state.submitError != null) {
-              getIt<SnackBarHelper>().showError(state.submitError!);
-            }
-          },
-          builder: (context, state) {
-            if (state is PersonWizardInitial || state is PersonWizardLoading) {
-              return const AppLoadingIndicator();
-            }
-            if (state is PersonWizardError) {
-              return ErrorStateWidget(
-                message: state.message,
-                onRetry: () => context.read<PersonWizardCubit>().initialize(widget.args.personId),
-              );
-            }
+            },
+            builder: (context, state) {
+              if (state is PersonWizardInitial || state is PersonWizardLoading) {
+                return const AppLoadingIndicator();
+              }
+              if (state is PersonWizardError) {
+                return ErrorStateWidget(
+                  message: state.message,
+                  onRetry: () => context.read<PersonWizardCubit>().initialize(widget.args.personId),
+                );
+              }
 
-            return Column(
-              children: [
-                PersonWizardStepIndicator(currentStep: _currentStep),
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: const [
-                      PersonWizardStep1BasicIdentity(),
-                      PersonWizardStep2ClassificationLocation(),
-                      PersonWizardStep3Relationships(),
-                      PersonWizardStep4Notes(),
-                    ],
+              return Column(
+                children: [
+                  PersonWizardStepIndicator(currentStep: _currentStep),
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: const [
+                        PersonWizardStep1BasicIdentity(),
+                        PersonWizardStep2ClassificationLocation(),
+                        PersonWizardStep3Relationships(),
+                        PersonWizardStep4Notes(),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
       bottomNavigationBar: BlocBuilder<PersonWizardCubit, PersonWizardState>(

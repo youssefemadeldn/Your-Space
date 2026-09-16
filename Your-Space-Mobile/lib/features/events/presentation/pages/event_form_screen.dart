@@ -80,92 +80,106 @@ class _EventFormScreenState extends State<EventFormScreen> {
     final nameAr = _nameArController.text.trim();
     final notes = _notesController.text.trim();
     context.read<EventFormCubit>().submit(
-          eventId: widget.args.eventId,
-          name: name,
-          // Editing: always send the current value, even empty — the fields are
-          // correctly prefilled from the backend, so emptying one means "clear
-          // it", not "unknown, leave unchanged". Creating: omit when empty,
-          // since there's nothing to clear yet.
-          nameAr: _isEditing ? nameAr : (nameAr.isEmpty ? null : nameAr),
-          eventDate: _eventDate,
-          notes: _isEditing ? notes : (notes.isEmpty ? null : notes),
-        );
+      eventId: widget.args.eventId,
+      name: name,
+      // Editing: always send the current value, even empty — the fields are
+      // correctly prefilled from the backend, so emptying one means "clear
+      // it", not "unknown, leave unchanged". Creating: omit when empty,
+      // since there's nothing to clear yet.
+      nameAr: _isEditing ? nameAr : (nameAr.isEmpty ? null : nameAr),
+      eventDate: _eventDate,
+      notes: _isEditing ? notes : (notes.isEmpty ? null : notes),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppAppBar(
-        title: _isEditing ? 'events.form.editTitle'.tr() : 'events.form.createTitle'.tr(),
+        title: _isEditing
+            ? 'events.form.editTitle'.tr()
+            : 'events.form.createTitle'.tr(),
         onBack: () => context.pop(),
       ),
       body: SafeArea(
-        child: BlocConsumer<EventFormCubit, EventFormState>(
-          listener: (context, state) {
-            if (state is EventFormSuccess) {
-              getIt<SnackBarHelper>().showSuccess('events.savedMessage'.tr());
-              context.pop();
-            } else if (state is EventFormError) {
-              getIt<SnackBarHelper>().showError(state.message);
-            }
-          },
-          builder: (context, state) {
-            if (state is EventFormInitial || state is EventFormLoading) {
-              return const AppLoadingIndicator();
-            }
-            if (state is EventFormReady) _seedFromReady(state);
-            final submitting = state is EventFormSubmitting;
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: BlocConsumer<EventFormCubit, EventFormState>(
+            listener: (context, state) {
+              if (state is EventFormSuccess) {
+                getIt<SnackBarHelper>().showSuccess('events.savedMessage'.tr());
+                context.pop();
+              } else if (state is EventFormError) {
+                getIt<SnackBarHelper>().showError(state.message);
+              }
+            },
+            builder: (context, state) {
+              if (state is EventFormInitial || state is EventFormLoading) {
+                return const AppLoadingIndicator();
+              }
+              if (state is EventFormReady) _seedFromReady(state);
+              final submitting = state is EventFormSubmitting;
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  AppInput(
-                    label: 'events.form.nameLabel'.tr(),
-                    controller: _nameController,
-                    errorText: _nameError,
-                    enabled: !submitting,
-                    onChanged: (_) {
-                      if (_nameError != null) setState(() => _nameError = null);
-                    },
-                  ),
-                  SizedBox(height: 14.h),
-                  AppInput(
-                    label: 'events.form.nameArLabel'.tr(),
-                    controller: _nameArController,
-                    enabled: !submitting,
-                  ),
-                  SizedBox(height: 14.h),
-                  InkWell(
-                    onTap: submitting ? null : _pickDate,
-                    child: IgnorePointer(
-                      child: AppInput(
-                        label: 'events.form.dateLabel'.tr(),
-                        suffixIcon: Icon(Icons.calendar_today_rounded, size: 18.w),
-                        controller: _dateController,
-                        enabled: !submitting,
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppInput(
+                      label: 'events.form.nameLabel'.tr(),
+                      controller: _nameController,
+                      errorText: _nameError,
+                      enabled: !submitting,
+                      onChanged: (_) {
+                        if (_nameError != null)
+                          setState(() => _nameError = null);
+                      },
+                    ),
+                    SizedBox(height: 14.h),
+                    AppInput(
+                      label: 'events.form.nameArLabel'.tr(),
+                      controller: _nameArController,
+                      enabled: !submitting,
+                    ),
+                    SizedBox(height: 14.h),
+                    InkWell(
+                      onTap: submitting ? null : _pickDate,
+                      child: IgnorePointer(
+                        child: AppInput(
+                          label: 'events.form.dateLabel'.tr(),
+                          suffixIcon: Icon(
+                            Icons.calendar_today_rounded,
+                            size: 18.w,
+                          ),
+                          controller: _dateController,
+                          enabled: !submitting,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 14.h),
-                  AppInput(
-                    label: 'events.form.notesLabel'.tr(),
-                    controller: _notesController,
-                    multiline: true,
-                    enabled: !submitting,
-                  ),
-                  SizedBox(height: 20.h),
-                  AppButton(
-                    label: _isEditing ? 'common.saveChanges'.tr() : 'events.form.createCta'.tr(),
-                    fullWidth: true,
-                    loading: submitting,
-                    onPressed: _submit,
-                  ),
-                ],
-              ),
-            );
-          },
+                    SizedBox(height: 14.h),
+                    AppInput(
+                      label: 'events.form.notesLabel'.tr(),
+                      controller: _notesController,
+                      multiline: true,
+                      enabled: !submitting,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                    ),
+                    SizedBox(height: 20.h),
+                    AppButton(
+                      label: _isEditing
+                          ? 'common.saveChanges'.tr()
+                          : 'events.form.createCta'.tr(),
+                      fullWidth: true,
+                      loading: submitting,
+                      onPressed: _submit,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
