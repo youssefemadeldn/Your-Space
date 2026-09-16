@@ -453,45 +453,31 @@ class PersonWizardCubit extends Cubit<PersonWizardState> {
         : current.availableNeighborhoods.firstWhere((n) => n.id == current.neighborhoodId).name;
 
     final personResult = current.isEditing
-        ? (needsSync
-            ? await _personRepository.updatePersonAndSync(
-                id: current.personId!,
-                name: current.name.trim(),
-                phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
-                phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
-                gender: current.gender!,
-                groupId: current.groupId!,
-                groupName: groupName,
-                subGroupId: current.subGroupId,
-                subGroupName: subGroupName,
-                governorateId: current.governorateId!,
-                governorateName: governorateName,
-                cityId: current.cityId,
-                cityName: cityName,
-                neighborhoodId: current.neighborhoodId,
-                neighborhoodName: neighborhoodName,
-                notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
-                facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
-              )
-            : await _personRepository.updatePerson(
-                id: current.personId!,
-                name: current.name.trim(),
-                phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
-                phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
-                gender: current.gender!,
-                groupId: current.groupId!,
-                groupName: groupName,
-                subGroupId: current.subGroupId,
-                subGroupName: subGroupName,
-                governorateId: current.governorateId!,
-                governorateName: governorateName,
-                cityId: current.cityId,
-                cityName: cityName,
-                neighborhoodId: current.neighborhoodId,
-                neighborhoodName: neighborhoodName,
-                notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
-                facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
-              ))
+        // Always the AndSync variant on edit, regardless of needsSync: `id`
+        // is always an already-real person, so there's no temp-id risk in
+        // opportunistically syncing now when online — and it closes the
+        // race where the Person Details screen's next network read would
+        // otherwise show stale data until the next background sync trigger
+        // (see updatePersonAndSync's doc comment for the offline fallback).
+        ? await _personRepository.updatePersonAndSync(
+            id: current.personId!,
+            name: current.name.trim(),
+            phoneNumber: current.phoneNumber.trim().isEmpty ? null : current.phoneNumber.trim(),
+            phoneNumber2: current.phoneNumber2.trim().isEmpty ? null : current.phoneNumber2.trim(),
+            gender: current.gender!,
+            groupId: current.groupId!,
+            groupName: groupName,
+            subGroupId: current.subGroupId,
+            subGroupName: subGroupName,
+            governorateId: current.governorateId!,
+            governorateName: governorateName,
+            cityId: current.cityId,
+            cityName: cityName,
+            neighborhoodId: current.neighborhoodId,
+            neighborhoodName: neighborhoodName,
+            notes: current.notes.trim().isEmpty ? null : current.notes.trim(),
+            facebookUrl: current.facebookUrl.trim().isEmpty ? null : current.facebookUrl.trim(),
+          )
         : (needsSync
             ? await _personRepository.createPersonAndSync(
                 name: current.name.trim(),
