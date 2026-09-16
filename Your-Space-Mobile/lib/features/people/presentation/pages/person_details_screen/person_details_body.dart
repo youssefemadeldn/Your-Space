@@ -97,7 +97,7 @@ class PersonDetailsBody extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.facebook, color: AppColors.primary),
+                  const Icon(Icons.facebook, color: AppColors.info),
                   SizedBox(width: 6.w),
                   Text('people.details.facebookLink'.tr(), style: AppTextStyles.bodyMedium),
                 ],

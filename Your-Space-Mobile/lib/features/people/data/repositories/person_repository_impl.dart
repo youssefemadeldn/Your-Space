@@ -432,7 +432,16 @@ class PersonRepositoryImpl implements PersonRepository {
       facebookUrl: facebookUrl,
     );
     final result = await _syncService.replayRow(rowId);
-    return result.fold(Left.new, (payload) => Right(payload as Person? ?? person));
+    // Unlike createPersonAndSync, `id` here is always an already-real,
+    // pre-existing person — so a NetworkFailure (device offline right now)
+    // isn't a reason to reject the edit: the row is already safely queued
+    // in the outbox and will sync on the next trigger, same Tier 2 success
+    // a plain updatePerson call would report. Any other failure (validation,
+    // server error) still propagates.
+    return result.fold(
+      (failure) => failure is NetworkFailure ? Right(person) : Left(failure),
+      (payload) => Right(payload as Person? ?? person),
+    );
   }
 
   @override

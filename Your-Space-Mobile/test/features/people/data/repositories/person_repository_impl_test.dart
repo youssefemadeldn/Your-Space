@@ -448,6 +448,30 @@ void main() {
 
       expect(result, const Left(failure));
     });
+
+    // Regression test: a plain field-only edit while offline used to
+    // surface as a hard failure even though the outbox row was already
+    // safely queued — `id` on an update is always an already-real person,
+    // so there's no temp-id risk in treating "couldn't sync right now
+    // because the device is offline" as the same Tier 2 success a plain
+    // updatePerson call would report, instead of rejecting the edit.
+    test('treats an immediate replay failing with NetworkFailure as a Tier 2 success', () async {
+      when(() => syncService.replayRow(99)).thenAnswer((_) async => const Left(NetworkFailure()));
+
+      final result = await repository.updatePersonAndSync(
+        id: 10,
+        name: 'New Person',
+        gender: Gender.male,
+        groupId: 1,
+        groupName: 'Family',
+        governorateId: 1,
+        governorateName: 'Cairo',
+      );
+
+      expect(result.isRight(), isTrue);
+      final person = result.getOrElse(() => throw StateError('expected Right'));
+      expect(person.id, 10);
+    });
   });
 
   test('addOccasionHistory maps the response to an entity', () async {

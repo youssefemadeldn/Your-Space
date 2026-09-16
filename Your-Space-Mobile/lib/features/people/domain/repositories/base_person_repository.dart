@@ -135,6 +135,13 @@ abstract class PersonRepository {
     String? facebookUrl,
   });
 
+  /// Same as [updatePersonAndSync]'s sibling above, with one difference:
+  /// `id` here always refers to an already-real, pre-existing person, so a
+  /// `NetworkFailure` (device offline right now) is treated as an accepted
+  /// Tier 2 success — `Right(Person)` with the locally-queued value — not a
+  /// failure, since there is no temp-id risk to guard against on an update.
+  /// Any other failure (validation, server error) still propagates as
+  /// `Left(failure)`.
   Future<Either<Failure, Person>> updatePersonAndSync({
     required int id,
     required String name,
