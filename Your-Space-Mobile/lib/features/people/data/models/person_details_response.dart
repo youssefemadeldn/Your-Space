@@ -24,6 +24,7 @@ class PersonDetailsResponse {
   final String? neighborhoodName;
   final String? primaryPhotoUrl;
   final String? notes;
+  final String? facebookUrl;
   final bool hasReciprocityHistory;
   final List<PersonOccasionHistoryResponse> occasionHistory;
   final List<PersonRelationshipResponse> relationships;
@@ -47,6 +48,7 @@ class PersonDetailsResponse {
     this.neighborhoodName,
     this.primaryPhotoUrl,
     this.notes,
+    this.facebookUrl,
     required this.hasReciprocityHistory,
     required this.occasionHistory,
     required this.relationships,
@@ -71,6 +73,7 @@ class PersonDetailsResponse {
         neighborhoodName: json['neighborhoodName'] as String?,
         primaryPhotoUrl: json['primaryPhotoUrl'] as String?,
         notes: json['notes'] as String?,
+        facebookUrl: json['facebookUrl'] as String?,
         hasReciprocityHistory: json['hasReciprocityHistory'] as bool,
         occasionHistory: (json['occasionHistory'] as List<dynamic>? ?? const [])
             .map((e) => PersonOccasionHistoryResponse.fromJson(e as Map<String, dynamic>))
@@ -100,6 +103,7 @@ class PersonDetailsResponse {
           neighborhoodName: neighborhoodName,
           primaryPhotoUrl: primaryPhotoUrl,
           notes: notes,
+          facebookUrl: facebookUrl,
           hasReciprocityHistory: hasReciprocityHistory,
         ),
         occasionHistory: occasionHistory.map((e) => e.toEntity()).toList(),
